@@ -374,7 +374,6 @@ export default function MonthCalendar({ tasks, reminders }: MonthCalendarProps) 
           );
         })}
       </Box>
-
       <Dialog
         open={dialogDate !== null}
         onClose={() => setDialogDate(null)}
