@@ -21,6 +21,7 @@ import AppLayout from "@/components/AppLayout";
 import { getSession } from "@/lib/authStorage";
 import { completeTask } from "@/lib/completeTask";
 import { fetchTask } from "@/lib/fetchTask";
+import { triggerTaskConfetti } from "@/lib/taskConfetti";
 import { getRoleLabel } from "@/lib/roleLabels";
 import { formatDaysLeft, formatDueDate } from "@/lib/taskDate";
 import type {
@@ -123,6 +124,7 @@ export default function TaskPage() {
         return;
       }
 
+      void triggerTaskConfetti();
       await router.replace("/home");
     } catch {
       setErrorMessage("שגיאה בסימון המטלה. נסה שוב.");

@@ -14,6 +14,7 @@ import TaskCard from "@/components/TaskCard";
 import { getSession } from "@/lib/authStorage";
 import { completeTask } from "@/lib/completeTask";
 import { fetchAssignedTasks } from "@/lib/fetchAssignedTasks";
+import { triggerTaskConfetti } from "@/lib/taskConfetti";
 import type {
   CompleteTaskErrorResponse,
   ListTasksErrorResponse,
@@ -110,6 +111,7 @@ export default function HomePage() {
       setTasks((currentTasks) =>
         currentTasks.filter((task) => task.id !== taskId),
       );
+      void triggerTaskConfetti();
     } catch {
       setErrorMessage("שגיאה בסימון המטלה. נסה שוב.");
     } finally {
