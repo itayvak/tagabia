@@ -1,5 +1,12 @@
-<!-- BEGIN:nextjs-agent-rules -->
-# This is NOT the Next.js you know
+מערכת תג"בייה
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
-<!-- END:nextjs-agent-rules -->
+מערכת שמרכזת ומפשטת את ניהול המשימות והתג"בים לצוער במקום אחד.
+
+המערכת מאפשרת לצוער לצפות בכל המשימות שהוטלו עליו, כולל תיאור של המשימה, התג"ב, ומי הטיל אותה. בנוסף, ניתן לסמן ביצוע ולעקוב אחר סטטוס המשימות.
+
+לממ"שים, התנסויות וגורמים מטילים, המערכת מאפשרת ליצור משימות חדשות, לשבץ אותן לצוערים או לקבוצות (צוות, פלוגה ..) ולעקוב בזמן אמת אחר ההתקדמות - מי השלים את המשימה ומי עדיין לא.
+
+מטרות המערכת:
+- ריכוז כלל המטלות במערכת אחת
+- לפשט הטלת משימות מצוערים מתנסים - הפחתת הסקרים הבלתי נגמרים בקבוצות בוואצפ
+- מעקב בזמן אמת על סטטוס המטלות, מצד הצוער ומצד המפיל

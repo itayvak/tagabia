@@ -1,0 +1,33 @@
+import type { FirestoreTask, PublicTask } from "@/types/task";
+import type { Timestamp } from "firebase-admin/firestore";
+
+export function toPublicTask(
+  id: string,
+  data: FirebaseFirestore.DocumentData,
+): PublicTask | null {
+  const task = data as Partial<FirestoreTask>;
+
+  if (
+    !task.title ||
+    !task.creatorName ||
+    !task.creatorRank ||
+    !task.creatorRole ||
+    !task.dueDate
+  ) {
+    return null;
+  }
+
+  const dueDate = task.dueDate as Timestamp;
+
+  return {
+    id,
+    title: task.title,
+    content: task.content ?? "",
+    creatorId: task.creatorId ?? "",
+    creatorName: task.creatorName,
+    creatorRank: task.creatorRank,
+    creatorRole: task.creatorRole,
+    dueDate: dueDate.toDate().toISOString(),
+    assignees: Array.isArray(task.assignees) ? task.assignees : [],
+  };
+}

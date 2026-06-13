@@ -9,14 +9,27 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@emotion/cache": "^11.14.0",
+    "@emotion/react": "^11.14.0",
+    "@emotion/server": "^11.11.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^9.1.1",
+    "@mui/material": "^9.1.1",
+    "@mui/material-nextjs": "^9.1.1",
+    "@mui/stylis-plugin-rtl": "^9.1.1",
+    "firebase": "^12.14.0",
+    "firebase-admin": "^14.0.0",
     "next": "16.2.9",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "stylis": "^4.4.0",
+    "stylis-plugin-rtl": "^2.1.1"
   },
   "devDependencies": {
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/stylis": "^4.2.7",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
     "typescript": "^5"
