@@ -141,7 +141,6 @@ export default function HomePage() {
   return (
     <>
       <Head>
-        <title>בית | תגביה</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
       <AppLayout user={user}>

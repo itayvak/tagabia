@@ -13,6 +13,7 @@ export default function Document(
   return (
     <Html lang="he" dir="rtl">
       <Head>
+        <title>תגביה</title>
         <DocumentHeadTags {...props} />
       </Head>
       <body>

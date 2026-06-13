@@ -106,7 +106,6 @@ export default function CalendarPage() {
   return (
     <>
       <Head>
-        <title>לוח שנה | תגביה</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
       <AppLayout user={user}>

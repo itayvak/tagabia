@@ -6,7 +6,10 @@ import { AppCacheProvider } from "@mui/material-nextjs/v16-pagesRouter";
 import { CssBaseline, ThemeProvider } from "@mui/material";
 import type { EmotionCache } from "@emotion/react";
 import type { AppProps } from "next/app";
+import Head from "next/head";
 import { useEffect } from "react";
+
+const APP_TITLE = "תגביה";
 
 type AppPropsWithCache = AppProps & {
   emotionCache?: EmotionCache;
@@ -26,6 +29,9 @@ export default function App({
 
   return (
     <AppCacheProvider emotionCache={emotionCache ?? rtlCache}>
+      <Head>
+        <title>{APP_TITLE}</title>
+      </Head>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <main>

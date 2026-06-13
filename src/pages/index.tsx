@@ -174,7 +174,6 @@ export default function LoginPage() {
     return (
       <>
         <Head>
-          <title>התחברות | תגביה</title>
           <meta name="viewport" content="width=device-width, initial-scale=1" />
         </Head>
         <Box
@@ -194,7 +193,6 @@ export default function LoginPage() {
   return (
     <>
       <Head>
-        <title>התחברות | תגביה</title>
         <meta name="description" content="התחברות לתגביה" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />

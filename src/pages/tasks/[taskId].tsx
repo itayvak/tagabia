@@ -151,7 +151,6 @@ export default function TaskPage() {
   return (
     <>
       <Head>
-        <title>{task ? `${task.title} | תגביה` : "מטלה | תגביה"}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
       <AppLayout user={user}>

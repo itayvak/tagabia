@@ -167,7 +167,6 @@ export default function AdminPage() {
   return (
     <>
       <Head>
-        <title>ניהול | תגביה</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
       <AppLayout user={user}>

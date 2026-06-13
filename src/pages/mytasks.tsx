@@ -326,7 +326,6 @@ export default function MyTasksPage() {
   return (
     <>
       <Head>
-        <title>מטלות שלי | תגביה</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
       <AppLayout user={user}>
