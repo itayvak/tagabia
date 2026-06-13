@@ -7,6 +7,8 @@ import {
   CircularProgress,
   Container,
   Snackbar,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from "@mui/material";
 import AppLayout from "@/components/AppLayout";
@@ -16,10 +18,11 @@ import { completeTask } from "@/lib/completeTask";
 import { fetchAssignedTasks } from "@/lib/fetchAssignedTasks";
 import { triggerTaskConfetti } from "@/lib/taskConfetti";
 import type {
+  AssignedTask,
+  AssignedTaskFilter,
   CompleteTaskErrorResponse,
+  ListAssignedTasksSuccessResponse,
   ListTasksErrorResponse,
-  ListTasksSuccessResponse,
-  PublicTask,
 } from "@/types/task";
 import type { PublicUser } from "@/types/user";
 
@@ -45,7 +48,8 @@ function getErrorMessage(error: string): string {
 export default function HomePage() {
   const router = useRouter();
   const [user, setUser] = useState<PublicUser | null>(null);
-  const [tasks, setTasks] = useState<PublicTask[]>([]);
+  const [tasks, setTasks] = useState<AssignedTask[]>([]);
+  const [taskFilter, setTaskFilter] = useState<AssignedTaskFilter>("pending");
   const [isLoadingTasks, setIsLoadingTasks] = useState(true);
   const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -70,7 +74,7 @@ export default function HomePage() {
       setErrorMessage(null);
 
       try {
-        const { response, data } = await fetchAssignedTasks(user.id);
+        const { response, data } = await fetchAssignedTasks(user.id, taskFilter);
 
         if (!response.ok) {
           const { error } = data as ListTasksErrorResponse;
@@ -78,7 +82,7 @@ export default function HomePage() {
           return;
         }
 
-        setTasks((data as ListTasksSuccessResponse).tasks);
+        setTasks((data as ListAssignedTasksSuccessResponse).tasks);
       } catch {
         setErrorMessage("שגיאה בטעינת המטלות. נסה שוב.");
       } finally {
@@ -87,7 +91,7 @@ export default function HomePage() {
     };
 
     void loadTasks();
-  }, [user]);
+  }, [user, taskFilter]);
 
   const handleCompleteTask = async (taskId: string) => {
     if (!user) {
@@ -160,13 +164,31 @@ export default function HomePage() {
             תג&quot;ביה
           </Typography>
         </Box>
+        <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
+          <ToggleButtonGroup
+            exclusive
+            value={taskFilter}
+            onChange={(_, value: AssignedTaskFilter | null) => {
+              if (value) {
+                setTaskFilter(value);
+              }
+            }}
+            size="small"
+            color="primary"
+          >
+            <ToggleButton value="pending">פתוחות</ToggleButton>
+            <ToggleButton value="completed">בוצעו</ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
         {isLoadingTasks ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
             <CircularProgress />
           </Box>
         ) : tasks.length === 0 ? (
           <Typography color="text.secondary" align="center" sx={{ py: 6 }}>
-            איזה כיף! סיימת את כל המטלות
+            {taskFilter === "pending"
+              ? "איזה כיף! סיימת את כל המטלות"
+              : "אין מטלות שבוצעו"}
           </Typography>
         ) : (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -175,6 +197,8 @@ export default function HomePage() {
                 key={task.id}
                 task={task}
                 isCompleting={completingTaskId === task.id}
+                isCompleted={task.completed}
+                completedAt={task.completedAt}
                 onOpen={(taskId) => void router.push(`/tasks/${taskId}`)}
                 onComplete={(taskId) => void handleCompleteTask(taskId)}
               />

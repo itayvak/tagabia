@@ -6,6 +6,7 @@ import type {
   ListCalendarTasksSuccessResponse,
 } from "@/types/task";
 import type { NextApiRequest, NextApiResponse } from "next";
+import { Timestamp } from "firebase-admin/firestore";
 
 type ListCalendarTasksResponse =
   | ListCalendarTasksSuccessResponse
@@ -56,6 +57,13 @@ export default async function handler(
       tasksById.set(doc.id, {
         ...task,
         completed: completionDocs[index]?.exists ?? false,
+        completedAt:
+          completionDocs[index]?.exists &&
+          completionDocs[index]?.data()?.completedAt
+            ? (completionDocs[index]!.data()!.completedAt as Timestamp)
+                .toDate()
+                .toISOString()
+            : null,
       });
     });
 
@@ -77,7 +85,7 @@ export default async function handler(
           }
 
           if (task.assignees.length === 0) {
-            return { ...task, completed: false };
+            return { ...task, completed: false, completedAt: null };
           }
 
           const completionSnapshot = await db
@@ -89,6 +97,7 @@ export default async function handler(
           return {
             ...task,
             completed: completionSnapshot.size >= task.assignees.length,
+            completedAt: null,
           };
         }),
       );

@@ -21,6 +21,8 @@ import type { PublicTask } from "@/types/task";
 interface TaskCardProps {
   task: PublicTask;
   isCompleting: boolean;
+  isCompleted?: boolean;
+  completedAt?: string | null;
   onOpen: (taskId: string) => void;
   onComplete: (taskId: string) => void;
 }
@@ -28,6 +30,8 @@ interface TaskCardProps {
 export default function TaskCard({
   task,
   isCompleting,
+  isCompleted = false,
+  completedAt = null,
   onOpen,
   onComplete,
 }: TaskCardProps) {
@@ -56,6 +60,11 @@ export default function TaskCard({
             <Typography variant="body2" color="text.secondary">
               {formatDaysLeft(task.dueDate)}
             </Typography>
+            {isCompleted && completedAt && (
+              <Typography variant="body2" color="text.secondary">
+                בוצע ב-{formatDueDate(completedAt)}
+              </Typography>
+            )}
           </CardContent>
         </CardActionArea>
         <CardActions sx={{ px: 2, pb: 2, pt: 0 }}>
@@ -63,7 +72,7 @@ export default function TaskCard({
             variant="contained"
             size="small"
             fullWidth
-            disabled={isCompleting}
+            disabled={isCompleting || isCompleted}
             onClick={() => setIsConfirmOpen(true)}
             startIcon={
               isCompleting ? (
@@ -73,7 +82,11 @@ export default function TaskCard({
               )
             }
           >
-            {isCompleting ? "מסמן..." : "בוצע"}
+            {isCompleting
+              ? "מסמן..."
+              : isCompleted
+                ? "סומן כבוצע"
+                : "בוצע"}
           </Button>
         </CardActions>
       </Card>

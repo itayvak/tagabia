@@ -25,10 +25,10 @@ import { triggerTaskConfetti } from "@/lib/taskConfetti";
 import { getRoleLabel } from "@/lib/roleLabels";
 import { formatDaysLeft, formatDueDate } from "@/lib/taskDate";
 import type {
+  AssignedTask,
   CompleteTaskErrorResponse,
   GetTaskErrorResponse,
   GetTaskSuccessResponse,
-  PublicTask,
 } from "@/types/task";
 import type { PublicUser } from "@/types/user";
 
@@ -59,7 +59,7 @@ export default function TaskPage() {
   const taskId = typeof router.query.taskId === "string" ? router.query.taskId : "";
 
   const [user, setUser] = useState<PublicUser | null>(null);
-  const [task, setTask] = useState<PublicTask | null>(null);
+  const [task, setTask] = useState<AssignedTask | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -105,7 +105,7 @@ export default function TaskPage() {
   }, [user, taskId, router.isReady]);
 
   const handleCompleteTask = async () => {
-    if (!user || !task) {
+    if (!user || !task || task.completed) {
       return;
     }
 
@@ -196,7 +196,7 @@ export default function TaskPage() {
             </Box>
             <Button
               variant="contained"
-              disabled={isCompleting}
+              disabled={isCompleting || task.completed}
               onClick={() => setIsConfirmOpen(true)}
               startIcon={
                 isCompleting ? (
@@ -206,7 +206,11 @@ export default function TaskPage() {
                 )
               }
             >
-              {isCompleting ? "מסמן..." : "בוצע"}
+              {isCompleting
+                ? "מסמן..."
+                : task.completed
+                  ? "סומן כבוצע"
+                  : "בוצע"}
             </Button>
           </Box>
         )}

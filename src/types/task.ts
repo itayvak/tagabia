@@ -24,9 +24,18 @@ export interface PublicTask {
   assignees: string[];
 }
 
-export interface CalendarTask extends PublicTask {
+export interface AssignedTask extends PublicTask {
   completed: boolean;
+  completedAt: string | null;
 }
+
+export type AssignedTaskFilter = "pending" | "completed";
+
+export interface ListAssignedTasksSuccessResponse {
+  tasks: AssignedTask[];
+}
+
+export interface CalendarTask extends AssignedTask {}
 
 export interface ListCalendarTasksSuccessResponse {
   tasks: CalendarTask[];
@@ -89,7 +98,7 @@ export interface DeleteTaskErrorResponse {
 }
 
 export interface GetTaskSuccessResponse {
-  task: PublicTask;
+  task: AssignedTask;
 }
 
 export interface GetTaskErrorResponse {

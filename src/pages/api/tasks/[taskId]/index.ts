@@ -69,7 +69,25 @@ async function handleGet(
       return res.status(500).json({ error: "Task data is invalid" });
     }
 
-    return res.status(200).json({ task });
+    const completionDoc = await getAdminFirestore()
+      .collection("tasks")
+      .doc(taskId)
+      .collection("completions")
+      .doc(userId)
+      .get();
+
+    return res.status(200).json({
+      task: {
+        ...task,
+        completed: completionDoc.exists,
+        completedAt:
+          completionDoc.exists && completionDoc.data()?.completedAt
+            ? (completionDoc.data()!.completedAt as Timestamp)
+                .toDate()
+                .toISOString()
+            : null,
+      },
+    });
   } catch (error) {
     console.error("Get task failed:", error);
     return res.status(500).json({ error: "Get task failed" });

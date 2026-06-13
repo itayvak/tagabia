@@ -1,16 +1,20 @@
 import { getAdminFirestore } from "@/lib/firebaseAdmin";
 import { toPublicTask } from "@/lib/taskMapper";
 import type {
+  AssignedTask,
+  AssignedTaskFilter,
+  ListAssignedTasksSuccessResponse,
   ListTasksErrorResponse,
-  ListTasksSuccessResponse,
-  PublicTask,
 } from "@/types/task";
+import { Timestamp } from "firebase-admin/firestore";
 import type { NextApiRequest, NextApiResponse } from "next";
 
-type ListTasksResponse = ListTasksSuccessResponse | ListTasksErrorResponse;
+type ListTasksResponse =
+  | ListAssignedTasksSuccessResponse
+  | ListTasksErrorResponse;
 
-function isNonEmptyString(value: unknown): value is string {
-  return typeof value === "string" && value.trim().length > 0;
+function parseStatusQuery(value: unknown): AssignedTaskFilter {
+  return value === "completed" ? "completed" : "pending";
 }
 
 export default async function handler(
@@ -24,6 +28,7 @@ export default async function handler(
 
   const userId =
     typeof req.query.userId === "string" ? req.query.userId.trim() : "";
+  const status = parseStatusQuery(req.query.status);
 
   if (!userId) {
     return res.status(400).json({ error: "User ID is required" });
@@ -43,12 +48,35 @@ export default async function handler(
       completionRefs.length > 0 ? await db.getAll(...completionRefs) : [];
 
     const tasks = snapshot.docs
-      .filter((_, index) => !completionDocs[index]?.exists)
-      .map((doc) => toPublicTask(doc.id, doc.data()))
-      .filter((task): task is PublicTask => task !== null)
-      .sort(
-        (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
-      );
+      .map((doc, index): AssignedTask | null => {
+        const task = toPublicTask(doc.id, doc.data());
+        if (!task) {
+          return null;
+        }
+
+        const completionDoc = completionDocs[index];
+        const completed = completionDoc?.exists ?? false;
+        const completionData = completionDoc?.data();
+        const completedAt =
+          completed && completionData?.completedAt
+            ? (completionData.completedAt as Timestamp).toDate().toISOString()
+            : null;
+
+        return { ...task, completed, completedAt };
+      })
+      .filter((task): task is AssignedTask => task !== null)
+      .filter((task) =>
+        status === "completed" ? task.completed : !task.completed,
+      )
+      .sort((a, b) => {
+        if (status === "completed") {
+          const aTime = a.completedAt ? new Date(a.completedAt).getTime() : 0;
+          const bTime = b.completedAt ? new Date(b.completedAt).getTime() : 0;
+          return bTime - aTime;
+        }
+
+        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      });
 
     return res.status(200).json({ tasks });
   } catch (error) {

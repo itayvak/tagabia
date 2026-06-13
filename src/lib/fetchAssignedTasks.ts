@@ -1,15 +1,18 @@
 import type {
+  AssignedTaskFilter,
+  ListAssignedTasksSuccessResponse,
   ListTasksErrorResponse,
-  ListTasksSuccessResponse,
 } from "@/types/task";
 
-export async function fetchAssignedTasks(userId: string) {
-  const response = await fetch(
-    `/api/tasks/assigned?userId=${encodeURIComponent(userId)}`,
-  );
+export async function fetchAssignedTasks(
+  userId: string,
+  status: AssignedTaskFilter = "pending",
+) {
+  const params = new URLSearchParams({ userId, status });
+  const response = await fetch(`/api/tasks/assigned?${params.toString()}`);
 
   const data = (await response.json()) as
-    | ListTasksSuccessResponse
+    | ListAssignedTasksSuccessResponse
     | ListTasksErrorResponse;
 
   return { response, data };
