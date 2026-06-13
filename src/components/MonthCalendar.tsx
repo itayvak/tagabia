@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import { Box, IconButton, List, ListItemButton, ListItemText, Typography } from "@mui/material";
+import { Box, Dialog, DialogContent, DialogTitle, IconButton, List, ListItemButton, ListItemText, Typography } from "@mui/material";
 import { formatDueDate, getCalendarDateKey, getDueDateCalendarKey } from "@/lib/taskDate";
 import type { PublicCalendarReminder } from "@/types/calendarReminder";
 import type { CalendarTask } from "@/types/task";
@@ -151,7 +151,7 @@ export default function MonthCalendar({ tasks, reminders }: MonthCalendarProps) 
   const [visibleMonth, setVisibleMonth] = useState(
     () => new Date(today.getFullYear(), today.getMonth(), 1),
   );
-  const [selectedDate, setSelectedDate] = useState<Date | null>(today);
+  const [dialogDate, setDialogDate] = useState<Date | null>(null);
 
   const tasksByDueDate = useMemo(() => groupTasksByDueDate(tasks), [tasks]);
 
@@ -162,10 +162,10 @@ export default function MonthCalendar({ tasks, reminders }: MonthCalendarProps) 
 
   const weeks = useMemo(() => chunkWeeks(days), [days]);
 
-  const selectedDayTasks =
-    selectedDate === null
+  const dialogDayTasks =
+    dialogDate === null
       ? []
-      : (tasksByDueDate.get(getCalendarDateKey(selectedDate)) ?? []);
+      : (tasksByDueDate.get(getCalendarDateKey(dialogDate)) ?? []);
 
   const monthLabel = `${MONTH_LABELS[visibleMonth.getMonth()]} ${visibleMonth.getFullYear()}`;
 
@@ -280,7 +280,7 @@ export default function MonthCalendar({ tasks, reminders }: MonthCalendarProps) 
           const dayKey = getCalendarDateKey(day.date);
           const dayTasks = tasksByDueDate.get(dayKey) ?? [];
           const isSelected =
-            selectedDate !== null && isSameDay(day.date, selectedDate);
+            dialogDate !== null && isSameDay(day.date, dialogDate);
           const hiddenTaskCount = Math.max(
             0,
             dayTasks.length - MAX_VISIBLE_TASKS_IN_CELL,
@@ -291,7 +291,7 @@ export default function MonthCalendar({ tasks, reminders }: MonthCalendarProps) 
               key={day.date.toISOString()}
               component="button"
               type="button"
-              onClick={() => setSelectedDate(day.date)}
+              onClick={() => setDialogDate(day.date)}
               sx={{
                 border: 1,
                 borderColor: isSelected ? "primary.main" : "divider",
@@ -375,52 +375,53 @@ export default function MonthCalendar({ tasks, reminders }: MonthCalendarProps) 
         })}
       </Box>
 
-      <Box
-        sx={{
-          borderTop: 1,
-          borderColor: "divider",
-          display: "flex",
-          flexDirection: "column",
-          flexShrink: 0,
-          maxHeight: "36%",
-          minHeight: 120,
-          overflow: "hidden",
-        }}
+      <Dialog
+        open={dialogDate !== null}
+        onClose={() => setDialogDate(null)}
+        fullWidth
+        maxWidth="xs"
       >
-        <Typography variant="subtitle2" sx={{ px: 2, py: 1 }}>
-          {selectedDate === null
+        <DialogTitle>
+          {dialogDate === null
             ? "מטלות"
-            : `מטלות ל-${selectedDate.toLocaleDateString("he-IL", {
+            : `מטלות ל-${dialogDate.toLocaleDateString("he-IL", {
                 day: "numeric",
                 month: "long",
               })}`}
-        </Typography>
-
-        {selectedDayTasks.length === 0 ? (
-          <Typography color="text.secondary" sx={{ px: 2, pb: 2 }}>
-            אין מטלות ביום זה
-          </Typography>
-        ) : (
-          <List dense disablePadding sx={{ overflowY: "auto" }}>
-            {selectedDayTasks.map((task) => (
-              <ListItemButton key={task.id} onClick={() => openTask(task.id)}>
-                <ListItemText
-                  primary={task.title}
-                  secondary={formatDueDate(task.dueDate)}
-                  slotProps={{
-                    primary: {
-                      sx: {
-                        color: task.completed ? "text.disabled" : "text.primary",
-                      },
-                    },
-                    secondary: { variant: "caption" },
+        </DialogTitle>
+        <DialogContent dividers sx={{ px: 0, py: 0 }}>
+          {dialogDayTasks.length === 0 ? (
+            <Typography color="text.secondary" sx={{ px: 3, py: 2 }}>
+              אין מטלות ביום זה
+            </Typography>
+          ) : (
+            <List disablePadding>
+              {dialogDayTasks.map((task) => (
+                <ListItemButton
+                  key={task.id}
+                  onClick={() => {
+                    setDialogDate(null);
+                    openTask(task.id);
                   }}
-                />
-              </ListItemButton>
-            ))}
-          </List>
-        )}
-      </Box>
+                >
+                  <ListItemText
+                    primary={task.title}
+                    secondary={formatDueDate(task.dueDate)}
+                    slotProps={{
+                      primary: {
+                        sx: {
+                          color: task.completed ? "text.disabled" : "text.primary",
+                        },
+                      },
+                      secondary: { variant: "caption" },
+                    }}
+                  />
+                </ListItemButton>
+              ))}
+            </List>
+          )}
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 }
