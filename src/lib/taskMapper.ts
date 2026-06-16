@@ -28,6 +28,11 @@ export function toPublicTask(
     creatorRank: task.creatorRank,
     creatorRole: task.creatorRole,
     dueDate: dueDate.toDate().toISOString(),
-    assignees: Array.isArray(task.assignees) ? task.assignees : [],
+    assignedTeams: Array.isArray(task.assignedTeams)
+      ? task.assignedTeams.filter(
+          (team): team is number =>
+            typeof team === "number" && Number.isInteger(team),
+        )
+      : [],
   };
 }

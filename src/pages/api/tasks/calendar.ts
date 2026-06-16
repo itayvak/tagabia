@@ -1,3 +1,4 @@
+import { getUsersInTeams } from "@/lib/assigneeTeams";
 import { getAdminFirestore } from "@/lib/firebaseAdmin";
 import { toPublicTask } from "@/lib/taskMapper";
 import type {
@@ -5,6 +6,7 @@ import type {
   ListCalendarTasksErrorResponse,
   ListCalendarTasksSuccessResponse,
 } from "@/types/task";
+import type { FirestoreUser } from "@/types/user";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { Timestamp } from "firebase-admin/firestore";
 
@@ -35,9 +37,16 @@ export default async function handler(
 
   try {
     const db = getAdminFirestore();
+    const userDoc = await db.collection("users").doc(userId).get();
+
+    if (!userDoc.exists) {
+      return res.status(400).json({ error: "User not found" });
+    }
+
+    const userTeam = (userDoc.data() as FirestoreUser).team;
     const assignedSnapshot = await db
       .collection("tasks")
-      .where("assignees", "array-contains", userId)
+      .where("assignedTeams", "array-contains", userTeam)
       .get();
 
     const completionRefs = assignedSnapshot.docs.map((doc) =>
@@ -84,19 +93,18 @@ export default async function handler(
             return null;
           }
 
-          if (task.assignees.length === 0) {
+          if (task.assignedTeams.length === 0) {
             return { ...task, completed: false, completedAt: null };
           }
 
-          const completionSnapshot = await db
-            .collection("tasks")
-            .doc(doc.id)
-            .collection("completions")
-            .get();
+          const [usersInTeams, completionSnapshot] = await Promise.all([
+            getUsersInTeams(db, task.assignedTeams),
+            db.collection("tasks").doc(doc.id).collection("completions").get(),
+          ]);
 
           return {
             ...task,
-            completed: completionSnapshot.size >= task.assignees.length,
+            completed: completionSnapshot.size >= usersInTeams.length,
             completedAt: null,
           };
         }),

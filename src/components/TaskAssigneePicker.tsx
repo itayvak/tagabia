@@ -13,10 +13,13 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
   PLATOONS,
   countAssigneeTargets,
+  createEmptyAssigneeSelection,
+  createEntireBattalionSelection,
   formatPlatoonLabel,
   getAssigneeSummaryItems,
   getTeamsForPlatoon,
   hasAssigneeSelection,
+  isEntireBattalionSelected,
   type AssigneeSelection,
 } from "@/lib/platoons";
 import type { Platoon } from "@/types/user";
@@ -24,21 +27,23 @@ import type { Platoon } from "@/types/user";
 interface TaskAssigneePickerProps {
   selection: AssigneeSelection;
   onChange: (selection: AssigneeSelection) => void;
-  assigneeCount: number | null;
-  isResolving: boolean;
   disabled?: boolean;
 }
 
 export default function TaskAssigneePicker({
   selection,
   onChange,
-  assigneeCount,
-  isResolving,
   disabled = false,
 }: TaskAssigneePickerProps) {
   const summaryItems = getAssigneeSummaryItems(selection);
   const targetCount = countAssigneeTargets(selection);
   const hasSelection = hasAssigneeSelection(selection);
+
+  const handleEntireBattalionChange = (checked: boolean) => {
+    onChange(
+      checked ? createEntireBattalionSelection() : createEmptyAssigneeSelection(),
+    );
+  };
 
   const handleEntirePlatoonChange = (platoon: Platoon, checked: boolean) => {
     const platoonTeams = getTeamsForPlatoon(platoon);
@@ -74,7 +79,20 @@ export default function TaskAssigneePicker({
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-      <Typography variant="subtitle2">שיוך לחיילים</Typography>
+      <Typography variant="subtitle2">שיוך לצוערים</Typography>
+
+      <FormControlLabel
+        control={
+          <Checkbox
+            checked={isEntireBattalionSelected(selection)}
+            onChange={(event) =>
+              handleEntireBattalionChange(event.target.checked)
+            }
+            disabled={disabled}
+          />
+        }
+        label="כל הגדוד"
+      />
 
       {PLATOONS.map((platoon) => {
         const platoonSelection = selection[platoon];
@@ -161,12 +179,8 @@ export default function TaskAssigneePicker({
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
         <Typography variant="caption" color="text.secondary">
           {!hasSelection
-            ? "לא נבחרו חיילים"
-            : isResolving
-              ? "מחשב כמה חיילים יקבלו את המטלה..."
-              : assigneeCount === null
-                ? `${targetCount} קבוצות נבחרו`
-                : `${assigneeCount} חיילים יקבלו את המטלה`}
+            ? "לא נבחרו צוותים"
+            : `${targetCount} קבוצות נבחרו`}
         </Typography>
         {summaryItems.length > 0 && (
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>

@@ -17,11 +17,13 @@ import {
   Typography,
 } from "@mui/material";
 import CheckIcon from "@mui/icons-material/Check";
+import ShareIcon from "@mui/icons-material/Share";
 import AppLayout from "@/components/AppLayout";
 import { getSession } from "@/lib/authStorage";
 import { completeTask } from "@/lib/completeTask";
 import { fetchTask } from "@/lib/fetchTask";
 import { triggerTaskConfetti } from "@/lib/taskConfetti";
+import { isUserAssignedToTeams } from "@/lib/assigneeTeams";
 import { getRoleLabel } from "@/lib/roleLabels";
 import { formatDaysLeft, formatDueDate } from "@/lib/taskDate";
 import type {
@@ -64,6 +66,11 @@ export default function TaskPage() {
   const [isCompleting, setIsCompleting] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const isAssignee =
+    Boolean(user && task) &&
+    isUserAssignedToTeams(user.team, task.assignedTeams);
 
   useEffect(() => {
     const session = getSession();
@@ -105,7 +112,7 @@ export default function TaskPage() {
   }, [user, taskId, router.isReady]);
 
   const handleCompleteTask = async () => {
-    if (!user || !task || task.completed) {
+    if (!user || !task || task.completed || !isAssignee) {
       return;
     }
 
@@ -130,6 +137,49 @@ export default function TaskPage() {
       setErrorMessage("שגיאה בסימון המטלה. נסה שוב.");
     } finally {
       setIsCompleting(false);
+    }
+  };
+
+  const handleShareTask = async () => {
+    if (!task) {
+      return;
+    }
+
+    const url = `${window.location.origin}/tasks/${task.id}`;
+    const text = [
+      task.title,
+      `תג"ב: ${formatDueDate(task.dueDate)} · ${formatDaysLeft(task.dueDate)}`,
+      `מאת ${task.creatorRank} ${task.creatorName}`,
+      "",
+      task.content,
+    ].join("\n");
+
+    const shareData: ShareData = {
+      title: task.title,
+      text,
+      url,
+    };
+
+    try {
+      if (typeof navigator.share === "function") {
+        if (navigator.canShare && !navigator.canShare(shareData)) {
+          await navigator.clipboard.writeText(`${text}\n\n${url}`);
+          setSuccessMessage("הקישור הועתק ללוח");
+          return;
+        }
+
+        await navigator.share(shareData);
+        return;
+      }
+
+      await navigator.clipboard.writeText(`${text}\n\n${url}`);
+      setSuccessMessage("הקישור הועתק ללוח");
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return;
+      }
+
+      setErrorMessage("שגיאה בשיתוף המטלה");
     }
   };
 
@@ -165,9 +215,27 @@ export default function TaskPage() {
           </Typography>
         ) : (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <Typography variant="h5" component="h1">
-              {task.title}
-            </Typography>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "flex-start",
+                justifyContent: "space-between",
+                gap: 1,
+              }}
+            >
+              <Typography variant="h5" component="h1" sx={{ flex: 1 }}>
+                {task.title}
+              </Typography>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => void handleShareTask()}
+                startIcon={<ShareIcon />}
+                sx={{ flexShrink: 0 }}
+              >
+                שיתוף
+              </Button>
+            </Box>
             <Box>
               <Typography variant="subtitle2" color="text.secondary">
                 מאת {task.creatorRank} {task.creatorName}
@@ -195,13 +263,19 @@ export default function TaskPage() {
             </Box>
             <Button
               variant="contained"
-              disabled={isCompleting || task.completed}
-              onClick={() => setIsConfirmOpen(true)}
+              fullWidth
+              disabled={isCompleting || task.completed || !isAssignee}
+              onClick={() => {
+                if (!isAssignee) return;
+                setIsConfirmOpen(true);
+              }}
               startIcon={
                 isCompleting ? (
                   <CircularProgress size={20} color="inherit" />
-                ) : (
+                ) : isAssignee && !task.completed ? (
                   <CheckIcon />
+                ) : (
+                  undefined
                 )
               }
             >
@@ -209,7 +283,9 @@ export default function TaskPage() {
                 ? "מסמן..."
                 : task.completed
                   ? "סומן כבוצע"
-                  : "בוצע"}
+                  : isAssignee
+                    ? "בוצע"
+                    : "אינך משויך למטלה זו"}
             </Button>
           </Box>
         )}
@@ -234,6 +310,21 @@ export default function TaskPage() {
           </Button>
         </DialogActions>
       </Dialog>
+      <Snackbar
+        open={successMessage !== null}
+        autoHideDuration={4000}
+        onClose={() => setSuccessMessage(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSuccessMessage(null)}
+          severity="success"
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          {successMessage}
+        </Alert>
+      </Snackbar>
       <Snackbar
         open={errorMessage !== null}
         autoHideDuration={5000}

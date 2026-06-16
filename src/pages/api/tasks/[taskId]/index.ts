@@ -1,3 +1,4 @@
+import { isUserAssignedToTeams, normalizeTeamIds } from "@/lib/assigneeTeams";
 import { getAdminFirestore } from "@/lib/firebaseAdmin";
 import { toPublicTask } from "@/lib/taskMapper";
 import type {
@@ -10,6 +11,7 @@ import type {
   UpdateTaskRequestBody,
   UpdateTaskSuccessResponse,
 } from "@/types/task";
+import type { FirestoreUser } from "@/types/user";
 import { Timestamp } from "firebase-admin/firestore";
 import type { NextApiRequest, NextApiResponse } from "next";
 
@@ -23,13 +25,6 @@ type TaskResponse =
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
-}
-
-function isStringArray(value: unknown): value is string[] {
-  return (
-    Array.isArray(value) &&
-    value.every((item) => typeof item === "string" && item.trim().length > 0)
-  );
 }
 
 async function handleGet(
@@ -50,26 +45,49 @@ async function handleGet(
   }
 
   try {
-    const taskDoc = await getAdminFirestore()
-      .collection("tasks")
-      .doc(taskId)
-      .get();
+    const db = getAdminFirestore();
+    const taskDoc = await db.collection("tasks").doc(taskId).get();
 
     if (!taskDoc.exists) {
       return res.status(404).json({ error: "Task not found" });
     }
 
-    const assignees = taskDoc.data()?.assignees;
-    if (!Array.isArray(assignees) || !assignees.includes(userId)) {
+    const taskData = taskDoc.data()!;
+    const assignedTeams = Array.isArray(taskData.assignedTeams)
+      ? (taskData.assignedTeams as number[])
+      : [];
+    const creatorId =
+      typeof taskData.creatorId === "string" ? taskData.creatorId.trim() : "";
+    const isCreator = creatorId === userId;
+
+    const userDoc = await db.collection("users").doc(userId).get();
+    if (!userDoc.exists) {
+      return res.status(400).json({ error: "User not found" });
+    }
+
+    const userTeam = (userDoc.data() as FirestoreUser).team;
+    const isAssignee = isUserAssignedToTeams(userTeam, assignedTeams);
+
+    if (!isAssignee && !isCreator) {
       return res.status(403).json({ error: "User is not assigned to this task" });
     }
 
-    const task = toPublicTask(taskDoc.id, taskDoc.data()!);
+    const task = toPublicTask(taskDoc.id, taskData);
     if (!task) {
       return res.status(500).json({ error: "Task data is invalid" });
     }
 
-    const completionDoc = await getAdminFirestore()
+    if (isCreator && !isAssignee) {
+      return res.status(200).json({
+        task: {
+          ...task,
+          completed: false,
+          completedAt: null,
+        },
+      });
+    }
+
+    const completionDoc = await db
       .collection("tasks")
       .doc(taskId)
       .collection("completions")
@@ -100,7 +118,7 @@ async function handlePut(
 ) {
   const taskId =
     typeof req.query.taskId === "string" ? req.query.taskId.trim() : "";
-  const { userId, title, content, dueDate, assignees } =
+  const { userId, title, content, dueDate, assignedTeams } =
     req.body as Partial<UpdateTaskRequestBody>;
 
   if (!taskId) {
@@ -123,12 +141,11 @@ async function handlePut(
     return res.status(400).json({ error: "Due date is required" });
   }
 
-  if (!isStringArray(assignees)) {
-    return res.status(400).json({ error: "Assignees must be a list of user IDs" });
-  }
-
-  if (assignees.length === 0) {
-    return res.status(400).json({ error: "At least one assignee is required" });
+  const normalizedTeams = normalizeTeamIds(assignedTeams);
+  if (!normalizedTeams) {
+    return res
+      .status(400)
+      .json({ error: "Assigned teams must be a list of valid team numbers" });
   }
 
   const parsedDueDate = new Date(dueDate);
@@ -150,20 +167,11 @@ async function handlePut(
       return res.status(403).json({ error: "User is not the task creator" });
     }
 
-    const uniqueAssigneeIds = [...new Set(assignees.map((id) => id.trim()))];
-    const assigneeDocs = await db.getAll(
-      ...uniqueAssigneeIds.map((id) => db.collection("users").doc(id)),
-    );
-
-    if (assigneeDocs.some((doc) => !doc.exists)) {
-      return res.status(400).json({ error: "One or more assignees not found" });
-    }
-
     await taskRef.update({
       title: title.trim(),
       content: content.trim(),
       dueDate: Timestamp.fromDate(parsedDueDate),
-      assignees: uniqueAssigneeIds,
+      assignedTeams: normalizedTeams,
     });
 
     return res.status(200).json({ taskId });

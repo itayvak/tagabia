@@ -9,7 +9,7 @@ export interface FirestoreTask {
   creatorRank: string;
   creatorRole: Role;
   dueDate: Timestamp;
-  assignees: string[];
+  assignedTeams: number[];
 }
 
 export interface PublicTask {
@@ -21,7 +21,7 @@ export interface PublicTask {
   creatorRank: string;
   creatorRole: Role;
   dueDate: string;
-  assignees: string[];
+  assignedTeams: number[];
 }
 
 export interface AssignedTask extends PublicTask {
@@ -29,13 +29,13 @@ export interface AssignedTask extends PublicTask {
   completedAt: string | null;
 }
 
-export type AssignedTaskFilter = "pending" | "completed";
+export type AssignedTaskFilter = "pending" | "completed" | "all";
 
 export interface ListAssignedTasksSuccessResponse {
   tasks: AssignedTask[];
 }
 
-export interface CalendarTask extends AssignedTask {}
+export type CalendarTask = AssignedTask;
 
 export interface ListCalendarTasksSuccessResponse {
   tasks: CalendarTask[];
@@ -58,7 +58,7 @@ export interface CreateTaskRequestBody {
   content: string;
   creatorId: string;
   dueDate: string;
-  assignees: string[];
+  assignedTeams: number[];
 }
 
 export interface CreateTaskSuccessResponse {
@@ -74,7 +74,7 @@ export interface UpdateTaskRequestBody {
   title: string;
   content: string;
   dueDate: string;
-  assignees: string[];
+  assignedTeams: number[];
 }
 
 export interface UpdateTaskSuccessResponse {

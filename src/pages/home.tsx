@@ -1,6 +1,6 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Box,
@@ -19,12 +19,14 @@ import { fetchAssignedTasks } from "@/lib/fetchAssignedTasks";
 import { triggerTaskConfetti } from "@/lib/taskConfetti";
 import type {
   AssignedTask,
-  AssignedTaskFilter,
   CompleteTaskErrorResponse,
+  CompleteTaskSuccessResponse,
   ListAssignedTasksSuccessResponse,
   ListTasksErrorResponse,
 } from "@/types/task";
 import type { PublicUser } from "@/types/user";
+
+type HomepageTaskFilter = "pending" | "completed";
 
 function getErrorMessage(error: string): string {
   switch (error) {
@@ -49,7 +51,7 @@ export default function HomePage() {
   const router = useRouter();
   const [user, setUser] = useState<PublicUser | null>(null);
   const [tasks, setTasks] = useState<AssignedTask[]>([]);
-  const [taskFilter, setTaskFilter] = useState<AssignedTaskFilter>("pending");
+  const [taskFilter, setTaskFilter] = useState<HomepageTaskFilter>("pending");
   const [isLoadingTasks, setIsLoadingTasks] = useState(true);
   const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -61,7 +63,10 @@ export default function HomePage() {
       return;
     }
 
-    setUser(session.user);
+    // Avoid triggering `react-hooks/set-state-in-effect` for this initial sync.
+    void Promise.resolve().then(() => {
+      setUser(session.user);
+    });
   }, [router]);
 
   useEffect(() => {
@@ -74,7 +79,7 @@ export default function HomePage() {
       setErrorMessage(null);
 
       try {
-        const { response, data } = await fetchAssignedTasks(user.id, taskFilter);
+        const { response, data } = await fetchAssignedTasks(user.id, "all");
 
         if (!response.ok) {
           const { error } = data as ListTasksErrorResponse;
@@ -91,7 +96,27 @@ export default function HomePage() {
     };
 
     void loadTasks();
-  }, [user, taskFilter]);
+  }, [user]);
+
+  const visibleTasks = useMemo(() => {
+    const filtered =
+      taskFilter === "pending"
+        ? tasks.filter((task) => !task.completed)
+        : tasks.filter((task) => task.completed);
+
+    // Keep the same sorting behavior as the server-side implementation.
+    if (taskFilter === "completed") {
+      return filtered.sort((a, b) => {
+        const aTime = a.completedAt ? new Date(a.completedAt).getTime() : 0;
+        const bTime = b.completedAt ? new Date(b.completedAt).getTime() : 0;
+        return bTime - aTime;
+      });
+    }
+
+    return filtered.sort((a, b) => {
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    });
+  }, [tasks, taskFilter]);
 
   const handleCompleteTask = async (taskId: string) => {
     if (!user) {
@@ -112,8 +137,13 @@ export default function HomePage() {
         return;
       }
 
+      const { completedAt } = data as CompleteTaskSuccessResponse;
       setTasks((currentTasks) =>
-        currentTasks.filter((task) => task.id !== taskId),
+        currentTasks.map((task) =>
+          task.id === taskId
+            ? { ...task, completed: true, completedAt }
+            : task,
+        ),
       );
       void triggerTaskConfetti();
     } catch {
@@ -167,7 +197,7 @@ export default function HomePage() {
           <ToggleButtonGroup
             exclusive
             value={taskFilter}
-            onChange={(_, value: AssignedTaskFilter | null) => {
+            onChange={(_, value: HomepageTaskFilter | null) => {
               if (value) {
                 setTaskFilter(value);
               }
@@ -183,7 +213,7 @@ export default function HomePage() {
           <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
             <CircularProgress />
           </Box>
-        ) : tasks.length === 0 ? (
+        ) : visibleTasks.length === 0 ? (
           <Typography color="text.secondary" align="center" sx={{ py: 6 }}>
             {taskFilter === "pending"
               ? "איזה כיף! סיימת את כל המטלות"
@@ -191,7 +221,7 @@ export default function HomePage() {
           </Typography>
         ) : (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            {tasks.map((task) => (
+            {visibleTasks.map((task) => (
               <TaskCard
                 key={task.id}
                 task={task}

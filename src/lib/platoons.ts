@@ -5,7 +5,7 @@ export const PLATOONS: Platoon[] = ["A", "B", "C", "D", "E"];
 export const PLATOON_LABELS: Record<Platoon, string> = {
   A: "ארבל",
   B: "בנטל",
-  C: "ג",
+  C: "גולן",
   D: "דותן",
   E: "הראל",
 };
@@ -48,6 +48,18 @@ export function createEmptyAssigneeSelection(): AssigneeSelection {
     selection[platoon] = { entirePlatoon: false, teams: [] };
     return selection;
   }, {} as AssigneeSelection);
+}
+
+export function createEntireBattalionSelection(): AssigneeSelection {
+  return PLATOONS.reduce((selection, platoon) => {
+    const teams = getTeamsForPlatoon(platoon);
+    selection[platoon] = { entirePlatoon: true, teams };
+    return selection;
+  }, {} as AssigneeSelection);
+}
+
+export function isEntireBattalionSelected(selection: AssigneeSelection): boolean {
+  return PLATOONS.every((platoon) => selection[platoon].entirePlatoon);
 }
 
 export function getAssigneeSummaryItems(

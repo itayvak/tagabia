@@ -45,7 +45,8 @@ export default function AppBottomBar({ user }: AppBottomBarProps) {
             label: "מטלות שיצרתי",
             href: "/mytasks",
             icon: <AssignmentIcon />,
-            match: (pathname: string) => pathname === "/mytasks",
+            match: (pathname: string) =>
+              pathname === "/mytasks" || pathname.startsWith("/mytasks/"),
           },
         ]
       : []),

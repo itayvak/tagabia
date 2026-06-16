@@ -6,6 +6,7 @@ import type {
   ListAssignedTasksSuccessResponse,
   ListTasksErrorResponse,
 } from "@/types/task";
+import type { FirestoreUser } from "@/types/user";
 import { Timestamp } from "firebase-admin/firestore";
 import type { NextApiRequest, NextApiResponse } from "next";
 
@@ -14,7 +15,15 @@ type ListTasksResponse =
   | ListTasksErrorResponse;
 
 function parseStatusQuery(value: unknown): AssignedTaskFilter {
-  return value === "completed" ? "completed" : "pending";
+  if (value === "completed") {
+    return "completed";
+  }
+
+  if (value === "all") {
+    return "all";
+  }
+
+  return "pending";
 }
 
 export default async function handler(
@@ -36,9 +45,16 @@ export default async function handler(
 
   try {
     const db = getAdminFirestore();
+    const userDoc = await db.collection("users").doc(userId).get();
+
+    if (!userDoc.exists) {
+      return res.status(400).json({ error: "User not found" });
+    }
+
+    const userTeam = (userDoc.data() as FirestoreUser).team;
     const snapshot = await db
       .collection("tasks")
-      .where("assignees", "array-contains", userId)
+      .where("assignedTeams", "array-contains", userTeam)
       .get();
 
     const completionRefs = snapshot.docs.map((doc) =>
@@ -66,15 +82,20 @@ export default async function handler(
       })
       .filter((task): task is AssignedTask => task !== null)
       .filter((task) =>
-        status === "completed" ? task.completed : !task.completed,
+        status === "all" ? true : status === "completed" ? task.completed : !task.completed,
       )
       .sort((a, b) => {
         if (status === "completed") {
-          const aTime = a.completedAt ? new Date(a.completedAt).getTime() : 0;
-          const bTime = b.completedAt ? new Date(b.completedAt).getTime() : 0;
+          const aTime = a.completedAt
+            ? new Date(a.completedAt).getTime()
+            : 0;
+          const bTime = b.completedAt
+            ? new Date(b.completedAt).getTime()
+            : 0;
           return bTime - aTime;
         }
 
+        // For `pending` and `all`, default to sorting by due date ascending.
         return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
       });
 

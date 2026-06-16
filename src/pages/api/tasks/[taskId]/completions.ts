@@ -1,3 +1,4 @@
+import { getUsersInTeams } from "@/lib/assigneeTeams";
 import { getAdminFirestore } from "@/lib/firebaseAdmin";
 import type {
   FirestoreTaskCompletion,
@@ -5,7 +6,6 @@ import type {
   ListTaskCompletionsSuccessResponse,
   TaskAssigneeStatus,
 } from "@/types/task";
-import type { FirestoreUser } from "@/types/user";
 import type { Timestamp } from "firebase-admin/firestore";
 import type { NextApiRequest, NextApiResponse } from "next";
 
@@ -49,16 +49,12 @@ export default async function handler(
       return res.status(403).json({ error: "User is not the task creator" });
     }
 
-    const assigneeIds = Array.isArray(taskData?.assignees)
-      ? (taskData.assignees as string[])
+    const assignedTeams = Array.isArray(taskData?.assignedTeams)
+      ? (taskData.assignedTeams as number[])
       : [];
 
-    const [assigneeDocs, completionSnapshot] = await Promise.all([
-      assigneeIds.length > 0
-        ? db.getAll(
-            ...assigneeIds.map((id) => db.collection("users").doc(id)),
-          )
-        : Promise.resolve([]),
+    const [usersInTeams, completionSnapshot] = await Promise.all([
+      getUsersInTeams(db, assignedTeams),
       taskRef.collection("completions").get(),
     ]);
 
@@ -83,29 +79,19 @@ export default async function handler(
         ),
     );
 
-    const assignees: TaskAssigneeStatus[] = assigneeDocs
-      .map((assigneeDoc, index) => {
-        const userId = assigneeIds[index] ?? assigneeDoc.id;
-        const userData = assigneeDoc.data() as Partial<FirestoreUser> | undefined;
-        const completedAt = completionsByUserId.get(userId) ?? null;
+    const assignees: TaskAssigneeStatus[] = usersInTeams.map(({ id, data }) => {
+      const completedAt = completionsByUserId.get(id) ?? null;
 
-        return {
-          userId,
-          assigneeName: userData?.fullname ?? userId,
-          assigneeRank: userData?.rank ?? "",
-          platoon: userData?.platoon ?? "A",
-          team: userData?.team ?? 0,
-          completed: completedAt !== null,
-          completedAt,
-        };
-      })
-      .sort((a, b) => {
-        if (a.team !== b.team) {
-          return a.team - b.team;
-        }
-
-        return a.assigneeName.localeCompare(b.assigneeName, "he");
-      });
+      return {
+        userId: id,
+        assigneeName: data.fullname,
+        assigneeRank: data.rank,
+        platoon: data.platoon,
+        team: data.team,
+        completed: completedAt !== null,
+        completedAt,
+      };
+    });
 
     return res.status(200).json({ assignees });
   } catch (error) {

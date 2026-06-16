@@ -20,16 +20,12 @@ import AppLayout from "@/components/AppLayout";
 import { APP_BOTTOM_BAR_HEIGHT } from "@/components/AppBottomBar";
 import CreatedTaskCard from "@/components/CreatedTaskCard";
 import TaskCompletionsDialog from "@/components/TaskCompletionsDialog";
-import TaskFormDialog, { type TaskFormData } from "@/components/TaskFormDialog";
 import { getSession } from "@/lib/authStorage";
-import { createTask } from "@/lib/createTask";
 import { deleteTask } from "@/lib/deleteTask";
 import { fetchCreatedTasks } from "@/lib/fetchCreatedTasks";
 import { fetchTaskCompletions } from "@/lib/fetchTaskCompletions";
-import { toDatetimeLocalValue } from "@/lib/taskDate";
-import { updateTask } from "@/lib/updateTask";
+import { getTaskErrorMessage } from "@/lib/taskErrorMessages";
 import type {
-  CreateTaskErrorResponse,
   DeleteTaskErrorResponse,
   ListTaskCompletionsErrorResponse,
   ListTaskCompletionsSuccessResponse,
@@ -37,57 +33,14 @@ import type {
   ListTasksSuccessResponse,
   PublicTask,
   TaskAssigneeStatus,
-  UpdateTaskErrorResponse,
 } from "@/types/task";
 import type { PublicUser } from "@/types/user";
-
-function getErrorMessage(error: string): string {
-  switch (error) {
-    case "Title is required":
-      return "יש להזין כותרת";
-    case "Content is required":
-      return "יש להזין תוכן";
-    case "Due date is required":
-      return "יש לבחור תאריך ושעת יעד";
-    case "Invalid due date":
-      return "תאריך ושעת יעד לא תקינים";
-    case "Creator not found":
-      return "יוצר המטלה לא נמצא";
-    case "One or more assignees not found":
-      return "אחד או יותר מהממונים לא נמצאו";
-    case "Assignees must be a list of user IDs":
-      return "יש לבחור חיילים למטלה";
-    case "At least one assignee is required":
-      return "יש לבחור לפחות חייל אחד";
-    case "Create task failed":
-      return "יצירת המטלה נכשלה";
-    case "Task not found":
-      return "המטלה לא נמצאה";
-    case "User is not the task creator":
-      return "אין לך הרשאה לערוך מטלה זו";
-    case "Update task failed":
-      return "עדכון המטלה נכשל";
-    case "Delete task failed":
-      return "מחיקת המטלה נכשלה";
-    case "List tasks failed":
-      return "טעינת המטלות נכשלה";
-    case "Creator ID is required":
-      return "מזהה יוצר חסר";
-    case "List completions failed":
-      return "טעינת הביצועים נכשלה";
-    default:
-      return error;
-  }
-}
 
 export default function MyTasksPage() {
   const router = useRouter();
   const [user, setUser] = useState<PublicUser | null>(null);
   const [tasks, setTasks] = useState<PublicTask[]>([]);
   const [isLoadingTasks, setIsLoadingTasks] = useState(true);
-  const [dialogMode, setDialogMode] = useState<"create" | "edit" | null>(null);
-  const [editingTask, setEditingTask] = useState<PublicTask | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [completionsTask, setCompletionsTask] = useState<PublicTask | null>(
     null,
@@ -127,7 +80,7 @@ export default function MyTasksPage() {
 
       if (!response.ok) {
         const { error } = data as ListTasksErrorResponse;
-        setErrorMessage(getErrorMessage(error ?? "טעינת המטלות נכשלה"));
+        setErrorMessage(getTaskErrorMessage(error ?? "טעינת המטלות נכשלה"));
         return;
       }
 
@@ -142,16 +95,6 @@ export default function MyTasksPage() {
   useEffect(() => {
     void loadTasks();
   }, [loadTasks]);
-
-  const handleOpenCreate = () => {
-    setEditingTask(null);
-    setDialogMode("create");
-  };
-
-  const handleOpenEdit = (task: PublicTask) => {
-    setEditingTask(task);
-    setDialogMode("edit");
-  };
 
   const handleOpenCompletions = async (task: PublicTask) => {
     if (!user) {
@@ -171,7 +114,7 @@ export default function MyTasksPage() {
 
       if (!response.ok) {
         const { error } = data as ListTaskCompletionsErrorResponse;
-        setErrorMessage(getErrorMessage(error ?? "טעינת הביצועים נכשלה"));
+        setErrorMessage(getTaskErrorMessage(error ?? "טעינת הביצועים נכשלה"));
         setCompletionsTask(null);
         return;
       }
@@ -190,47 +133,6 @@ export default function MyTasksPage() {
   const handleCloseCompletions = () => {
     setCompletionsTask(null);
     setAssigneeStatuses([]);
-  };
-
-  const handleCloseDialog = () => {
-    if (isSubmitting) {
-      return;
-    }
-
-    setDialogMode(null);
-    setEditingTask(null);
-  };
-
-  const handleCreateTask = async (task: TaskFormData) => {
-    if (!user) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    setErrorMessage(null);
-
-    try {
-      const { response, data } = await createTask({
-        title: task.title,
-        content: task.content,
-        creatorId: user.id,
-        dueDate: task.dueDate,
-        assignees: task.assignees,
-      });
-
-      if (!response.ok) {
-        const { error } = data as CreateTaskErrorResponse;
-        setErrorMessage(getErrorMessage(error ?? "יצירת המטלה נכשלה"));
-        return;
-      }
-
-      setDialogMode(null);
-      await loadTasks();
-    } catch {
-      setErrorMessage("שגיאה ביצירת המטלה. נסה שוב.");
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   const handleOpenDelete = (task: PublicTask) => {
@@ -260,7 +162,7 @@ export default function MyTasksPage() {
 
       if (!response.ok) {
         const { error } = data as DeleteTaskErrorResponse;
-        setErrorMessage(getErrorMessage(error ?? "מחיקת המטלה נכשלה"));
+        setErrorMessage(getTaskErrorMessage(error ?? "מחיקת המטלה נכשלה"));
         return;
       }
 
@@ -272,39 +174,6 @@ export default function MyTasksPage() {
       setErrorMessage("שגיאה במחיקת המטלה. נסה שוב.");
     } finally {
       setDeletingTaskId(null);
-    }
-  };
-
-  const handleUpdateTask = async (task: TaskFormData) => {
-    if (!user || !editingTask) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    setErrorMessage(null);
-
-    try {
-      const { response, data } = await updateTask(editingTask.id, {
-        userId: user.id,
-        title: task.title,
-        content: task.content,
-        dueDate: task.dueDate,
-        assignees: task.assignees,
-      });
-
-      if (!response.ok) {
-        const { error } = data as UpdateTaskErrorResponse;
-        setErrorMessage(getErrorMessage(error ?? "עדכון המטלה נכשל"));
-        return;
-      }
-
-      setDialogMode(null);
-      setEditingTask(null);
-      await loadTasks();
-    } catch {
-      setErrorMessage("שגיאה בעדכון המטלה. נסה שוב.");
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -345,7 +214,8 @@ export default function MyTasksPage() {
                 key={task.id}
                 task={task}
                 isDeleting={deletingTaskId === task.id}
-                onEdit={() => handleOpenEdit(task)}
+                onOpen={(taskId) => void router.push(`/tasks/${taskId}`)}
+                onEdit={() => void router.push(`/mytasks/${task.id}/edit`)}
                 onViewCompletions={() => void handleOpenCompletions(task)}
                 onDelete={() => handleOpenDelete(task)}
               />
@@ -356,7 +226,7 @@ export default function MyTasksPage() {
       <Fab
         variant="extended"
         color="primary"
-        onClick={handleOpenCreate}
+        onClick={() => void router.push("/mytasks/new")}
         sx={{
           position: "fixed",
           bottom: APP_BOTTOM_BAR_HEIGHT + 16,
@@ -365,28 +235,6 @@ export default function MyTasksPage() {
       >
         מטלה חדשה
       </Fab>
-      <TaskFormDialog
-        open={dialogMode !== null}
-        mode={dialogMode ?? "create"}
-        isSubmitting={isSubmitting}
-        initialValues={
-          editingTask
-            ? {
-                title: editingTask.title,
-                content: editingTask.content,
-                dueDate: toDatetimeLocalValue(editingTask.dueDate),
-                assignees: editingTask.assignees,
-              }
-            : undefined
-        }
-        onClose={handleCloseDialog}
-        onError={(message) => setErrorMessage(message)}
-        onSubmit={(task) =>
-          void (dialogMode === "edit"
-            ? handleUpdateTask(task)
-            : handleCreateTask(task))
-        }
-      />
       <Dialog
         open={deletingTask !== null}
         onClose={handleCloseDelete}

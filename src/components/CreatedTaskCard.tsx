@@ -1,6 +1,7 @@
 import {
   Button,
   Card,
+  CardActionArea,
   CardActions,
   CardContent,
   Typography,
@@ -14,6 +15,7 @@ import type { PublicTask } from "@/types/task";
 interface CreatedTaskCardProps {
   task: PublicTask;
   isDeleting?: boolean;
+  onOpen: (taskId: string) => void;
   onEdit: () => void;
   onViewCompletions: () => void;
   onDelete: () => void;
@@ -22,13 +24,15 @@ interface CreatedTaskCardProps {
 export default function CreatedTaskCard({
   task,
   isDeleting = false,
+  onOpen,
   onEdit,
   onViewCompletions,
   onDelete,
 }: CreatedTaskCardProps) {
   return (
     <Card variant="outlined">
-      <CardContent sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+      <CardActionArea onClick={() => onOpen(task.id)}>
+        <CardContent sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
         <Typography variant="h6" component="h2">
           {task.title}
         </Typography>
@@ -39,6 +43,7 @@ export default function CreatedTaskCard({
           {formatDaysLeft(task.dueDate)}
         </Typography>
       </CardContent>
+      </CardActionArea>
       <CardActions sx={{ px: 2, pb: 2, pt: 0, gap: 1 }}>
         <Button
           size="small"
@@ -54,7 +59,7 @@ export default function CreatedTaskCard({
           startIcon={<GroupIcon />}
           onClick={onViewCompletions}
         >
-          מי ביצע
+          סטטוס ביצוע
         </Button>
         <Button
           size="small"

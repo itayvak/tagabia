@@ -1,3 +1,4 @@
+import { normalizeTeamIds } from "@/lib/assigneeTeams";
 import { getAdminFirestore } from "@/lib/firebaseAdmin";
 import type {
   CreateTaskErrorResponse,
@@ -14,13 +15,6 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-function isStringArray(value: unknown): value is string[] {
-  return (
-    Array.isArray(value) &&
-    value.every((item) => typeof item === "string" && item.trim().length > 0)
-  );
-}
-
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<CreateTaskResponse>,
@@ -30,7 +24,7 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { title, content, creatorId, dueDate, assignees } =
+  const { title, content, creatorId, dueDate, assignedTeams } =
     req.body as Partial<CreateTaskRequestBody>;
 
   if (!isNonEmptyString(title)) {
@@ -49,12 +43,11 @@ export default async function handler(
     return res.status(400).json({ error: "Due date is required" });
   }
 
-  if (!isStringArray(assignees)) {
-    return res.status(400).json({ error: "Assignees must be a list of user IDs" });
-  }
-
-  if (assignees.length === 0) {
-    return res.status(400).json({ error: "At least one assignee is required" });
+  const normalizedTeams = normalizeTeamIds(assignedTeams);
+  if (!normalizedTeams) {
+    return res
+      .status(400)
+      .json({ error: "Assigned teams must be a list of valid team numbers" });
   }
 
   const parsedDueDate = new Date(dueDate);
@@ -74,15 +67,6 @@ export default async function handler(
 
     const creatorData = creatorDoc.data() as FirestoreUser;
 
-    const uniqueAssigneeIds = [...new Set(assignees.map((id) => id.trim()))];
-    const assigneeDocs = await db.getAll(
-      ...uniqueAssigneeIds.map((id) => db.collection("users").doc(id)),
-    );
-
-    if (assigneeDocs.some((doc) => !doc.exists)) {
-      return res.status(400).json({ error: "One or more assignees not found" });
-    }
-
     const taskRef = await db.collection("tasks").add({
       title: title.trim(),
       content: content.trim(),
@@ -91,7 +75,7 @@ export default async function handler(
       creatorRank: creatorData.rank,
       creatorRole: creatorData.role,
       dueDate: Timestamp.fromDate(parsedDueDate),
-      assignees: uniqueAssigneeIds,
+      assignedTeams: normalizedTeams,
     });
 
     return res.status(201).json({ taskId: taskRef.id });

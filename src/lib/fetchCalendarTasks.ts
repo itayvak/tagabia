@@ -8,7 +8,6 @@ import type { PublicUser } from "@/types/user";
 export async function fetchCalendarTasks(user: PublicUser) {
   const params = new URLSearchParams({
     userId: user.id,
-    includeCreated: String(user.role !== "peasant"),
   });
 
   const response = await fetch(`/api/tasks/calendar?${params.toString()}`);
