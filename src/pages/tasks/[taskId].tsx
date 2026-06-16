@@ -69,8 +69,9 @@ export default function TaskPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const isAssignee =
-    Boolean(user && task) &&
-    isUserAssignedToTeams(user.team, task.assignedTeams);
+    !user || !task
+      ? false
+      : isUserAssignedToTeams(user.team, task.assignedTeams);
 
   useEffect(() => {
     const session = getSession();
