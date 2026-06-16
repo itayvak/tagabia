@@ -152,7 +152,6 @@ export default function TaskPage() {
       `תג"ב: ${formatDueDate(task.dueDate)} · ${formatDaysLeft(task.dueDate)}`,
       `מאת ${task.creatorRank} ${task.creatorName}`,
       "",
-      task.content,
     ].join("\n");
 
     const shareData: ShareData = {
