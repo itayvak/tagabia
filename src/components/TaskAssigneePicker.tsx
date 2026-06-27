@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Accordion,
   AccordionDetails,
@@ -8,14 +8,9 @@ import {
   Chip,
   CircularProgress,
   Collapse,
-  FormControlLabel,
-  FormGroup,
-  IconButton,
   Typography,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
-import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import { fetchUsersByIds } from "@/lib/fetchUsersByIds";
 import { fetchUsersByTeams } from "@/lib/fetchUsersByTeams";
 import {
@@ -30,6 +25,113 @@ import {
   isEntireBattalionSelected,
 } from "@/lib/platoons";
 import type { Platoon, PublicUser } from "@/types/user";
+
+function formatTeamHierarchyLabel(platoon: Platoon, team: number): string {
+  const platoonTeams = getTeamsForPlatoon(platoon);
+  const localIndex = platoonTeams.indexOf(team) + 1;
+  return `צוות ${localIndex}`;
+}
+
+const hierarchyLineSx = {
+  width: 2,
+  bgcolor: "divider",
+  borderRadius: 1,
+  alignSelf: "stretch",
+  flexShrink: 0,
+  minHeight: 20,
+} as const;
+
+function HierarchyGuide({ children }: { children: ReactNode }) {
+  return (
+    <Box sx={{ display: "flex", gap: 1.5, alignItems: "stretch" }}>
+      <Box sx={hierarchyLineSx} aria-hidden />
+      <Box sx={{ flex: 1, minWidth: 0 }}>{children}</Box>
+    </Box>
+  );
+}
+
+interface AssigneeSelectionRowProps {
+  label: string;
+  checked: boolean;
+  indeterminate?: boolean;
+  disabled?: boolean;
+  highlighted?: boolean;
+  expandable?: boolean;
+  expanded?: boolean;
+  onCheckedChange: (checked: boolean) => void;
+  onToggleExpand?: () => void;
+  stopExpandPropagation?: boolean;
+}
+
+function AssigneeSelectionRow({
+  label,
+  checked,
+  indeterminate = false,
+  disabled = false,
+  highlighted = false,
+  expandable = false,
+  expanded = false,
+  onCheckedChange,
+  onToggleExpand,
+  stopExpandPropagation = false,
+}: AssigneeSelectionRowProps) {
+  const handleToggleExpand = () => {
+    if (!disabled && expandable) {
+      onToggleExpand?.();
+    }
+  };
+
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 0.5,
+        width: "100%",
+        minHeight: 36,
+      }}
+    >
+      <Checkbox
+        size="small"
+        checked={checked}
+        indeterminate={indeterminate}
+        disabled={disabled}
+        onClick={
+          stopExpandPropagation
+            ? (event) => event.stopPropagation()
+            : undefined
+        }
+        onChange={(event) => onCheckedChange(event.target.checked)}
+      />
+      <Typography
+        variant="body2"
+        sx={{
+          flex: 1,
+          fontWeight: highlighted ? 600 : 400,
+          color: highlighted ? "text.primary" : "text.secondary",
+          cursor: expandable && !disabled ? "pointer" : "default",
+        }}
+        onClick={handleToggleExpand}
+      >
+        {label}
+      </Typography>
+      {expandable ? (
+        <ExpandMoreIcon
+          fontSize="small"
+          sx={{
+            color: "text.secondary",
+            transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
+            transition: "transform 0.2s",
+            cursor: disabled ? "default" : "pointer",
+          }}
+          onClick={handleToggleExpand}
+        />
+      ) : (
+        <Box sx={{ width: 20, flexShrink: 0 }} aria-hidden />
+      )}
+    </Box>
+  );
+}
 
 export interface TaskAssignment {
   assignedTeams: number[];
@@ -79,6 +181,9 @@ export default function TaskAssigneePicker({
   const [loadingTeams, setLoadingTeams] = useState<Set<number>>(new Set());
   const [loadErrors, setLoadErrors] = useState<Map<number, string>>(new Map());
   const [expandedTeams, setExpandedTeams] = useState<Set<number>>(new Set());
+  const [expandedPlatoons, setExpandedPlatoons] = useState<Set<Platoon>>(
+    new Set(),
+  );
 
   const assignedUsersKey = assignedUsers.join(",");
 
@@ -169,6 +274,18 @@ export default function TaskAssigneePicker({
     if (willExpand) {
       void loadTeamUsers(teamId);
     }
+  };
+
+  const togglePlatoonExpanded = (platoon: Platoon) => {
+    setExpandedPlatoons((current) => {
+      const next = new Set(current);
+      if (next.has(platoon)) {
+        next.delete(platoon);
+      } else {
+        next.add(platoon);
+      }
+      return next;
+    });
   };
 
   const updateAssignment = (nextTeams: number[], nextUsers: string[]) => {
@@ -367,12 +484,12 @@ export default function TaskAssigneePicker({
       });
 
       if (wholeTeams.length === platoonTeams.length) {
-        items.push(`פלוגת ${formatPlatoonLabel(platoon)} (כל)`);
+        items.push(`פלוגת ${formatPlatoonLabel(platoon)} (כל הצוותים)`);
         continue;
       }
 
       for (const team of wholeTeams) {
-        items.push(`צוות ${team} (כל)`);
+        items.push(`צוות ${team} (כל הצוערים)`);
       }
 
       for (const team of partialTeams) {
@@ -387,35 +504,40 @@ export default function TaskAssigneePicker({
     return items;
   }, [assignedTeams, assignedUsers, usersByTeam]);
 
-  const targetCount = summaryItems.length;
-  const hasSelection = assignedTeams.length > 0 || assignedUsers.length > 0;
-
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
       <Typography variant="subtitle2">שיוך לצוערים</Typography>
 
-      <FormControlLabel
-        control={
-          <Checkbox
-            checked={isEntireBattalionSelected(selection)}
-            onChange={(event) =>
-              handleEntireBattalionChange(event.target.checked)
-            }
-            disabled={disabled}
-          />
-        }
+      <AssigneeSelectionRow
         label="כל הגדוד"
+        checked={isEntireBattalionSelected(selection)}
+        highlighted={isEntireBattalionSelected(selection)}
+        disabled={disabled}
+        onCheckedChange={handleEntireBattalionChange}
       />
 
       {PLATOONS.map((platoon) => {
         const platoonTeams = getTeamsForPlatoon(platoon);
         const hasSelectionInPlatoon = hasPlatoonSelection(platoon);
+        const isPlatoonExpanded = expandedPlatoons.has(platoon);
 
         return (
           <Accordion
             key={platoon}
             disableGutters
             variant="outlined"
+            expanded={isPlatoonExpanded}
+            onChange={(_event, isExpanded) => {
+              setExpandedPlatoons((current) => {
+                const next = new Set(current);
+                if (isExpanded) {
+                  next.add(platoon);
+                } else {
+                  next.delete(platoon);
+                }
+                return next;
+              });
+            }}
             disabled={disabled}
             sx={{
               "&:before": { display: "none" },
@@ -423,163 +545,144 @@ export default function TaskAssigneePicker({
               overflow: "hidden",
             }}
           >
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography
-                variant="body2"
-                sx={{
-                  fontWeight: hasSelectionInPlatoon ? 600 : 400,
-                  color: hasSelectionInPlatoon ? "text.primary" : "text.secondary",
-                }}
-              >
-                פלוגת {formatPlatoonLabel(platoon)}
-                {isPlatoonFullySelected(platoon) && <> · כל הפלוגה</>}
-                {!isPlatoonFullySelected(platoon) && hasSelectionInPlatoon && (
-                  <> · נבחרו צוותים</>
-                )}
-              </Typography>
+            <AccordionSummary expandIcon={null} sx={{ minHeight: 48 }}>
+              <AssigneeSelectionRow
+                label={`פלוגת ${formatPlatoonLabel(platoon)}`}
+                checked={isPlatoonFullySelected(platoon)}
+                indeterminate={isPlatoonPartiallySelected(platoon)}
+                highlighted={hasSelectionInPlatoon}
+                expandable
+                expanded={isPlatoonExpanded}
+                disabled={disabled}
+                stopExpandPropagation
+                onCheckedChange={(checked) =>
+                  handleEntirePlatoonChange(platoon, checked)
+                }
+                onToggleExpand={() => togglePlatoonExpanded(platoon)}
+              />
             </AccordionSummary>
-            <AccordionDetails sx={{ pt: 0 }}>
-              <FormGroup>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={isPlatoonFullySelected(platoon)}
-                      indeterminate={isPlatoonPartiallySelected(platoon)}
-                      onChange={(event) =>
-                        handleEntirePlatoonChange(platoon, event.target.checked)
-                      }
-                      disabled={disabled}
-                    />
-                  }
-                  label="כל הפלוגה"
-                />
-
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 1, pr: 1 }}>
+            <AccordionDetails sx={{ pt: 0, pb: 1.5 }}>
+              <HierarchyGuide>
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 0.5,
+                  }}
+                >
                   {platoonTeams.map((team) => {
                     const teamCheckbox = getTeamCheckboxState(team);
-                    const isExpanded = expandedTeams.has(team);
+                    const isTeamExpanded = expandedTeams.has(team);
                     const teamUsers = usersByTeam.get(team) ?? [];
                     const isLoadingTeam = loadingTeams.has(team);
                     const teamLoadError = loadErrors.get(team);
+                    const isTeamHighlighted =
+                      teamCheckbox.checked || teamCheckbox.indeterminate;
 
                     return (
                       <Box key={team}>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 0.5,
-                          }}
-                        >
-                          <Checkbox
-                            size="small"
-                            checked={teamCheckbox.checked}
-                            indeterminate={teamCheckbox.indeterminate}
-                            onChange={(event) =>
-                              handleWholeTeamChange(team, event.target.checked)
-                            }
-                            disabled={disabled || isPlatoonFullySelected(platoon)}
-                          />
-                          <Typography variant="body2" sx={{ flex: 1 }}>
-                            צוות {team}
-                          </Typography>
-                          <IconButton
-                            size="small"
-                            aria-label={
-                              isExpanded ? "הסתר צוערים" : "הצג צוערים"
-                            }
-                            onClick={() => toggleTeamExpanded(team)}
-                            disabled={disabled}
-                          >
-                            {isExpanded ? (
-                              <KeyboardArrowUpIcon fontSize="small" />
-                            ) : (
-                              <KeyboardArrowDownIcon fontSize="small" />
-                            )}
-                          </IconButton>
-                        </Box>
+                        <AssigneeSelectionRow
+                          label={formatTeamHierarchyLabel(platoon, team)}
+                          checked={teamCheckbox.checked}
+                          indeterminate={teamCheckbox.indeterminate}
+                          highlighted={isTeamHighlighted}
+                          expandable
+                          expanded={isTeamExpanded}
+                          disabled={disabled || isPlatoonFullySelected(platoon)}
+                          onCheckedChange={(checked) =>
+                            handleWholeTeamChange(team, checked)
+                          }
+                          onToggleExpand={() => toggleTeamExpanded(team)}
+                        />
 
-                        <Collapse in={isExpanded}>
-                          <Box sx={{ pr: 3, pt: 0.5, pb: 1 }}>
-                            {isLoadingTeam && (
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 1,
-                                }}
-                              >
-                                <CircularProgress size={16} />
+                        <Collapse in={isTeamExpanded}>
+                          <HierarchyGuide>
+                            <Box
+                              sx={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 0,
+                                py: 0.5,
+                              }}
+                            >
+                              {isLoadingTeam && (
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 1,
+                                    py: 0.5,
+                                    minHeight: 36,
+                                  }}
+                                >
+                                  <CircularProgress size={16} />
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                  >
+                                    טוען צוערים...
+                                  </Typography>
+                                </Box>
+                              )}
+
+                              {teamLoadError && (
                                 <Typography
                                   variant="caption"
-                                  color="text.secondary"
+                                  color="error"
+                                  sx={{ py: 0.5, minHeight: 36 }}
                                 >
-                                  טוען צוערים...
-                                </Typography>
-                              </Box>
-                            )}
-
-                            {teamLoadError && (
-                              <Typography variant="caption" color="error">
-                                {teamLoadError}
-                              </Typography>
-                            )}
-
-                            {!isLoadingTeam &&
-                              !teamLoadError &&
-                              teamUsers.map((user) => (
-                                <FormControlLabel
-                                  key={user.id}
-                                  control={
-                                    <Checkbox
-                                      size="small"
-                                      checked={isMemberChecked(team, user.id)}
-                                      onChange={(event) =>
-                                        handleMemberChange(
-                                          team,
-                                          user.id,
-                                          event.target.checked,
-                                        )
-                                      }
-                                      disabled={
-                                        disabled ||
-                                        isPlatoonFullySelected(platoon) ||
-                                        assignedTeams.includes(team)
-                                      }
-                                    />
-                                  }
-                                  label={`${user.fullname} (${user.rank})`}
-                                />
-                              ))}
-
-                            {!isLoadingTeam &&
-                              !teamLoadError &&
-                              teamUsers.length === 0 && (
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                >
-                                  אין צוערים בצוות
+                                  {teamLoadError}
                                 </Typography>
                               )}
-                          </Box>
+
+                              {!isLoadingTeam &&
+                                !teamLoadError &&
+                                teamUsers.map((user) => (
+                                  <AssigneeSelectionRow
+                                    key={user.id}
+                                    label={user.fullname}
+                                    checked={isMemberChecked(team, user.id)}
+                                    highlighted={isMemberChecked(team, user.id)}
+                                    disabled={
+                                      disabled ||
+                                      isPlatoonFullySelected(platoon) ||
+                                      assignedTeams.includes(team)
+                                    }
+                                    onCheckedChange={(checked) =>
+                                      handleMemberChange(
+                                        team,
+                                        user.id,
+                                        checked,
+                                      )
+                                    }
+                                  />
+                                ))}
+
+                              {!isLoadingTeam &&
+                                !teamLoadError &&
+                                teamUsers.length === 0 && (
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    sx={{ py: 0.5, minHeight: 36 }}
+                                  >
+                                    אין צוערים בצוות
+                                  </Typography>
+                                )}
+                            </Box>
+                          </HierarchyGuide>
                         </Collapse>
                       </Box>
                     );
                   })}
                 </Box>
-              </FormGroup>
+              </HierarchyGuide>
             </AccordionDetails>
           </Accordion>
         );
       })}
 
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-        <Typography variant="caption" color="text.secondary">
-          {!hasSelection
-            ? "לא נבחרו צוותים או צוערים"
-            : `${targetCount} קבוצות נבחרו`}
-        </Typography>
         {summaryItems.length > 0 && (
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
             {summaryItems.map((item) => (
