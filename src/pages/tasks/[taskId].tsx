@@ -23,7 +23,7 @@ import { getSession } from "@/lib/authStorage";
 import { completeTask } from "@/lib/completeTask";
 import { fetchTask } from "@/lib/fetchTask";
 import { triggerTaskConfetti } from "@/lib/taskConfetti";
-import { isUserAssignedToTeams } from "@/lib/assigneeTeams";
+import { isUserAssignedToTask } from "@/lib/assigneeTeams";
 import { getRoleLabel } from "@/lib/roleLabels";
 import { formatDaysLeft, formatDueDate } from "@/lib/taskDate";
 import type {
@@ -71,7 +71,12 @@ export default function TaskPage() {
   const isAssignee =
     !user || !task
       ? false
-      : isUserAssignedToTeams(user.team, task.assignedTeams);
+      : isUserAssignedToTask(
+          user.id,
+          user.team,
+          task.assignedTeams,
+          task.assignedUsers,
+        );
 
   useEffect(() => {
     const session = getSession();

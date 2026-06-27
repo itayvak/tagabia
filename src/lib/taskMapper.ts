@@ -34,5 +34,11 @@ export function toPublicTask(
             typeof team === "number" && Number.isInteger(team),
         )
       : [],
+    assignedUsers: Array.isArray(task.assignedUsers)
+      ? task.assignedUsers.filter(
+          (userId): userId is string =>
+            typeof userId === "string" && userId.trim().length > 0,
+        )
+      : [],
   };
 }

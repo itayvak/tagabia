@@ -32,6 +32,18 @@ export function normalizeTeamIds(raw: unknown): number[] | null {
   return [...teamIds].sort((a, b) => a - b);
 }
 
+export function normalizeTeamIdsOptional(raw: unknown): number[] | null {
+  if (!Array.isArray(raw)) {
+    return null;
+  }
+
+  if (raw.length === 0) {
+    return [];
+  }
+
+  return normalizeTeamIds(raw);
+}
+
 export function selectionToTeamIds(selection: AssigneeSelection): number[] {
   const teamIds = new Set<number>();
 
@@ -73,6 +85,52 @@ export function isUserAssignedToTeams(
   return assignedTeams.includes(userTeam);
 }
 
+export function hasTaskAssignment(
+  assignedTeams: number[],
+  assignedUsers: string[],
+): boolean {
+  return assignedTeams.length > 0 || assignedUsers.length > 0;
+}
+
+export function normalizeUserIds(raw: unknown): string[] | null {
+  if (!Array.isArray(raw)) {
+    return null;
+  }
+
+  if (raw.length === 0) {
+    return [];
+  }
+
+  const userIds = new Set<string>();
+
+  for (const item of raw) {
+    if (typeof item !== "string") {
+      return null;
+    }
+
+    const trimmed = item.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    userIds.add(trimmed);
+  }
+
+  return [...userIds].sort((a, b) => a.localeCompare(b));
+}
+
+export function isUserAssignedToTask(
+  userId: string,
+  userTeam: number,
+  assignedTeams: number[],
+  assignedUsers: string[],
+): boolean {
+  return (
+    isUserAssignedToTeams(userTeam, assignedTeams) ||
+    assignedUsers.includes(userId)
+  );
+}
+
 export interface UserInTeam {
   id: string;
   data: FirestoreUser;
@@ -110,4 +168,61 @@ export async function getUsersInTeams(
 
       return a.data.fullname.localeCompare(b.data.fullname, "he");
     });
+}
+
+function sortUsersInTeam(users: UserInTeam[]): UserInTeam[] {
+  return users.sort((a, b) => {
+    if (a.data.team !== b.data.team) {
+      return a.data.team - b.data.team;
+    }
+
+    return a.data.fullname.localeCompare(b.data.fullname, "he");
+  });
+}
+
+export async function getUsersByIds(
+  db: Firestore,
+  userIds: string[],
+): Promise<UserInTeam[]> {
+  const normalizedUserIds = normalizeUserIds(userIds);
+  if (!normalizedUserIds || normalizedUserIds.length === 0) {
+    return [];
+  }
+
+  const refs = normalizedUserIds.map((id) => db.collection("users").doc(id));
+  const docs = refs.length > 0 ? await db.getAll(...refs) : [];
+
+  const users = docs
+    .filter((doc) => doc.exists)
+    .map((doc) => ({
+      id: doc.id,
+      data: doc.data() as FirestoreUser,
+    }));
+
+  return sortUsersInTeam(users);
+}
+
+export async function getTaskAssignees(
+  db: Firestore,
+  assignedTeams: number[],
+  assignedUsers: string[],
+): Promise<UserInTeam[]> {
+  const [usersInTeams, usersByIds] = await Promise.all([
+    getUsersInTeams(db, assignedTeams),
+    getUsersByIds(db, assignedUsers),
+  ]);
+
+  const usersById = new Map<string, FirestoreUser>();
+
+  for (const user of usersInTeams) {
+    usersById.set(user.id, user.data);
+  }
+
+  for (const user of usersByIds) {
+    usersById.set(user.id, user.data);
+  }
+
+  return sortUsersInTeam(
+    [...usersById.entries()].map(([id, data]) => ({ id, data })),
+  );
 }

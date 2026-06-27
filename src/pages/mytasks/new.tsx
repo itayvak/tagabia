@@ -60,6 +60,7 @@ export default function NewTaskPage() {
         creatorId: user.id,
         dueDate: task.dueDate,
         assignedTeams: task.assignedTeams,
+        assignedUsers: task.assignedUsers,
       });
 
       if (!response.ok) {

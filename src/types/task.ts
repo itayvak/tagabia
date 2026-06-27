@@ -10,6 +10,7 @@ export interface FirestoreTask {
   creatorRole: Role;
   dueDate: Timestamp;
   assignedTeams: number[];
+  assignedUsers: string[];
 }
 
 export interface PublicTask {
@@ -22,6 +23,7 @@ export interface PublicTask {
   creatorRole: Role;
   dueDate: string;
   assignedTeams: number[];
+  assignedUsers: string[];
 }
 
 export interface AssignedTask extends PublicTask {
@@ -59,6 +61,7 @@ export interface CreateTaskRequestBody {
   creatorId: string;
   dueDate: string;
   assignedTeams: number[];
+  assignedUsers?: string[];
 }
 
 export interface CreateTaskSuccessResponse {
@@ -75,6 +78,7 @@ export interface UpdateTaskRequestBody {
   content: string;
   dueDate: string;
   assignedTeams: number[];
+  assignedUsers?: string[];
 }
 
 export interface UpdateTaskSuccessResponse {

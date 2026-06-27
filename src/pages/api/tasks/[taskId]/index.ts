@@ -1,4 +1,9 @@
-import { isUserAssignedToTeams, normalizeTeamIds } from "@/lib/assigneeTeams";
+import {
+  hasTaskAssignment,
+  isUserAssignedToTask,
+  normalizeTeamIdsOptional,
+  normalizeUserIds,
+} from "@/lib/assigneeTeams";
 import { getAdminFirestore } from "@/lib/firebaseAdmin";
 import { toPublicTask } from "@/lib/taskMapper";
 import type {
@@ -56,6 +61,9 @@ async function handleGet(
     const assignedTeams = Array.isArray(taskData.assignedTeams)
       ? (taskData.assignedTeams as number[])
       : [];
+    const assignedUsers = Array.isArray(taskData.assignedUsers)
+      ? (taskData.assignedUsers as string[])
+      : [];
     const creatorId =
       typeof taskData.creatorId === "string" ? taskData.creatorId.trim() : "";
     const isCreator = creatorId === userId;
@@ -66,7 +74,12 @@ async function handleGet(
     }
 
     const userTeam = (userDoc.data() as FirestoreUser).team;
-    const isAssignee = isUserAssignedToTeams(userTeam, assignedTeams);
+    const isAssignee = isUserAssignedToTask(
+      userId,
+      userTeam,
+      assignedTeams,
+      assignedUsers,
+    );
 
     if (!isAssignee && !isCreator) {
       return res.status(403).json({ error: "User is not assigned to this task" });
@@ -118,7 +131,7 @@ async function handlePut(
 ) {
   const taskId =
     typeof req.query.taskId === "string" ? req.query.taskId.trim() : "";
-  const { userId, title, content, dueDate, assignedTeams } =
+  const { userId, title, content, dueDate, assignedTeams, assignedUsers } =
     req.body as Partial<UpdateTaskRequestBody>;
 
   if (!taskId) {
@@ -141,11 +154,22 @@ async function handlePut(
     return res.status(400).json({ error: "Due date is required" });
   }
 
-  const normalizedTeams = normalizeTeamIds(assignedTeams);
-  if (!normalizedTeams) {
+  const normalizedTeams = normalizeTeamIdsOptional(assignedTeams);
+  if (normalizedTeams === null) {
     return res
       .status(400)
       .json({ error: "Assigned teams must be a list of valid team numbers" });
+  }
+
+  const normalizedUsers = normalizeUserIds(assignedUsers ?? []);
+  if (normalizedUsers === null) {
+    return res
+      .status(400)
+      .json({ error: "Assigned users must be a list of valid user IDs" });
+  }
+
+  if (!hasTaskAssignment(normalizedTeams, normalizedUsers)) {
+    return res.status(400).json({ error: "At least one assignee is required" });
   }
 
   const parsedDueDate = new Date(dueDate);
@@ -172,6 +196,7 @@ async function handlePut(
       content: content.trim(),
       dueDate: Timestamp.fromDate(parsedDueDate),
       assignedTeams: normalizedTeams,
+      assignedUsers: normalizedUsers,
     });
 
     return res.status(200).json({ taskId });

@@ -1,4 +1,8 @@
-import { normalizeTeamIds } from "@/lib/assigneeTeams";
+import {
+  hasTaskAssignment,
+  normalizeTeamIdsOptional,
+  normalizeUserIds,
+} from "@/lib/assigneeTeams";
 import { getAdminFirestore } from "@/lib/firebaseAdmin";
 import type {
   CreateTaskErrorResponse,
@@ -24,7 +28,7 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { title, content, creatorId, dueDate, assignedTeams } =
+  const { title, content, creatorId, dueDate, assignedTeams, assignedUsers } =
     req.body as Partial<CreateTaskRequestBody>;
 
   if (!isNonEmptyString(title)) {
@@ -43,11 +47,22 @@ export default async function handler(
     return res.status(400).json({ error: "Due date is required" });
   }
 
-  const normalizedTeams = normalizeTeamIds(assignedTeams);
-  if (!normalizedTeams) {
+  const normalizedTeams = normalizeTeamIdsOptional(assignedTeams);
+  if (normalizedTeams === null) {
     return res
       .status(400)
       .json({ error: "Assigned teams must be a list of valid team numbers" });
+  }
+
+  const normalizedUsers = normalizeUserIds(assignedUsers ?? []);
+  if (normalizedUsers === null) {
+    return res
+      .status(400)
+      .json({ error: "Assigned users must be a list of valid user IDs" });
+  }
+
+  if (!hasTaskAssignment(normalizedTeams, normalizedUsers)) {
+    return res.status(400).json({ error: "At least one assignee is required" });
   }
 
   const parsedDueDate = new Date(dueDate);
@@ -76,6 +91,7 @@ export default async function handler(
       creatorRole: creatorData.role,
       dueDate: Timestamp.fromDate(parsedDueDate),
       assignedTeams: normalizedTeams,
+      assignedUsers: normalizedUsers,
     });
 
     return res.status(201).json({ taskId: taskRef.id });

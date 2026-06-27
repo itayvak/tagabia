@@ -1,4 +1,5 @@
 import { getAdminFirestore } from "@/lib/firebaseAdmin";
+import { mergeTaskSnapshotDocs } from "@/lib/mergeTaskSnapshots";
 import { toPublicTask } from "@/lib/taskMapper";
 import type {
   AssignedTask,
@@ -52,18 +53,26 @@ export default async function handler(
     }
 
     const userTeam = (userDoc.data() as FirestoreUser).team;
-    const snapshot = await db
-      .collection("tasks")
-      .where("assignedTeams", "array-contains", userTeam)
-      .get();
+    const [byTeamSnapshot, byUserSnapshot] = await Promise.all([
+      db
+        .collection("tasks")
+        .where("assignedTeams", "array-contains", userTeam)
+        .get(),
+      db
+        .collection("tasks")
+        .where("assignedUsers", "array-contains", userId)
+        .get(),
+    ]);
 
-    const completionRefs = snapshot.docs.map((doc) =>
+    const mergedDocs = mergeTaskSnapshotDocs(byTeamSnapshot, byUserSnapshot);
+
+    const completionRefs = mergedDocs.map((doc) =>
       db.collection("tasks").doc(doc.id).collection("completions").doc(userId),
     );
     const completionDocs =
       completionRefs.length > 0 ? await db.getAll(...completionRefs) : [];
 
-    const tasks = snapshot.docs
+    const tasks = mergedDocs
       .map((doc, index): AssignedTask | null => {
         const task = toPublicTask(doc.id, doc.data());
         if (!task) {

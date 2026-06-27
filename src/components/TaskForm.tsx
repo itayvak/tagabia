@@ -1,18 +1,14 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Box, Button, CircularProgress, TextField } from "@mui/material";
 import TaskAssigneePicker from "@/components/TaskAssigneePicker";
-import { selectionToTeamIds, teamIdsToSelection } from "@/lib/assigneeTeams";
-import {
-  createEmptyAssigneeSelection,
-  hasAssigneeSelection,
-  type AssigneeSelection,
-} from "@/lib/platoons";
+import { hasTaskAssignment } from "@/lib/assigneeTeams";
 
 export interface TaskFormData {
   title: string;
   content: string;
   dueDate: string;
   assignedTeams: number[];
+  assignedUsers: string[];
 }
 
 interface TaskFormProps {
@@ -29,6 +25,7 @@ const emptyForm: TaskFormData = {
   content: "",
   dueDate: "",
   assignedTeams: [],
+  assignedUsers: [],
 };
 
 export default function TaskForm({
@@ -42,23 +39,24 @@ export default function TaskForm({
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [dueDate, setDueDate] = useState("");
-  const [assigneeSelection, setAssigneeSelection] = useState<AssigneeSelection>(
-    createEmptyAssigneeSelection(),
-  );
+  const [assignedTeams, setAssignedTeams] = useState<number[]>([]);
+  const [assignedUsers, setAssignedUsers] = useState<string[]>([]);
 
   useEffect(() => {
     if (initialValues) {
       setTitle(initialValues.title);
       setContent(initialValues.content);
       setDueDate(initialValues.dueDate);
-      setAssigneeSelection(teamIdsToSelection(initialValues.assignedTeams));
+      setAssignedTeams(initialValues.assignedTeams);
+      setAssignedUsers(initialValues.assignedUsers);
       return;
     }
 
     setTitle(emptyForm.title);
     setContent(emptyForm.content);
     setDueDate(emptyForm.dueDate);
-    setAssigneeSelection(createEmptyAssigneeSelection());
+    setAssignedTeams(emptyForm.assignedTeams);
+    setAssignedUsers(emptyForm.assignedUsers);
   }, [initialValues]);
 
   const handleCancel = () => {
@@ -72,14 +70,8 @@ export default function TaskForm({
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!hasAssigneeSelection(assigneeSelection)) {
-      onError?.("יש לבחור לפחות פלוגה או צוות אחד");
-      return;
-    }
-
-    const assignedTeams = selectionToTeamIds(assigneeSelection);
-    if (assignedTeams.length === 0) {
-      onError?.("לא נבחרו צוותים למטלה");
+    if (!hasTaskAssignment(assignedTeams, assignedUsers)) {
+      onError?.("יש לבחור לפחות צוות או צוער אחד");
       return;
     }
 
@@ -88,6 +80,7 @@ export default function TaskForm({
       content: content.trim(),
       dueDate,
       assignedTeams,
+      assignedUsers,
     });
   };
 
@@ -140,8 +133,12 @@ export default function TaskForm({
         }}
       />
       <TaskAssigneePicker
-        selection={assigneeSelection}
-        onChange={setAssigneeSelection}
+        assignedTeams={assignedTeams}
+        assignedUsers={assignedUsers}
+        onChange={({ assignedTeams: nextTeams, assignedUsers: nextUsers }) => {
+          setAssignedTeams(nextTeams);
+          setAssignedUsers(nextUsers);
+        }}
         disabled={isSubmitting}
       />
       <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, pt: 1 }}>

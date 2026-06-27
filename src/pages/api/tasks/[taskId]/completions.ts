@@ -1,4 +1,4 @@
-import { getUsersInTeams } from "@/lib/assigneeTeams";
+import { getTaskAssignees } from "@/lib/assigneeTeams";
 import { getAdminFirestore } from "@/lib/firebaseAdmin";
 import type {
   FirestoreTaskCompletion,
@@ -52,9 +52,12 @@ export default async function handler(
     const assignedTeams = Array.isArray(taskData?.assignedTeams)
       ? (taskData.assignedTeams as number[])
       : [];
+    const assignedUsers = Array.isArray(taskData?.assignedUsers)
+      ? (taskData.assignedUsers as string[])
+      : [];
 
-    const [usersInTeams, completionSnapshot] = await Promise.all([
-      getUsersInTeams(db, assignedTeams),
+    const [taskAssignees, completionSnapshot] = await Promise.all([
+      getTaskAssignees(db, assignedTeams, assignedUsers),
       taskRef.collection("completions").get(),
     ]);
 
@@ -79,7 +82,7 @@ export default async function handler(
         ),
     );
 
-    const assignees: TaskAssigneeStatus[] = usersInTeams.map(({ id, data }) => {
+    const assignees: TaskAssigneeStatus[] = taskAssignees.map(({ id, data }) => {
       const completedAt = completionsByUserId.get(id) ?? null;
 
       return {

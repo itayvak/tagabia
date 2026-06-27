@@ -1,4 +1,4 @@
-import { isUserAssignedToTeams } from "@/lib/assigneeTeams";
+import { isUserAssignedToTask } from "@/lib/assigneeTeams";
 import { getAdminFirestore } from "@/lib/firebaseAdmin";
 import type {
   CompleteTaskErrorResponse,
@@ -51,6 +51,9 @@ export default async function handler(
     const assignedTeams = Array.isArray(taskDoc.data()?.assignedTeams)
       ? (taskDoc.data()!.assignedTeams as number[])
       : [];
+    const assignedUsers = Array.isArray(taskDoc.data()?.assignedUsers)
+      ? (taskDoc.data()!.assignedUsers as string[])
+      : [];
 
     const userDoc = await db.collection("users").doc(trimmedUserId).get();
     if (!userDoc.exists) {
@@ -58,7 +61,14 @@ export default async function handler(
     }
 
     const userTeam = (userDoc.data() as FirestoreUser).team;
-    if (!isUserAssignedToTeams(userTeam, assignedTeams)) {
+    if (
+      !isUserAssignedToTask(
+        trimmedUserId,
+        userTeam,
+        assignedTeams,
+        assignedUsers,
+      )
+    ) {
       return res.status(403).json({ error: "User is not assigned to this task" });
     }
 

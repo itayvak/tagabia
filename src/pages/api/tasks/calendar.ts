@@ -1,5 +1,6 @@
-import { getUsersInTeams } from "@/lib/assigneeTeams";
+import { getTaskAssignees } from "@/lib/assigneeTeams";
 import { getAdminFirestore } from "@/lib/firebaseAdmin";
+import { mergeTaskSnapshotDocs } from "@/lib/mergeTaskSnapshots";
 import { toPublicTask } from "@/lib/taskMapper";
 import type {
   CalendarTask,
@@ -44,12 +45,20 @@ export default async function handler(
     }
 
     const userTeam = (userDoc.data() as FirestoreUser).team;
-    const assignedSnapshot = await db
-      .collection("tasks")
-      .where("assignedTeams", "array-contains", userTeam)
-      .get();
+    const [byTeamSnapshot, byUserSnapshot] = await Promise.all([
+      db
+        .collection("tasks")
+        .where("assignedTeams", "array-contains", userTeam)
+        .get(),
+      db
+        .collection("tasks")
+        .where("assignedUsers", "array-contains", userId)
+        .get(),
+    ]);
 
-    const completionRefs = assignedSnapshot.docs.map((doc) =>
+    const assignedDocs = mergeTaskSnapshotDocs(byTeamSnapshot, byUserSnapshot);
+
+    const completionRefs = assignedDocs.map((doc) =>
       db.collection("tasks").doc(doc.id).collection("completions").doc(userId),
     );
     const completionDocs =
@@ -57,7 +66,7 @@ export default async function handler(
 
     const tasksById = new Map<string, CalendarTask>();
 
-    assignedSnapshot.docs.forEach((doc, index) => {
+    assignedDocs.forEach((doc, index) => {
       const task = toPublicTask(doc.id, doc.data());
       if (!task) {
         return;
@@ -93,18 +102,21 @@ export default async function handler(
             return null;
           }
 
-          if (task.assignedTeams.length === 0) {
+          if (
+            task.assignedTeams.length === 0 &&
+            task.assignedUsers.length === 0
+          ) {
             return { ...task, completed: false, completedAt: null };
           }
 
-          const [usersInTeams, completionSnapshot] = await Promise.all([
-            getUsersInTeams(db, task.assignedTeams),
+          const [assignees, completionSnapshot] = await Promise.all([
+            getTaskAssignees(db, task.assignedTeams, task.assignedUsers),
             db.collection("tasks").doc(doc.id).collection("completions").get(),
           ]);
 
           return {
             ...task,
-            completed: completionSnapshot.size >= usersInTeams.length,
+            completed: completionSnapshot.size >= assignees.length,
             completedAt: null,
           };
         }),

@@ -104,6 +104,7 @@ export default function EditTaskPage() {
         content: formData.content,
         dueDate: formData.dueDate,
         assignedTeams: formData.assignedTeams,
+        assignedUsers: formData.assignedUsers,
       });
 
       if (!response.ok) {
@@ -162,6 +163,7 @@ export default function EditTaskPage() {
                 content: task.content,
                 dueDate: toDatetimeLocalValue(task.dueDate),
                 assignedTeams: task.assignedTeams,
+                assignedUsers: task.assignedUsers,
               }}
               onCancel={handleCancel}
               onError={(message) => setErrorMessage(message)}
