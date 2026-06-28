@@ -125,23 +125,52 @@ function getRemindersForWeek(
     .sort((a, b) => a.dateKey.localeCompare(b.dateKey));
 }
 
-function CalendarReminderLine({ reminder }: { reminder: PublicCalendarReminder }) {
+function CalendarReminderLine({
+  week,
+  reminder,
+}: {
+  week: CalendarDay[];
+  reminder: PublicCalendarReminder;
+}) {
+  const columnIndex = week.findIndex(
+    (day) => getCalendarDateKey(day.date) === reminder.dateKey,
+  );
+
+  if (columnIndex === -1) {
+    return null;
+  }
+
   return (
-    <Typography
-      variant="caption"
+    <Box
       sx={{
-        color: "text.disabled",
-        fontSize: "0.7rem",
-        lineHeight: 1.3,
-        marginInline: "calc(50% - 50vw)",
-        px: 1,
-        py: 0.125,
-        whiteSpace: "normal",
-        width: "100vw",
+        display: "grid",
+        gap: 0.5,
+        gridTemplateColumns: "repeat(7, 1fr)",
+        minHeight: 20,
       }}
     >
-      {reminder.text}
-    </Typography>
+      {Array.from({ length: columnIndex }, (_, index) => (
+        <Box key={`spacer-${index}`} />
+      ))}
+      <Box
+        sx={{
+          gridColumn: `${columnIndex + 1} / -1`,
+          minWidth: 0,
+        }}
+      >
+        <Typography
+          variant="caption"
+          sx={{
+            color: "text.disabled",
+            fontSize: "0.65rem",
+            lineHeight: 1.2,
+            whiteSpace: "normal",
+          }}
+        >
+          {reminder.text}
+        </Typography>
+      </Box>
+    </Box>
   );
 }
 
@@ -264,7 +293,11 @@ export default function MonthCalendar({ tasks, reminders }: MonthCalendarProps) 
               }}
             >
               {weekReminders.map((reminder) => (
-                <CalendarReminderLine key={reminder.id} reminder={reminder} />
+                <CalendarReminderLine
+                  key={reminder.id}
+                  week={week}
+                  reminder={reminder}
+                />
               ))}
 
               <Box
