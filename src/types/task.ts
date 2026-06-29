@@ -1,3 +1,4 @@
+import type { TaskFormField, TaskFormFieldInput, TaskSubmission } from "@/types/taskForm";
 import type { Platoon, Role } from "@/types/user";
 import type { Timestamp } from "firebase-admin/firestore";
 
@@ -11,6 +12,7 @@ export interface FirestoreTask {
   dueDate: Timestamp;
   assignedTeams: number[];
   assignedUsers: string[];
+  hasFormFields?: boolean;
 }
 
 export interface PublicTask {
@@ -24,11 +26,14 @@ export interface PublicTask {
   dueDate: string;
   assignedTeams: number[];
   assignedUsers: string[];
+  hasFormFields: boolean;
+  formFields?: TaskFormField[];
 }
 
 export interface AssignedTask extends PublicTask {
   completed: boolean;
   completedAt: string | null;
+  submission?: TaskSubmission | null;
 }
 
 export type AssignedTaskFilter = "pending" | "completed" | "all";
@@ -62,6 +67,7 @@ export interface CreateTaskRequestBody {
   dueDate: string;
   assignedTeams: number[];
   assignedUsers?: string[];
+  formFields?: TaskFormFieldInput[];
 }
 
 export interface CreateTaskSuccessResponse {
@@ -79,6 +85,7 @@ export interface UpdateTaskRequestBody {
   dueDate: string;
   assignedTeams: number[];
   assignedUsers?: string[];
+  formFields?: TaskFormFieldInput[];
 }
 
 export interface UpdateTaskSuccessResponse {
@@ -117,6 +124,7 @@ export interface FirestoreTaskCompletion {
 
 export interface CompleteTaskRequestBody {
   userId: string;
+  answers?: Record<string, string>;
 }
 
 export interface CompleteTaskSuccessResponse {

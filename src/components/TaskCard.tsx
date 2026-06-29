@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  Box,
   Button,
   Card,
   CardActionArea,
@@ -14,12 +15,14 @@ import {
   Typography,
 } from "@mui/material";
 import CheckIcon from "@mui/icons-material/Check";
+import DescriptionIcon from "@mui/icons-material/Description";
+import TaskTypeIcon from "@/components/TaskTypeIcon";
 import { getRoleLabel } from "@/lib/roleLabels";
 import { formatDaysLeft, formatDueDate } from "@/lib/taskDate";
-import type { PublicTask } from "@/types/task";
+import type { AssignedTask } from "@/types/task";
 
 interface TaskCardProps {
-  task: PublicTask;
+  task: AssignedTask;
   isCompleting: boolean;
   isCompleted?: boolean;
   completedAt?: string | null;
@@ -36,10 +39,20 @@ export default function TaskCard({
   onComplete,
 }: TaskCardProps) {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const requiresForm = task.hasFormFields && !isCompleted;
 
   const handleConfirm = () => {
     setIsConfirmOpen(false);
     onComplete(task.id);
+  };
+
+  const handleActionClick = () => {
+    if (requiresForm) {
+      onOpen(task.id);
+      return;
+    }
+
+    setIsConfirmOpen(true);
   };
 
   return (
@@ -47,9 +60,19 @@ export default function TaskCard({
       <Card variant="outlined">
         <CardActionArea onClick={() => onOpen(task.id)}>
           <CardContent sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            <Typography variant="h6" component="h2">
-              {task.title}
-            </Typography>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "flex-start",
+                justifyContent: "space-between",
+                gap: 1,
+              }}
+            >
+              <Typography variant="h6" component="h2" sx={{ flex: 1 }}>
+                {task.title}
+              </Typography>
+              <TaskTypeIcon hasFormFields={task.hasFormFields} />
+            </Box>
             <Typography variant="body2" color="text.secondary">
               מאת {task.creatorRank} {task.creatorName} -{" "}
               {getRoleLabel(task.creatorRole)}
@@ -73,10 +96,12 @@ export default function TaskCard({
             size="small"
             fullWidth
             disabled={isCompleting || isCompleted}
-            onClick={() => setIsConfirmOpen(true)}
+            onClick={handleActionClick}
             startIcon={
               isCompleting ? (
                 <CircularProgress size={16} color="inherit" />
+              ) : requiresForm ? (
+                <DescriptionIcon />
               ) : (
                 <CheckIcon />
               )
@@ -86,12 +111,14 @@ export default function TaskCard({
               ? "מסמן..."
               : isCompleted
                 ? "סומן כבוצע"
-                : "בוצע"}
+                : requiresForm
+                  ? "מלא טופס"
+                  : "בוצע"}
           </Button>
         </CardActions>
       </Card>
       <Dialog
-        open={isConfirmOpen}
+        open={isConfirmOpen && !requiresForm}
         onClose={() => setIsConfirmOpen(false)}
         fullWidth
         maxWidth="xs"

@@ -1,7 +1,14 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Box, Button, CircularProgress, TextField } from "@mui/material";
 import TaskAssigneePicker from "@/components/TaskAssigneePicker";
+import TaskFormFieldBuilder, {
+  toBuilderFormFields,
+  toFormFieldInputs,
+  validateBuilderFields,
+  type BuilderFormField,
+} from "@/components/TaskFormFieldBuilder";
 import { hasTaskAssignment } from "@/lib/assigneeTeams";
+import type { TaskFormFieldInput } from "@/types/taskForm";
 
 export interface TaskFormData {
   title: string;
@@ -9,6 +16,7 @@ export interface TaskFormData {
   dueDate: string;
   assignedTeams: number[];
   assignedUsers: string[];
+  formFields: TaskFormFieldInput[];
 }
 
 interface TaskFormProps {
@@ -26,6 +34,7 @@ const emptyForm: TaskFormData = {
   dueDate: "",
   assignedTeams: [],
   assignedUsers: [],
+  formFields: [],
 };
 
 export default function TaskForm({
@@ -41,6 +50,7 @@ export default function TaskForm({
   const [dueDate, setDueDate] = useState("");
   const [assignedTeams, setAssignedTeams] = useState<number[]>([]);
   const [assignedUsers, setAssignedUsers] = useState<string[]>([]);
+  const [formFields, setFormFields] = useState<BuilderFormField[]>([]);
 
   useEffect(() => {
     if (initialValues) {
@@ -49,6 +59,7 @@ export default function TaskForm({
       setDueDate(initialValues.dueDate);
       setAssignedTeams(initialValues.assignedTeams);
       setAssignedUsers(initialValues.assignedUsers);
+      setFormFields(toBuilderFormFields(initialValues.formFields));
       return;
     }
 
@@ -57,6 +68,7 @@ export default function TaskForm({
     setDueDate(emptyForm.dueDate);
     setAssignedTeams(emptyForm.assignedTeams);
     setAssignedUsers(emptyForm.assignedUsers);
+    setFormFields([]);
   }, [initialValues]);
 
   const handleCancel = () => {
@@ -75,12 +87,19 @@ export default function TaskForm({
       return;
     }
 
+    const formFieldsError = validateBuilderFields(formFields);
+    if (formFieldsError) {
+      onError?.(formFieldsError);
+      return;
+    }
+
     onSubmit({
       title: title.trim(),
       content: content.trim(),
       dueDate,
       assignedTeams,
       assignedUsers,
+      formFields: toFormFieldInputs(formFields),
     });
   };
 
@@ -139,6 +158,11 @@ export default function TaskForm({
           setAssignedTeams(nextTeams);
           setAssignedUsers(nextUsers);
         }}
+        disabled={isSubmitting}
+      />
+      <TaskFormFieldBuilder
+        fields={formFields}
+        onChange={setFormFields}
         disabled={isSubmitting}
       />
       <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, pt: 1 }}>

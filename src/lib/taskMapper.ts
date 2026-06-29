@@ -40,5 +40,6 @@ export function toPublicTask(
             typeof userId === "string" && userId.trim().length > 0,
         )
       : [],
+    hasFormFields: task.hasFormFields === true,
   };
 }

@@ -61,6 +61,7 @@ export default function NewTaskPage() {
         dueDate: task.dueDate,
         assignedTeams: task.assignedTeams,
         assignedUsers: task.assignedUsers,
+        formFields: task.formFields,
       });
 
       if (!response.ok) {

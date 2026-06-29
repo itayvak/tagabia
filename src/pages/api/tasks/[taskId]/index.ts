@@ -6,6 +6,12 @@ import {
 } from "@/lib/assigneeTeams";
 import { getAdminFirestore } from "@/lib/firebaseAdmin";
 import { toPublicTask } from "@/lib/taskMapper";
+import {
+  deleteTaskSubcollection,
+  loadTaskFormFields,
+  syncTaskFormFields,
+} from "@/lib/taskFormFirestore";
+import { validateFormFieldInputs } from "@/lib/taskFormValidation";
 import type {
   DeleteTaskErrorResponse,
   DeleteTaskRequestBody,
@@ -16,6 +22,7 @@ import type {
   UpdateTaskRequestBody,
   UpdateTaskSuccessResponse,
 } from "@/types/task";
+import type { FirestoreTaskSubmission } from "@/types/taskForm";
 import type { FirestoreUser } from "@/types/user";
 import { Timestamp } from "firebase-admin/firestore";
 import type { NextApiRequest, NextApiResponse } from "next";
@@ -90,12 +97,20 @@ async function handleGet(
       return res.status(500).json({ error: "Task data is invalid" });
     }
 
+    const formFields = await loadTaskFormFields(db, taskId);
+    const taskWithFormFields = {
+      ...task,
+      hasFormFields: formFields.length > 0 || task.hasFormFields,
+      formFields,
+    };
+
     if (isCreator && !isAssignee) {
       return res.status(200).json({
         task: {
-          ...task,
+          ...taskWithFormFields,
           completed: false,
           completedAt: null,
+          submission: null,
         },
       });
     }
@@ -107,9 +122,31 @@ async function handleGet(
       .doc(userId)
       .get();
 
+    let submission = null;
+    if (completionDoc.exists && formFields.length > 0) {
+      const submissionDoc = await db
+        .collection("tasks")
+        .doc(taskId)
+        .collection("submissions")
+        .doc(userId)
+        .get();
+
+      if (submissionDoc.exists) {
+        const submissionData = submissionDoc.data() as FirestoreTaskSubmission;
+        submission = {
+          submittedAt: (submissionData.submittedAt as Timestamp)
+            .toDate()
+            .toISOString(),
+          completerName: submissionData.completerName,
+          completerRank: submissionData.completerRank,
+          answers: submissionData.answers ?? {},
+        };
+      }
+    }
+
     return res.status(200).json({
       task: {
-        ...task,
+        ...taskWithFormFields,
         completed: completionDoc.exists,
         completedAt:
           completionDoc.exists && completionDoc.data()?.completedAt
@@ -117,6 +154,7 @@ async function handleGet(
                 .toDate()
                 .toISOString()
             : null,
+        submission,
       },
     });
   } catch (error) {
@@ -131,7 +169,7 @@ async function handlePut(
 ) {
   const taskId =
     typeof req.query.taskId === "string" ? req.query.taskId.trim() : "";
-  const { userId, title, content, dueDate, assignedTeams, assignedUsers } =
+  const { userId, title, content, dueDate, assignedTeams, assignedUsers, formFields } =
     req.body as Partial<UpdateTaskRequestBody>;
 
   if (!taskId) {
@@ -177,6 +215,11 @@ async function handlePut(
     return res.status(400).json({ error: "Invalid due date" });
   }
 
+  const formFieldsValidation = validateFormFieldInputs(formFields);
+  if (!formFieldsValidation.ok) {
+    return res.status(400).json({ error: formFieldsValidation.error });
+  }
+
   try {
     const db = getAdminFirestore();
     const taskRef = db.collection("tasks").doc(taskId);
@@ -197,7 +240,10 @@ async function handlePut(
       dueDate: Timestamp.fromDate(parsedDueDate),
       assignedTeams: normalizedTeams,
       assignedUsers: normalizedUsers,
+      hasFormFields: formFieldsValidation.fields.length > 0,
     });
+
+    await syncTaskFormFields(db, taskId, formFieldsValidation.fields);
 
     return res.status(200).json({ taskId });
   } catch (error) {
@@ -242,6 +288,9 @@ async function handleDelete(
       completionsSnapshot.docs.forEach((doc) => batch.delete(doc.ref));
       await batch.commit();
     }
+
+    await deleteTaskSubcollection(db, taskRef, "formFields");
+    await deleteTaskSubcollection(db, taskRef, "submissions");
 
     await taskRef.delete();
 

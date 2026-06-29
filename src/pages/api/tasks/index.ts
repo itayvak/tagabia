@@ -4,6 +4,8 @@ import {
   normalizeUserIds,
 } from "@/lib/assigneeTeams";
 import { getAdminFirestore } from "@/lib/firebaseAdmin";
+import { syncTaskFormFields } from "@/lib/taskFormFirestore";
+import { validateFormFieldInputs } from "@/lib/taskFormValidation";
 import type {
   CreateTaskErrorResponse,
   CreateTaskRequestBody,
@@ -28,7 +30,7 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { title, content, creatorId, dueDate, assignedTeams, assignedUsers } =
+  const { title, content, creatorId, dueDate, assignedTeams, assignedUsers, formFields } =
     req.body as Partial<CreateTaskRequestBody>;
 
   if (!isNonEmptyString(title)) {
@@ -70,6 +72,11 @@ export default async function handler(
     return res.status(400).json({ error: "Invalid due date" });
   }
 
+  const formFieldsValidation = validateFormFieldInputs(formFields);
+  if (!formFieldsValidation.ok) {
+    return res.status(400).json({ error: formFieldsValidation.error });
+  }
+
   try {
     const db = getAdminFirestore();
     const trimmedCreatorId = creatorId.trim();
@@ -92,7 +99,12 @@ export default async function handler(
       dueDate: Timestamp.fromDate(parsedDueDate),
       assignedTeams: normalizedTeams,
       assignedUsers: normalizedUsers,
+      hasFormFields: formFieldsValidation.fields.length > 0,
     });
+
+    if (formFieldsValidation.fields.length > 0) {
+      await syncTaskFormFields(db, taskRef.id, formFieldsValidation.fields);
+    }
 
     return res.status(201).json({ taskId: taskRef.id });
   } catch (error) {

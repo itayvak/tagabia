@@ -1,5 +1,7 @@
 import { isUserAssignedToTask } from "@/lib/assigneeTeams";
 import { getAdminFirestore } from "@/lib/firebaseAdmin";
+import { loadTaskFormFields } from "@/lib/taskFormFirestore";
+import { validateFormAnswers } from "@/lib/taskFormValidation";
 import type {
   CompleteTaskErrorResponse,
   CompleteTaskRequestBody,
@@ -27,7 +29,7 @@ export default async function handler(
   }
 
   const taskId = typeof req.query.taskId === "string" ? req.query.taskId.trim() : "";
-  const { userId } = req.body as Partial<CompleteTaskRequestBody>;
+  const { userId, answers } = req.body as Partial<CompleteTaskRequestBody>;
 
   if (!taskId) {
     return res.status(400).json({ error: "Task ID is required" });
@@ -79,13 +81,33 @@ export default async function handler(
       return res.status(409).json({ error: "Task already completed" });
     }
 
+    const formFields = await loadTaskFormFields(db, taskId);
+    const answersValidation = validateFormAnswers(formFields, answers);
+    if (!answersValidation.ok) {
+      return res.status(400).json({ error: answersValidation.error });
+    }
+
     const userData = userDoc.data() as FirestoreUser;
     const completedAt = Timestamp.now();
-    await completionRef.set({
+    const batch = db.batch();
+
+    batch.set(completionRef, {
       completedAt,
       completerName: userData.fullname,
       completerRank: userData.rank,
     });
+
+    if (formFields.length > 0) {
+      const submissionRef = taskRef.collection("submissions").doc(trimmedUserId);
+      batch.set(submissionRef, {
+        submittedAt: completedAt,
+        completerName: userData.fullname,
+        completerRank: userData.rank,
+        answers: answersValidation.answers,
+      });
+    }
+
+    await batch.commit();
 
     return res.status(201).json({
       completedAt: completedAt.toDate().toISOString(),

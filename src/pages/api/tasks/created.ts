@@ -35,7 +35,7 @@ export default async function handler(
       .map((doc) => toPublicTask(doc.id, doc.data()))
       .filter((task): task is PublicTask => task !== null)
       .sort(
-        (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
+        (a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime(),
       );
 
     return res.status(200).json({ tasks });

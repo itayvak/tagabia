@@ -32,11 +32,36 @@ export function getTaskErrorMessage(error: string): string {
       return "מזהה יוצר חסר";
     case "List completions failed":
       return "טעינת הביצועים נכשלה";
+    case "List submissions failed":
+      return "טעינת התשובות נכשלה";
+    case "Task has no form fields":
+      return "למטלה זו אין טופס";
     case "Get task failed":
       return "טעינת המטלה נכשלה";
     case "Task data is invalid":
       return "נתוני המטלה לא תקינים";
+    case "Form fields must be a list":
+      return "שדות הטופס לא תקינים";
+    case "Form field data is invalid":
+      return "שדה טופס לא תקין";
+    case "Form field label is required":
+      return "יש להזין תווית לכל שדה בטופס";
+    case "Form field type is invalid":
+      return "סוג שדה הטופס לא תקין";
+    case "Form field required flag is invalid":
+      return "הגדרת חובת שדה לא תקינה";
+    case "Multiple choice field must have at least two options":
+    case "Choice field must have at least two options":
+      return "שדה בחירה חייב לכלול לפחות שתי אפשרויות";
+    case "Form answers are required":
+      return "יש למלא את הטופס לפני סימון המטלה כבוצעה";
     default:
+      if (error.startsWith("Required form field is missing:")) {
+        return "יש למלא את כל שדות החובה בטופס";
+      }
+      if (error.startsWith("Invalid option for form field:")) {
+        return "נבחרה אפשרות לא תקינה בשדה בטופס";
+      }
       return error;
   }
 }

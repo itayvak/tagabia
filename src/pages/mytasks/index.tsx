@@ -1,6 +1,6 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Box,
@@ -20,10 +20,12 @@ import AppLayout from "@/components/AppLayout";
 import { APP_BOTTOM_BAR_HEIGHT } from "@/components/AppBottomBar";
 import CreatedTaskCard from "@/components/CreatedTaskCard";
 import TaskCompletionsDialog from "@/components/TaskCompletionsDialog";
+import TaskSubmissionsDialog from "@/components/TaskSubmissionsDialog";
 import { getSession } from "@/lib/authStorage";
 import { deleteTask } from "@/lib/deleteTask";
 import { fetchCreatedTasks } from "@/lib/fetchCreatedTasks";
 import { fetchTaskCompletions } from "@/lib/fetchTaskCompletions";
+import { fetchTaskSubmissions } from "@/lib/fetchTaskSubmissions";
 import { getTaskErrorMessage } from "@/lib/taskErrorMessages";
 import type {
   DeleteTaskErrorResponse,
@@ -35,6 +37,12 @@ import type {
   TaskAssigneeStatus,
 } from "@/types/task";
 import type { PublicUser } from "@/types/user";
+import type {
+  ListTaskSubmissionsErrorResponse,
+  ListTaskSubmissionsSuccessResponse,
+  TaskFormField,
+  TaskSubmissionEntry,
+} from "@/types/taskForm";
 
 export default function MyTasksPage() {
   const router = useRouter();
@@ -49,6 +57,14 @@ export default function MyTasksPage() {
     [],
   );
   const [isLoadingCompletions, setIsLoadingCompletions] = useState(false);
+  const [submissionsTask, setSubmissionsTask] = useState<PublicTask | null>(
+    null,
+  );
+  const [submissionFormFields, setSubmissionFormFields] = useState<
+    TaskFormField[]
+  >([]);
+  const [submissions, setSubmissions] = useState<TaskSubmissionEntry[]>([]);
+  const [isLoadingSubmissions, setIsLoadingSubmissions] = useState(false);
   const [deletingTask, setDeletingTask] = useState<PublicTask | null>(null);
   const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
 
@@ -96,6 +112,15 @@ export default function MyTasksPage() {
     void loadTasks();
   }, [loadTasks]);
 
+  const sortedTasks = useMemo(
+    () =>
+      [...tasks].sort(
+        (a, b) =>
+          new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime(),
+      ),
+    [tasks],
+  );
+
   const handleOpenCompletions = async (task: PublicTask) => {
     if (!user) {
       return;
@@ -133,6 +158,44 @@ export default function MyTasksPage() {
   const handleCloseCompletions = () => {
     setCompletionsTask(null);
     setAssigneeStatuses([]);
+  };
+
+  const handleOpenSubmissions = async (task: PublicTask) => {
+    if (!user) {
+      return;
+    }
+
+    setSubmissionsTask(task);
+    setSubmissionFormFields([]);
+    setSubmissions([]);
+    setIsLoadingSubmissions(true);
+    setErrorMessage(null);
+
+    try {
+      const { response, data } = await fetchTaskSubmissions(task.id, user.id);
+
+      if (!response.ok) {
+        const { error } = data as ListTaskSubmissionsErrorResponse;
+        setErrorMessage(getTaskErrorMessage(error ?? "טעינת התשובות נכשלה"));
+        setSubmissionsTask(null);
+        return;
+      }
+
+      const successData = data as ListTaskSubmissionsSuccessResponse;
+      setSubmissionFormFields(successData.formFields);
+      setSubmissions(successData.submissions);
+    } catch {
+      setErrorMessage("שגיאה בטעינת התשובות. נסה שוב.");
+      setSubmissionsTask(null);
+    } finally {
+      setIsLoadingSubmissions(false);
+    }
+  };
+
+  const handleCloseSubmissions = () => {
+    setSubmissionsTask(null);
+    setSubmissionFormFields([]);
+    setSubmissions([]);
   };
 
   const handleOpenDelete = (task: PublicTask) => {
@@ -209,7 +272,7 @@ export default function MyTasksPage() {
           </Typography>
         ) : (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            {tasks.map((task) => (
+            {sortedTasks.map((task) => (
               <CreatedTaskCard
                 key={task.id}
                 task={task}
@@ -217,6 +280,7 @@ export default function MyTasksPage() {
                 onOpen={(taskId) => void router.push(`/tasks/${taskId}`)}
                 onEdit={() => void router.push(`/mytasks/${task.id}/edit`)}
                 onViewCompletions={() => void handleOpenCompletions(task)}
+                onViewSubmissions={() => void handleOpenSubmissions(task)}
                 onDelete={() => handleOpenDelete(task)}
               />
             ))}
@@ -268,6 +332,14 @@ export default function MyTasksPage() {
         isLoading={isLoadingCompletions}
         assignees={assigneeStatuses}
         onClose={handleCloseCompletions}
+      />
+      <TaskSubmissionsDialog
+        open={submissionsTask !== null}
+        taskTitle={submissionsTask?.title ?? ""}
+        isLoading={isLoadingSubmissions}
+        formFields={submissionFormFields}
+        submissions={submissions}
+        onClose={handleCloseSubmissions}
       />
       </AppLayout>
       <Snackbar

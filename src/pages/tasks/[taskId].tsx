@@ -19,6 +19,8 @@ import {
 import CheckIcon from "@mui/icons-material/Check";
 import ShareIcon from "@mui/icons-material/Share";
 import AppLayout from "@/components/AppLayout";
+import LinkifiedText from "@/components/LinkifiedText";
+import TaskFormRenderer from "@/components/TaskFormRenderer";
 import { getSession } from "@/lib/authStorage";
 import { completeTask } from "@/lib/completeTask";
 import { fetchTask } from "@/lib/fetchTask";
@@ -26,6 +28,7 @@ import { triggerTaskConfetti } from "@/lib/taskConfetti";
 import { isUserAssignedToTask } from "@/lib/assigneeTeams";
 import { getRoleLabel } from "@/lib/roleLabels";
 import { formatDaysLeft, formatDueDate } from "@/lib/taskDate";
+import { areRequiredFormAnswersFilled } from "@/lib/taskFormValidation";
 import type {
   AssignedTask,
   CompleteTaskErrorResponse,
@@ -51,7 +54,15 @@ function getErrorMessage(error: string): string {
       return "המטלה כבר סומנה כבוצעה";
     case "Complete task failed":
       return "סימון המטלה נכשל";
+    case "Form answers are required":
+      return "יש למלא את הטופס לפני סימון המטלה כבוצעה";
     default:
+      if (error.startsWith("Required form field is missing:")) {
+        return "יש למלא את כל שדות החובה בטופס";
+      }
+      if (error.startsWith("Invalid option for form field:")) {
+        return "נבחרה אפשרות לא תקינה בשדה בטופס";
+      }
       return error;
   }
 }
@@ -67,6 +78,12 @@ export default function TaskPage() {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+
+  const formFields = task?.formFields ?? [];
+  const hasFormFields = formFields.length > 0;
+  const canCompleteForm =
+    !hasFormFields || areRequiredFormAnswersFilled(formFields, answers);
 
   const isAssignee =
     !user || !task
@@ -107,6 +124,8 @@ export default function TaskPage() {
         }
 
         setTask((data as GetTaskSuccessResponse).task);
+        const loadedTask = (data as GetTaskSuccessResponse).task;
+        setAnswers(loadedTask.submission?.answers ?? {});
       } catch {
         setErrorMessage("שגיאה בטעינת המטלה. נסה שוב.");
       } finally {
@@ -129,6 +148,7 @@ export default function TaskPage() {
     try {
       const { response, data } = await completeTask(task.id, {
         userId: user.id,
+        answers: hasFormFields ? answers : undefined,
       });
 
       if (!response.ok) {
@@ -262,14 +282,36 @@ export default function TaskPage() {
                 תוכן
               </Typography>
               <Divider sx={{ my: 3 }} />
-              <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
-                {task.content}
-              </Typography>
+              <LinkifiedText text={task.content} />
             </Box>
+            {hasFormFields ? (
+              <Box>
+                <Typography variant="subtitle2" gutterBottom>
+                  טופס
+                </Typography>
+                <Divider sx={{ my: 2 }} />
+                <TaskFormRenderer
+                  fields={formFields}
+                  answers={answers}
+                  onChange={(fieldId, value) =>
+                    setAnswers((current) => ({
+                      ...current,
+                      [fieldId]: value,
+                    }))
+                  }
+                  disabled={task.completed || !isAssignee}
+                />
+              </Box>
+            ) : null}
             <Button
               variant="contained"
               fullWidth
-              disabled={isCompleting || task.completed || !isAssignee}
+              disabled={
+                isCompleting ||
+                task.completed ||
+                !isAssignee ||
+                (hasFormFields && !canCompleteForm)
+              }
               onClick={() => {
                 if (!isAssignee) return;
                 setIsConfirmOpen(true);
