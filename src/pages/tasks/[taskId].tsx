@@ -31,6 +31,7 @@ import { triggerTaskConfetti } from "@/lib/taskConfetti";
 import { isUserAssignedToTask } from "@/lib/assigneeTeams";
 import { getRoleLabel } from "@/lib/roleLabels";
 import { formatDaysLeft, formatDueDate } from "@/lib/taskDate";
+import { shareTaskAsImage } from "@/lib/shareTaskAsImage";
 import { areRequiredFormAnswersFilled } from "@/lib/taskFormValidation";
 import type {
   AssignedTask,
@@ -78,6 +79,7 @@ export default function TaskPage() {
   const [task, setTask] = useState<AssignedTask | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -170,44 +172,26 @@ export default function TaskPage() {
   };
 
   const handleShareTask = async () => {
-    if (!task) {
+    if (!task || !user) {
       return;
     }
 
-    const url = `${window.location.origin}/tasks/${task.id}`;
-    const text = [
-      task.title,
-      `תג"ב: ${formatDueDate(task.dueDate)} · ${formatDaysLeft(task.dueDate)}`,
-      `מאת ${task.creatorRank} ${task.creatorName}`,
-      "",
-    ].join("\n");
-
-    const shareData: ShareData = {
-      title: task.title,
-      text,
-      url,
-    };
+    setIsSharing(true);
+    setErrorMessage(null);
 
     try {
-      if (typeof navigator.share === "function") {
-        if (navigator.canShare && !navigator.canShare(shareData)) {
-          await navigator.clipboard.writeText(`${text}\n\n${url}`);
-          setSuccessMessage("הקישור הועתק ללוח");
-          return;
-        }
-
-        await navigator.share(shareData);
-        return;
+      const result = await shareTaskAsImage(task, user.id);
+      if (result === "downloaded") {
+        setSuccessMessage("התמונה הורדה למכשיר");
       }
-
-      await navigator.clipboard.writeText(`${text}\n\n${url}`);
-      setSuccessMessage("הקישור הועתק ללוח");
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
         return;
       }
 
       setErrorMessage("שגיאה בשיתוף המטלה");
+    } finally {
+      setIsSharing(false);
     }
   };
 
@@ -274,11 +258,18 @@ export default function TaskPage() {
                       <Button
                         variant="outlined"
                         size="small"
+                        disabled={isSharing}
                         onClick={() => void handleShareTask()}
-                        startIcon={<ShareIcon />}
+                        startIcon={
+                          isSharing ? (
+                            <CircularProgress size={16} color="inherit" />
+                          ) : (
+                            <ShareIcon />
+                          )
+                        }
                         sx={{ flexShrink: 0 }}
                       >
-                        שיתוף
+                        {isSharing ? "משתף..." : "שיתוף"}
                       </Button>
                     </Box>
                     <Box>

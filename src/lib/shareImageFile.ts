@@ -3,12 +3,13 @@ export type ShareImageResult = "shared" | "downloaded";
 export async function shareImageFile(
   blob: Blob,
   filename: string,
+  title = "דוח מטלות",
 ): Promise<ShareImageResult> {
   const file = new File([blob], filename, { type: "image/png" });
 
   if (typeof navigator.share === "function") {
     const shareData: ShareData = {
-      title: "דוח מטלות",
+      title,
       files: [file],
     };
 

@@ -336,7 +336,9 @@ function drawColumn(
 
 export async function renderTaskReportImage(
   entries: TaskReportEntry[],
+  options: { subtitle?: string } = {},
 ): Promise<Blob> {
+  const subtitle = options.subtitle ?? "דוח מטלות";
   const fontFamily = getFontFamily();
   await ensureFontsLoaded(fontFamily);
 
@@ -388,7 +390,7 @@ export async function renderTaskReportImage(
 
   context.fillStyle = COLORS.textSecondary;
   context.font = `400 14px ${fontFamily}`;
-  context.fillText("דוח מטלות", reportWidth / 2, y + 12);
+  context.fillText(subtitle, reportWidth / 2, y + 12);
   y += 18;
 
   context.font = `400 12px ${fontFamily}`;
