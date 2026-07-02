@@ -10,7 +10,7 @@ const CARD_PADDING = 12;
 const COLUMN_WIDTH = 328;
 const CARD_INNER_WIDTH = COLUMN_WIDTH - CARD_PADDING * 2;
 const MAX_TASKS_PER_COLUMN = 5;
-const HEADER_HEIGHT = 56 + 8 + 24 + 18 + 16 + 14 + 20;
+const HEADER_HEIGHT = 56 + 8 + 24 + 18 + 8;
 const CARD_FONT_SIZE = 13;
 const CARD_LINE_HEIGHT = 18;
 const CARD_TITLE_FONT_SIZE = 16;
@@ -175,16 +175,6 @@ function drawCardTextLine(
   const lines = maxWidth ? wrapTextLines(context, text, maxWidth) : [text];
   const endY = drawRtlTextBlock(context, lines, textRight, y, lineHeight);
   return endY + CARD_LINE_GAP;
-}
-
-function formatReportDate(date: Date): string {
-  return date.toLocaleString("he-IL", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 function formatCompletionStats(completedCount: number, totalCount: number): string {
@@ -391,11 +381,7 @@ export async function renderTaskReportImage(
   context.fillStyle = COLORS.textSecondary;
   context.font = `400 14px ${fontFamily}`;
   context.fillText(subtitle, reportWidth / 2, y + 12);
-  y += 18;
-
-  context.font = `400 12px ${fontFamily}`;
-  context.fillText(formatReportDate(new Date()), reportWidth / 2, y + 10);
-  y += 20;
+  y += 18 + 8;
 
   const cardsStartY = y;
   const columnCount = columns.length;
