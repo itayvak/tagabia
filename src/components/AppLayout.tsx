@@ -11,8 +11,19 @@ interface AppLayoutProps {
 export default function AppLayout({ user, children }: AppLayoutProps) {
   return (
     <>
-      <AppTopBar user={user} />
-      <Box sx={{ pb: `${APP_BOTTOM_BAR_HEIGHT + 16}px` }}>{children}</Box>
+      <Box sx={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
+        <AppTopBar user={user} />
+        <Box
+          sx={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            pb: `${APP_BOTTOM_BAR_HEIGHT + 16}px`,
+          }}
+        >
+          {children}
+        </Box>
+      </Box>
       <AppBottomBar user={user} />
     </>
   );

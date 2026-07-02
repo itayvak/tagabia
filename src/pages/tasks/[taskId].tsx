@@ -5,6 +5,8 @@ import {
   Alert,
   Box,
   Button,
+  Card,
+  CardContent,
   CircularProgress,
   Container,
   Dialog,
@@ -12,13 +14,13 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
-  Divider,
   Snackbar,
   Typography,
 } from "@mui/material";
 import CheckIcon from "@mui/icons-material/Check";
 import ShareIcon from "@mui/icons-material/Share";
 import AppLayout from "@/components/AppLayout";
+import { APP_BOTTOM_BAR_HEIGHT } from "@/components/AppBottomBar";
 import LinkifiedText from "@/components/LinkifiedText";
 import TaskFormRenderer from "@/components/TaskFormRenderer";
 import TaskMediaAttachments from "@/components/TaskMediaAttachments";
@@ -230,115 +232,140 @@ export default function TaskPage() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
       <AppLayout user={user}>
-        <Container maxWidth="sm" sx={{ py: 3 }}>
-        {isLoading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
-            <CircularProgress />
-          </Box>
-        ) : !task ? (
-          <Typography color="text.secondary" align="center" sx={{ py: 6 }}>
-            לא ניתן לטעון את המטלה
-          </Typography>
-        ) : (
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "flex-start",
-                justifyContent: "space-between",
-                gap: 1,
-              }}
-            >
-              <Typography variant="h5" component="h1" sx={{ flex: 1 }}>
-                {task.title}
-              </Typography>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={() => void handleShareTask()}
-                startIcon={<ShareIcon />}
-                sx={{ flexShrink: 0 }}
-              >
-                שיתוף
-              </Button>
-            </Box>
-            <Box>
-              <Typography variant="subtitle2" color="text.secondary">
-                מאת {task.creatorRank} {task.creatorName}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {getRoleLabel(task.creatorRole)}
-              </Typography>
-            </Box>
-            <Box>
-              <Typography variant="subtitle2">
-                  תג"ב: {formatDueDate(task.dueDate)}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {formatDaysLeft(task.dueDate)}
-                </Typography>
-            </Box>
-            <Box>
-              <Typography variant="subtitle2" gutterBottom>
-                תוכן
-              </Typography>
-              <Divider sx={{ my: 3 }} />
-              <LinkifiedText text={task.content} />
-              <TaskMediaAttachments media={task.media} />
-            </Box>
-            {hasFormFields ? (
-              <Box>
-                <Typography variant="subtitle2" gutterBottom>
-                  טופס
-                </Typography>
-                <Divider sx={{ my: 2 }} />
-                <TaskFormRenderer
-                  fields={formFields}
-                  answers={answers}
-                  onChange={(fieldId, value) =>
-                    setAnswers((current) => ({
-                      ...current,
-                      [fieldId]: value,
-                    }))
-                  }
-                  disabled={task.completed || !isAssignee}
-                />
+        <Box
+          sx={{
+            bgcolor: "grey.200",
+            py: 3,
+            flex: 1,
+            minHeight: `calc(100dvh - ${APP_BOTTOM_BAR_HEIGHT + 88}px)`,
+          }}
+        >
+          <Container maxWidth="sm">
+            {isLoading ? (
+              <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+                <CircularProgress />
               </Box>
-            ) : null}
-            <Button
-              variant="contained"
-              fullWidth
-              disabled={
-                isCompleting ||
-                task.completed ||
-                !isAssignee ||
-                (hasFormFields && !canCompleteForm)
-              }
-              onClick={() => {
-                if (!isAssignee) return;
-                setIsConfirmOpen(true);
-              }}
-              startIcon={
-                isCompleting ? (
-                  <CircularProgress size={20} color="inherit" />
-                ) : isAssignee && !task.completed ? (
-                  <CheckIcon />
-                ) : (
-                  undefined
-                )
-              }
-            >
-              {isCompleting
-                ? "מסמן..."
-                : task.completed
-                  ? "סומן כבוצע"
-                  : isAssignee
-                    ? "בוצע"
-                    : "אינך משויך למטלה זו"}
-            </Button>
-          </Box>
-        )}
-      </Container>
+            ) : !task ? (
+              <Typography color="text.secondary" align="center" sx={{ py: 6 }}>
+                לא ניתן לטעון את המטלה
+              </Typography>
+            ) : (
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <Card elevation={0} sx={{ borderRadius: 2 }}>
+                  <CardContent
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 2,
+                      "&:last-child": { pb: 2 },
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        justifyContent: "space-between",
+                        gap: 1,
+                      }}
+                    >
+                      <Typography variant="h5" component="h1" sx={{ flex: 1 }}>
+                        {task.title}
+                      </Typography>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={() => void handleShareTask()}
+                        startIcon={<ShareIcon />}
+                        sx={{ flexShrink: 0 }}
+                      >
+                        שיתוף
+                      </Button>
+                    </Box>
+                    <Box>
+                      <Typography variant="subtitle2" color="text.secondary">
+                        מאת {task.creatorRank} {task.creatorName}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {getRoleLabel(task.creatorRole)}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="subtitle2">
+                        תג"ב: {formatDueDate(task.dueDate)}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {formatDaysLeft(task.dueDate)}
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+
+                <Card elevation={0} sx={{ borderRadius: 2 }}>
+                  <CardContent sx={{ "&:last-child": { pb: 2 } }}>
+                    <Typography variant="subtitle2" gutterBottom>
+                      תוכן
+                    </Typography>
+                    <LinkifiedText text={task.content} />
+                    <TaskMediaAttachments media={task.media} />
+                  </CardContent>
+                </Card>
+
+                {hasFormFields ? (
+                  <Card elevation={0} sx={{ borderRadius: 2 }}>
+                    <CardContent sx={{ "&:last-child": { pb: 2 } }}>
+                      <Typography variant="subtitle2" gutterBottom>
+                        טופס
+                      </Typography>
+                      <TaskFormRenderer
+                        fields={formFields}
+                        answers={answers}
+                        onChange={(fieldId, value) =>
+                          setAnswers((current) => ({
+                            ...current,
+                            [fieldId]: value,
+                          }))
+                        }
+                        disabled={task.completed || !isAssignee}
+                      />
+                    </CardContent>
+                  </Card>
+                ) : null}
+
+                <Button
+                  variant="contained"
+                  fullWidth
+                  disabled={
+                    isCompleting ||
+                    task.completed ||
+                    !isAssignee ||
+                    (hasFormFields && !canCompleteForm)
+                  }
+                  onClick={() => {
+                    if (!isAssignee) return;
+                    setIsConfirmOpen(true);
+                  }}
+                  startIcon={
+                    isCompleting ? (
+                      <CircularProgress size={20} color="inherit" />
+                    ) : isAssignee && !task.completed ? (
+                      <CheckIcon />
+                    ) : (
+                      undefined
+                    )
+                  }
+                >
+                  {isCompleting
+                    ? "מסמן..."
+                    : task.completed
+                      ? "סומן כבוצע"
+                      : isAssignee
+                        ? "בוצע"
+                        : "אינך משויך למטלה זו"}
+                </Button>
+              </Box>
+            )}
+          </Container>
+        </Box>
       </AppLayout>
       <Dialog
         open={isConfirmOpen}

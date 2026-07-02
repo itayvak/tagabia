@@ -1,5 +1,6 @@
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import DownloadIcon from "@mui/icons-material/Download";
 import { useEffect, useState } from "react";
 import {
   Box,
@@ -12,6 +13,7 @@ import {
   Divider,
   Typography,
 } from "@mui/material";
+import { downloadTaskSubmissionsCsv } from "@/lib/taskSubmissionsCsv";
 import { formatSubmissionAnswer } from "@/lib/formatSubmissionAnswer";
 import { formatDueDate } from "@/lib/taskDate";
 import type { TaskFormField, TaskSubmissionEntry } from "@/types/taskForm";
@@ -151,6 +153,16 @@ export default function TaskSubmissionsDialog({
         ) : null}
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
+        {!isLoading && submissions.length > 0 ? (
+          <Button
+            startIcon={<DownloadIcon />}
+            onClick={() =>
+              downloadTaskSubmissionsCsv(taskTitle, formFields, submissions)
+            }
+          >
+            ייצוא CSV
+          </Button>
+        ) : null}
         <Button onClick={onClose}>סגור</Button>
       </DialogActions>
     </Dialog>
