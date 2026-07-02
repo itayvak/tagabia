@@ -120,3 +120,16 @@ export async function deleteTaskSubcollection(
   snapshot.docs.forEach((doc) => batch.delete(doc.ref));
   await batch.commit();
 }
+
+export async function getTaskSubmissionCount(
+  db: Firestore,
+  taskId: string,
+): Promise<number> {
+  const snapshot = await db
+    .collection("tasks")
+    .doc(taskId)
+    .collection("submissions")
+    .get();
+
+  return snapshot.size;
+}

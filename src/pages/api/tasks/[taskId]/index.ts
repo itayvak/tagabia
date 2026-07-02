@@ -8,9 +8,11 @@ import { getAdminFirestore } from "@/lib/firebaseAdmin";
 import { toPublicTask } from "@/lib/taskMapper";
 import {
   deleteTaskSubcollection,
+  getTaskSubmissionCount,
   loadTaskFormFields,
   syncTaskFormFields,
 } from "@/lib/taskFormFirestore";
+import { deleteAllTaskMedia } from "@/lib/taskMediaStorage";
 import { validateFormFieldInputs } from "@/lib/taskFormValidation";
 import type {
   DeleteTaskErrorResponse,
@@ -18,6 +20,7 @@ import type {
   DeleteTaskSuccessResponse,
   GetTaskErrorResponse,
   GetTaskSuccessResponse,
+  TaskMedia,
   UpdateTaskErrorResponse,
   UpdateTaskRequestBody,
   UpdateTaskSuccessResponse,
@@ -98,10 +101,17 @@ async function handleGet(
     }
 
     const formFields = await loadTaskFormFields(db, taskId);
+    const hasFormFields = formFields.length > 0 || task.hasFormFields;
+    const submissionCount =
+      isCreator && hasFormFields
+        ? await getTaskSubmissionCount(db, taskId)
+        : undefined;
+
     const taskWithFormFields = {
       ...task,
-      hasFormFields: formFields.length > 0 || task.hasFormFields,
+      hasFormFields,
       formFields,
+      ...(submissionCount !== undefined ? { submissionCount } : {}),
     };
 
     if (isCreator && !isAssignee) {
@@ -184,9 +194,15 @@ async function handlePut(
     return res.status(400).json({ error: "Title is required" });
   }
 
-  if (!isNonEmptyString(content)) {
-    return res.status(400).json({ error: "Content is required" });
+  if (
+    content !== undefined &&
+    content !== null &&
+    typeof content !== "string"
+  ) {
+    return res.status(400).json({ error: "Content must be a string" });
   }
+
+  const trimmedContent = typeof content === "string" ? content.trim() : "";
 
   if (!isNonEmptyString(dueDate)) {
     return res.status(400).json({ error: "Due date is required" });
@@ -236,7 +252,7 @@ async function handlePut(
 
     await taskRef.update({
       title: title.trim(),
-      content: content.trim(),
+      content: trimmedContent,
       dueDate: Timestamp.fromDate(parsedDueDate),
       assignedTeams: normalizedTeams,
       assignedUsers: normalizedUsers,
@@ -280,6 +296,14 @@ async function handleDelete(
     const trimmedUserId = userId.trim();
     if (taskDoc.data()?.creatorId !== trimmedUserId) {
       return res.status(403).json({ error: "User is not the task creator" });
+    }
+
+    const taskMedia = Array.isArray(taskDoc.data()?.media)
+      ? (taskDoc.data()!.media as TaskMedia[])
+      : [];
+
+    if (taskMedia.length > 0) {
+      await deleteAllTaskMedia(taskId, taskMedia);
     }
 
     const completionsSnapshot = await taskRef.collection("completions").get();

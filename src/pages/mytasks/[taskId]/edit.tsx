@@ -1,11 +1,17 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Box,
+  Button,
   CircularProgress,
   Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Snackbar,
   Typography,
 } from "@mui/material";
@@ -15,6 +21,7 @@ import { getSession } from "@/lib/authStorage";
 import { fetchTask } from "@/lib/fetchTask";
 import { toDatetimeLocalValue } from "@/lib/taskDate";
 import { getTaskErrorMessage } from "@/lib/taskErrorMessages";
+import { haveFormFieldsChanged } from "@/lib/taskFormValidation";
 import { updateTask } from "@/lib/updateTask";
 import type {
   GetTaskErrorResponse,
@@ -22,6 +29,7 @@ import type {
   PublicTask,
   UpdateTaskErrorResponse,
 } from "@/types/task";
+import type { TaskFormFieldInput } from "@/types/taskForm";
 import type { PublicUser } from "@/types/user";
 
 export default function EditTaskPage() {
@@ -31,9 +39,41 @@ export default function EditTaskPage() {
 
   const [user, setUser] = useState<PublicUser | null>(null);
   const [task, setTask] = useState<PublicTask | null>(null);
+  const [initialFormFields, setInitialFormFields] = useState<TaskFormFieldInput[]>(
+    [],
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [pendingFormData, setPendingFormData] = useState<TaskFormData | null>(
+    null,
+  );
+  const [isConfirmFormEditOpen, setIsConfirmFormEditOpen] = useState(false);
+
+  const initialFormValues = useMemo(() => {
+    if (!task) {
+      return undefined;
+    }
+
+    return {
+      title: task.title,
+      content: task.content,
+      dueDate: toDatetimeLocalValue(task.dueDate),
+      assignedTeams: task.assignedTeams,
+      assignedUsers: task.assignedUsers,
+      formFields: task.formFields ?? [],
+      pendingMedia: [],
+    };
+  }, [task]);
+
+  const formFieldsWarningMessage = useMemo(() => {
+    const submissionCount = task?.submissionCount ?? 0;
+    if (submissionCount <= 0) {
+      return null;
+    }
+
+    return `יש כבר ${submissionCount} תשובות לטופס זה. שינוי השדות עלול לפגוע בנתונים קיימים.`;
+  }, [task?.submissionCount]);
 
   useEffect(() => {
     const session = getSession();
@@ -74,7 +114,9 @@ export default function EditTaskPage() {
           return;
         }
 
+        const loadedFormFields = loadedTask.formFields ?? [];
         setTask(loadedTask);
+        setInitialFormFields(loadedFormFields);
       } catch {
         setErrorMessage("שגיאה בטעינת המטלה. נסה שוב.");
       } finally {
@@ -89,7 +131,7 @@ export default function EditTaskPage() {
     void router.push("/mytasks");
   };
 
-  const handleUpdateTask = async (formData: TaskFormData) => {
+  const performUpdate = async (formData: TaskFormData) => {
     if (!user || !task) {
       return;
     }
@@ -120,6 +162,37 @@ export default function EditTaskPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleUpdateTask = async (formData: TaskFormData) => {
+    const submissionCount = task?.submissionCount ?? 0;
+    const formFieldsChanged = haveFormFieldsChanged(
+      initialFormFields,
+      formData.formFields,
+    );
+
+    if (submissionCount > 0 && formFieldsChanged) {
+      setPendingFormData(formData);
+      setIsConfirmFormEditOpen(true);
+      return;
+    }
+
+    await performUpdate(formData);
+  };
+
+  const handleConfirmFormEdit = async () => {
+    if (!pendingFormData) {
+      return;
+    }
+
+    setIsConfirmFormEditOpen(false);
+    await performUpdate(pendingFormData);
+    setPendingFormData(null);
+  };
+
+  const handleCancelFormEdit = () => {
+    setIsConfirmFormEditOpen(false);
+    setPendingFormData(null);
   };
 
   if (!user) {
@@ -159,14 +232,11 @@ export default function EditTaskPage() {
             <TaskForm
               mode="edit"
               isSubmitting={isSubmitting}
-              initialValues={{
-                title: task.title,
-                content: task.content,
-                dueDate: toDatetimeLocalValue(task.dueDate),
-                assignedTeams: task.assignedTeams,
-                assignedUsers: task.assignedUsers,
-                formFields: task.formFields ?? [],
-              }}
+              taskId={task.id}
+              userId={user.id}
+              initialMedia={task.media}
+              formFieldsWarningMessage={formFieldsWarningMessage}
+              initialValues={initialFormValues}
               onCancel={handleCancel}
               onError={(message) => setErrorMessage(message)}
               onSubmit={(formData) => void handleUpdateTask(formData)}
@@ -174,6 +244,34 @@ export default function EditTaskPage() {
           )}
         </Container>
       </AppLayout>
+      <Dialog
+        open={isConfirmFormEditOpen}
+        onClose={handleCancelFormEdit}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>שינוי שדות הטופס</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            כבר התקבלו {task?.submissionCount ?? 0} תשובות לטופס זה. שינוי השדות
+            עלול לגרום לתשובות קיימות להיראות לא שלמות או לא תקינות. האם להמשיך
+            בשמירה?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={handleCancelFormEdit} disabled={isSubmitting}>
+            ביטול
+          </Button>
+          <Button
+            variant="contained"
+            color="warning"
+            disabled={isSubmitting}
+            onClick={() => void handleConfirmFormEdit()}
+          >
+            {isSubmitting ? "שומר..." : "שמור בכל זאת"}
+          </Button>
+        </DialogActions>
+      </Dialog>
       <Snackbar
         open={errorMessage !== null}
         autoHideDuration={5000}

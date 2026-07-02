@@ -12,6 +12,7 @@ import {
   Button,
   List,
   ListItem,
+  ListItemButton,
   ListItemIcon,
   ListItemText,
   ToggleButton,
@@ -29,7 +30,11 @@ interface TaskCompletionsDialogProps {
   taskTitle: string;
   isLoading: boolean;
   assignees: TaskAssigneeStatus[];
+  hasFormFields?: boolean;
+  submittedUserIds?: string[];
   onClose: () => void;
+  onViewSubmission?: (userId: string) => void;
+  onViewAllSubmissions?: () => void;
 }
 
 function formatAssigneeStatus(assignee: TaskAssigneeStatus): string {
@@ -71,10 +76,28 @@ export default function TaskCompletionsDialog({
   taskTitle,
   isLoading,
   assignees,
+  hasFormFields = false,
+  submittedUserIds = [],
   onClose,
+  onViewSubmission,
+  onViewAllSubmissions,
 }: TaskCompletionsDialogProps) {
   const [filter, setFilter] = useState<CompletionFilter>("all");
   const [didCopy, setDidCopy] = useState(false);
+
+  const submittedUserIdSet = useMemo(
+    () => new Set(submittedUserIds),
+    [submittedUserIds],
+  );
+
+  const completedCount = useMemo(
+    () => assignees.filter((assignee) => assignee.completed).length,
+    [assignees],
+  );
+
+  const submissionCount = hasFormFields
+    ? submittedUserIds.length
+    : completedCount;
 
   useEffect(() => {
     if (open) {
@@ -118,6 +141,13 @@ export default function TaskCompletionsDialog({
           {taskTitle}
         </Typography>
         {!isLoading && assignees.length > 0 && (
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            {hasFormFields
+              ? `${submissionCount} מתוך ${assignees.length} הגישו טופס`
+              : `${completedCount} מתוך ${assignees.length} ביצעו את המטלה`}
+          </Typography>
+        )}
+        {!isLoading && assignees.length > 0 && (
           <ToggleButtonGroup
             value={filter}
             exclusive
@@ -149,39 +179,87 @@ export default function TaskCompletionsDialog({
           </Typography>
         ) : (
           <List disablePadding>
-            {filteredAssignees.map((assignee) => (
-              <ListItem key={assignee.userId} disableGutters divider>
-                <ListItemIcon sx={{ minWidth: 36 }}>
-                  {assignee.completed ? (
-                    <CheckCircleIcon color="success" fontSize="small" />
-                  ) : (
-                    <RadioButtonUncheckedIcon color="disabled" fontSize="small" />
-                  )}
-                </ListItemIcon>
-                <ListItemText
-                  primary={`${assignee.assigneeName}`.trim()}
-                  secondary={
-                    <>
-                      {`פלוגת ${formatPlatoonLabel(assignee.platoon)}, צוות ${assignee.team}`}
-                      <br />
-                      {formatAssigneeStatus(assignee)}
-                    </>
-                  }
-                />
-              </ListItem>
-            ))}
+            {filteredAssignees.map((assignee) => {
+              const hasSubmission =
+                hasFormFields &&
+                assignee.completed &&
+                submittedUserIdSet.has(assignee.userId);
+              const canViewSubmission =
+                hasSubmission && onViewSubmission !== undefined;
+
+              const listContent = (
+                <>
+                  <ListItemIcon sx={{ minWidth: 36 }}>
+                    {assignee.completed ? (
+                      <CheckCircleIcon color="success" fontSize="small" />
+                    ) : (
+                      <RadioButtonUncheckedIcon color="disabled" fontSize="small" />
+                    )}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={`${assignee.assigneeName}`.trim()}
+                    secondary={
+                      <>
+                        {`פלוגת ${formatPlatoonLabel(assignee.platoon)}, צוות ${assignee.team}`}
+                        <br />
+                        {formatAssigneeStatus(assignee)}
+                        {canViewSubmission ? (
+                          <>
+                            <br />
+                            <Typography
+                              component="span"
+                              variant="caption"
+                              color="primary"
+                            >
+                              לחץ לצפייה בתשובה
+                            </Typography>
+                          </>
+                        ) : null}
+                      </>
+                    }
+                  />
+                </>
+              );
+
+              if (canViewSubmission) {
+                return (
+                  <ListItem key={assignee.userId} disablePadding divider>
+                    <ListItemButton
+                      onClick={() => onViewSubmission(assignee.userId)}
+                    >
+                      {listContent}
+                    </ListItemButton>
+                  </ListItem>
+                );
+              }
+
+              return (
+                <ListItem key={assignee.userId} disableGutters divider>
+                  {listContent}
+                </ListItem>
+              );
+            })}
           </List>
         )}
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2, justifyContent: "space-between" }}>
-        <Button
-          variant="outlined"
-          startIcon={<ContentCopyIcon />}
-          disabled={isLoading || filteredAssignees.length === 0}
-          onClick={() => void handleCopyList()}
-        >
-          {didCopy ? "הועתק!" : "העתק רשימה"}
-        </Button>
+        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+          <Button
+            variant="outlined"
+            startIcon={<ContentCopyIcon />}
+            disabled={isLoading || filteredAssignees.length === 0}
+            onClick={() => void handleCopyList()}
+          >
+            {didCopy ? "הועתק!" : "העתק רשימה"}
+          </Button>
+          {hasFormFields &&
+          onViewAllSubmissions &&
+          submissionCount > 0 ? (
+            <Button variant="outlined" onClick={onViewAllSubmissions}>
+              צפה בכל התשובות
+            </Button>
+          ) : null}
+        </Box>
         <Button onClick={onClose}>סגור</Button>
       </DialogActions>
     </Dialog>

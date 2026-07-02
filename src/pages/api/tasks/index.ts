@@ -37,9 +37,15 @@ export default async function handler(
     return res.status(400).json({ error: "Title is required" });
   }
 
-  if (!isNonEmptyString(content)) {
-    return res.status(400).json({ error: "Content is required" });
+  if (
+    content !== undefined &&
+    content !== null &&
+    typeof content !== "string"
+  ) {
+    return res.status(400).json({ error: "Content must be a string" });
   }
+
+  const trimmedContent = typeof content === "string" ? content.trim() : "";
 
   if (!isNonEmptyString(creatorId)) {
     return res.status(400).json({ error: "Creator ID is required" });
@@ -91,7 +97,7 @@ export default async function handler(
 
     const taskRef = await db.collection("tasks").add({
       title: title.trim(),
-      content: content.trim(),
+      content: trimmedContent,
       creatorId: trimmedCreatorId,
       creatorName: creatorData.fullname,
       creatorRank: creatorData.rank,

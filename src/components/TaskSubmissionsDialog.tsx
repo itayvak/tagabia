@@ -22,6 +22,8 @@ interface TaskSubmissionsDialogProps {
   isLoading: boolean;
   formFields: TaskFormField[];
   submissions: TaskSubmissionEntry[];
+  totalAssignees?: number;
+  initialUserId?: string | null;
   onClose: () => void;
 }
 
@@ -31,15 +33,27 @@ export default function TaskSubmissionsDialog({
   isLoading,
   formFields,
   submissions,
+  totalAssignees,
+  initialUserId = null,
   onClose,
 }: TaskSubmissionsDialogProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
-    if (open) {
-      setCurrentIndex(0);
+    if (!open) {
+      return;
     }
-  }, [open]);
+
+    if (initialUserId && submissions.length > 0) {
+      const index = submissions.findIndex(
+        (submission) => submission.userId === initialUserId,
+      );
+      setCurrentIndex(index >= 0 ? index : 0);
+      return;
+    }
+
+    setCurrentIndex(0);
+  }, [open, initialUserId, submissions]);
 
   useEffect(() => {
     if (currentIndex >= submissions.length && submissions.length > 0) {
@@ -51,14 +65,20 @@ export default function TaskSubmissionsDialog({
     submissions.length > 0 ? submissions[currentIndex] : null;
   const hasPrevious = currentIndex > 0;
   const hasNext = currentIndex < submissions.length - 1;
+  const assigneeTotal = totalAssignees ?? submissions.length;
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>תשובות לטופס</DialogTitle>
       <DialogContent>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
           {taskTitle}
         </Typography>
+        {!isLoading && assigneeTotal > 0 ? (
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            {submissions.length} מתוך {assigneeTotal} ממונים הגישו טופס
+          </Typography>
+        ) : null}
 
         {isLoading ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>

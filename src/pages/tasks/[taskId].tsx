@@ -21,6 +21,7 @@ import ShareIcon from "@mui/icons-material/Share";
 import AppLayout from "@/components/AppLayout";
 import LinkifiedText from "@/components/LinkifiedText";
 import TaskFormRenderer from "@/components/TaskFormRenderer";
+import TaskMediaAttachments from "@/components/TaskMediaAttachments";
 import { getSession } from "@/lib/authStorage";
 import { completeTask } from "@/lib/completeTask";
 import { fetchTask } from "@/lib/fetchTask";
@@ -283,6 +284,7 @@ export default function TaskPage() {
               </Typography>
               <Divider sx={{ my: 3 }} />
               <LinkifiedText text={task.content} />
+              <TaskMediaAttachments media={task.media} />
             </Box>
             {hasFormFields ? (
               <Box>

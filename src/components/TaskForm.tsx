@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
-import { Box, Button, CircularProgress, TextField } from "@mui/material";
+import { Alert, Box, Button, CircularProgress, TextField } from "@mui/material";
 import TaskAssigneePicker from "@/components/TaskAssigneePicker";
 import TaskFormFieldBuilder, {
   toBuilderFormFields,
@@ -7,7 +7,9 @@ import TaskFormFieldBuilder, {
   validateBuilderFields,
   type BuilderFormField,
 } from "@/components/TaskFormFieldBuilder";
+import TaskMediaUpload from "@/components/TaskMediaUpload";
 import { hasTaskAssignment } from "@/lib/assigneeTeams";
+import type { TaskMedia } from "@/types/task";
 import type { TaskFormFieldInput } from "@/types/taskForm";
 
 export interface TaskFormData {
@@ -17,12 +19,18 @@ export interface TaskFormData {
   assignedTeams: number[];
   assignedUsers: string[];
   formFields: TaskFormFieldInput[];
+  pendingMedia: File[];
 }
 
 interface TaskFormProps {
   mode: "create" | "edit";
   isSubmitting: boolean;
+  isUploadingMedia?: boolean;
+  taskId?: string;
+  userId?: string;
   initialValues?: TaskFormData;
+  initialMedia?: TaskMedia[];
+  formFieldsWarningMessage?: string | null;
   onCancel: () => void;
   onSubmit: (task: TaskFormData) => void;
   onError?: (message: string) => void;
@@ -35,12 +43,18 @@ const emptyForm: TaskFormData = {
   assignedTeams: [],
   assignedUsers: [],
   formFields: [],
+  pendingMedia: [],
 };
 
 export default function TaskForm({
   mode,
   isSubmitting,
+  isUploadingMedia = false,
+  taskId,
+  userId,
   initialValues,
+  initialMedia = [],
+  formFieldsWarningMessage = null,
   onCancel,
   onSubmit,
   onError,
@@ -51,24 +65,20 @@ export default function TaskForm({
   const [assignedTeams, setAssignedTeams] = useState<number[]>([]);
   const [assignedUsers, setAssignedUsers] = useState<string[]>([]);
   const [formFields, setFormFields] = useState<BuilderFormField[]>([]);
+  const [pendingMedia, setPendingMedia] = useState<File[]>([]);
 
   useEffect(() => {
-    if (initialValues) {
-      setTitle(initialValues.title);
-      setContent(initialValues.content);
-      setDueDate(initialValues.dueDate);
-      setAssignedTeams(initialValues.assignedTeams);
-      setAssignedUsers(initialValues.assignedUsers);
-      setFormFields(toBuilderFormFields(initialValues.formFields));
+    if (!initialValues) {
       return;
     }
 
-    setTitle(emptyForm.title);
-    setContent(emptyForm.content);
-    setDueDate(emptyForm.dueDate);
-    setAssignedTeams(emptyForm.assignedTeams);
-    setAssignedUsers(emptyForm.assignedUsers);
-    setFormFields([]);
+    setTitle(initialValues.title);
+    setContent(initialValues.content);
+    setDueDate(initialValues.dueDate);
+    setAssignedTeams(initialValues.assignedTeams);
+    setAssignedUsers(initialValues.assignedUsers);
+    setFormFields(toBuilderFormFields(initialValues.formFields));
+    setPendingMedia(initialValues.pendingMedia);
   }, [initialValues]);
 
   const handleCancel = () => {
@@ -100,11 +110,25 @@ export default function TaskForm({
       assignedTeams,
       assignedUsers,
       formFields: toFormFieldInputs(formFields),
+      pendingMedia,
     });
   };
 
   const isCreate = mode === "create";
   const formId = isCreate ? "create-task-form" : "edit-task-form";
+  const isFormBusy = isSubmitting || isUploadingMedia;
+
+  const assigneePicker = (
+    <TaskAssigneePicker
+      assignedTeams={assignedTeams}
+      assignedUsers={assignedUsers}
+      onChange={({ assignedTeams: nextTeams, assignedUsers: nextUsers }) => {
+        setAssignedTeams(nextTeams);
+        setAssignedUsers(nextUsers);
+      }}
+      disabled={isFormBusy}
+    />
+  );
 
   return (
     <Box
@@ -120,7 +144,7 @@ export default function TaskForm({
         required
         fullWidth
         autoFocus
-        disabled={isSubmitting}
+        disabled={isFormBusy}
         slotProps={{
           htmlInput: { dir: "rtl" },
         }}
@@ -129,11 +153,10 @@ export default function TaskForm({
         label="תוכן"
         value={content}
         onChange={(event) => setContent(event.target.value)}
-        required
         fullWidth
         multiline
         minRows={3}
-        disabled={isSubmitting}
+        disabled={isFormBusy}
         slotProps={{
           htmlInput: { dir: "rtl" },
         }}
@@ -145,47 +168,55 @@ export default function TaskForm({
         onChange={(event) => setDueDate(event.target.value)}
         required
         fullWidth
-        disabled={isSubmitting}
+        disabled={isFormBusy}
         slotProps={{
           inputLabel: { shrink: true },
           htmlInput: { dir: "ltr" },
         }}
       />
-      <TaskAssigneePicker
-        assignedTeams={assignedTeams}
-        assignedUsers={assignedUsers}
-        onChange={({ assignedTeams: nextTeams, assignedUsers: nextUsers }) => {
-          setAssignedTeams(nextTeams);
-          setAssignedUsers(nextUsers);
-        }}
-        disabled={isSubmitting}
+      <TaskMediaUpload
+        mode={mode}
+        disabled={isFormBusy}
+        taskId={taskId}
+        userId={userId}
+        initialMedia={initialMedia}
+        pendingMedia={pendingMedia}
+        onPendingMediaChange={setPendingMedia}
+        onError={onError}
       />
+      {!isCreate ? assigneePicker : null}
+      {formFieldsWarningMessage ? (
+        <Alert severity="warning">{formFieldsWarningMessage}</Alert>
+      ) : null}
       <TaskFormFieldBuilder
         fields={formFields}
         onChange={setFormFields}
-        disabled={isSubmitting}
+        disabled={isFormBusy}
       />
+      {isCreate ? assigneePicker : null}
       <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, pt: 1 }}>
-        <Button onClick={handleCancel} disabled={isSubmitting}>
+        <Button onClick={handleCancel} disabled={isFormBusy}>
           ביטול
         </Button>
         <Button
           type="submit"
           variant="contained"
-          disabled={isSubmitting}
+          disabled={isFormBusy}
           startIcon={
-            isSubmitting ? (
+            isFormBusy ? (
               <CircularProgress size={20} color="inherit" />
             ) : undefined
           }
         >
-          {isSubmitting
-            ? isCreate
-              ? "יוצר..."
-              : "שומר..."
-            : isCreate
-              ? "יצירה"
-              : "שמירה"}
+          {isUploadingMedia
+            ? "מעלה קבצים..."
+            : isSubmitting
+              ? isCreate
+                ? "יוצר..."
+                : "שומר..."
+              : isCreate
+                ? "יצירה"
+                : "שמירה"}
         </Button>
       </Box>
     </Box>

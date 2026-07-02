@@ -196,3 +196,38 @@ export function areRequiredFormAnswersFilled(
       return value.trim().length > 0;
     });
 }
+
+function normalizeFormFieldsForCompare(
+  fields: TaskFormFieldInput[],
+): Array<{
+  id?: string;
+  type: TaskFormFieldType;
+  label: string;
+  required: boolean;
+  order: number;
+  options?: string[];
+}> {
+  return fields.map((field, index) => ({
+    id: field.id,
+    type: field.type,
+    label: field.label.trim(),
+    required: field.required,
+    order: index,
+    options:
+      field.type === "multipleChoice" || field.type === "multiSelect"
+        ? (field.options ?? [])
+            .map((option) => option.trim())
+            .filter((option) => option.length > 0)
+        : undefined,
+  }));
+}
+
+export function haveFormFieldsChanged(
+  initial: TaskFormFieldInput[],
+  current: TaskFormFieldInput[],
+): boolean {
+  return (
+    JSON.stringify(normalizeFormFieldsForCompare(initial)) !==
+    JSON.stringify(normalizeFormFieldsForCompare(current))
+  );
+}

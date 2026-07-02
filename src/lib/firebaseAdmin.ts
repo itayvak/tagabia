@@ -1,7 +1,10 @@
 import { cert, getApps, initializeApp, type App } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
 
 const projectId = process.env.FIREBASE_PROJECT_ID ?? "tagabia-a5f3f";
+const storageBucket =
+  process.env.FIREBASE_STORAGE_BUCKET ?? "tagabia-a5f3f.firebasestorage.app";
 
 function initFirebaseAdmin(): App {
   const existingApp = getApps()[0];
@@ -17,9 +20,14 @@ function initFirebaseAdmin(): App {
   return initializeApp({
     credential: cert(JSON.parse(serviceAccountKey)),
     projectId,
+    storageBucket,
   });
 }
 
 export function getAdminFirestore() {
   return getFirestore(initFirebaseAdmin());
+}
+
+export function getAdminStorage() {
+  return getStorage(initFirebaseAdmin());
 }

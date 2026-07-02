@@ -506,7 +506,7 @@ export default function TaskAssigneePicker({
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-      <Typography variant="subtitle2">שיוך לצוערים</Typography>
+      <Typography variant="subtitle1">שיוך לצוערים</Typography>
 
       <AssigneeSelectionRow
         label="כל הגדוד"

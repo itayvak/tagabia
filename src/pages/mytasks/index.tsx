@@ -13,9 +13,12 @@ import {
   DialogContentText,
   DialogTitle,
   Fab,
+  InputAdornment,
   Snackbar,
+  TextField,
   Typography,
 } from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
 import AppLayout from "@/components/AppLayout";
 import { APP_BOTTOM_BAR_HEIGHT } from "@/components/AppBottomBar";
 import CreatedTaskCard from "@/components/CreatedTaskCard";
@@ -65,8 +68,12 @@ export default function MyTasksPage() {
   >([]);
   const [submissions, setSubmissions] = useState<TaskSubmissionEntry[]>([]);
   const [isLoadingSubmissions, setIsLoadingSubmissions] = useState(false);
+  const [submissionsInitialUserId, setSubmissionsInitialUserId] = useState<
+    string | null
+  >(null);
   const [deletingTask, setDeletingTask] = useState<PublicTask | null>(null);
   const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const session = getSession();
@@ -112,13 +119,26 @@ export default function MyTasksPage() {
     void loadTasks();
   }, [loadTasks]);
 
-  const sortedTasks = useMemo(
-    () =>
-      [...tasks].sort(
-        (a, b) =>
-          new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime(),
-      ),
-    [tasks],
+  const filteredTasks = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    const sorted = [...tasks].sort(
+      (a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime(),
+    );
+
+    if (!query) {
+      return sorted;
+    }
+
+    return sorted.filter(
+      (task) =>
+        task.title.toLowerCase().includes(query) ||
+        task.content.toLowerCase().includes(query),
+    );
+  }, [tasks, searchQuery]);
+
+  const submittedUserIds = useMemo(
+    () => submissions.map((submission) => submission.userId),
+    [submissions],
   );
 
   const handleOpenCompletions = async (task: PublicTask) => {
@@ -128,25 +148,45 @@ export default function MyTasksPage() {
 
     setCompletionsTask(task);
     setAssigneeStatuses([]);
+    setSubmissions([]);
+    setSubmissionFormFields([]);
     setIsLoadingCompletions(true);
     setErrorMessage(null);
 
     try {
-      const { response, data } = await fetchTaskCompletions(
-        task.id,
-        user.id,
-      );
+      const completionsPromise = fetchTaskCompletions(task.id, user.id);
+      const submissionsPromise = task.hasFormFields
+        ? fetchTaskSubmissions(task.id, user.id)
+        : null;
 
-      if (!response.ok) {
-        const { error } = data as ListTaskCompletionsErrorResponse;
+      const completionsResult = await completionsPromise;
+      const submissionsResult = submissionsPromise
+        ? await submissionsPromise
+        : null;
+
+      if (!completionsResult.response.ok) {
+        const { error } = completionsResult.data as ListTaskCompletionsErrorResponse;
         setErrorMessage(getTaskErrorMessage(error ?? "טעינת הביצועים נכשלה"));
         setCompletionsTask(null);
         return;
       }
 
       setAssigneeStatuses(
-        (data as ListTaskCompletionsSuccessResponse).assignees,
+        (completionsResult.data as ListTaskCompletionsSuccessResponse).assignees,
       );
+
+      if (submissionsResult) {
+        if (!submissionsResult.response.ok) {
+          const { error } = submissionsResult.data as ListTaskSubmissionsErrorResponse;
+          setErrorMessage(getTaskErrorMessage(error ?? "טעינת התשובות נכשלה"));
+          return;
+        }
+
+        const successData =
+          submissionsResult.data as ListTaskSubmissionsSuccessResponse;
+        setSubmissionFormFields(successData.formFields);
+        setSubmissions(successData.submissions);
+      }
     } catch {
       setErrorMessage("שגיאה בטעינת הביצועים. נסה שוב.");
       setCompletionsTask(null);
@@ -158,44 +198,104 @@ export default function MyTasksPage() {
   const handleCloseCompletions = () => {
     setCompletionsTask(null);
     setAssigneeStatuses([]);
+    setSubmissions([]);
+    setSubmissionFormFields([]);
   };
 
-  const handleOpenSubmissions = async (task: PublicTask) => {
+  const handleOpenSubmissions = async (
+    task: PublicTask,
+    initialUserId: string | null = null,
+  ) => {
     if (!user) {
       return;
     }
 
     setSubmissionsTask(task);
+    setSubmissionsInitialUserId(initialUserId);
     setSubmissionFormFields([]);
     setSubmissions([]);
     setIsLoadingSubmissions(true);
     setErrorMessage(null);
 
-    try {
-      const { response, data } = await fetchTaskSubmissions(task.id, user.id);
+    const needsAssigneeCount = assigneeStatuses.length === 0 || completionsTask?.id !== task.id;
 
-      if (!response.ok) {
-        const { error } = data as ListTaskSubmissionsErrorResponse;
+    if (needsAssigneeCount) {
+      setIsLoadingCompletions(true);
+    }
+
+    try {
+      const submissionsPromise = fetchTaskSubmissions(task.id, user.id);
+      const completionsPromise = needsAssigneeCount
+        ? fetchTaskCompletions(task.id, user.id)
+        : null;
+
+      const submissionsResult = await submissionsPromise;
+      const completionsResult = completionsPromise
+        ? await completionsPromise
+        : null;
+
+      if (!submissionsResult.response.ok) {
+        const { error } = submissionsResult.data as ListTaskSubmissionsErrorResponse;
         setErrorMessage(getTaskErrorMessage(error ?? "טעינת התשובות נכשלה"));
         setSubmissionsTask(null);
         return;
       }
 
-      const successData = data as ListTaskSubmissionsSuccessResponse;
+      const successData =
+        submissionsResult.data as ListTaskSubmissionsSuccessResponse;
       setSubmissionFormFields(successData.formFields);
       setSubmissions(successData.submissions);
+
+      if (completionsResult) {
+        if (!completionsResult.response.ok) {
+          const { error } = completionsResult.data as ListTaskCompletionsErrorResponse;
+          setErrorMessage(getTaskErrorMessage(error ?? "טעינת הביצועים נכשלה"));
+          setSubmissionsTask(null);
+          return;
+        }
+
+        setAssigneeStatuses(
+          (completionsResult.data as ListTaskCompletionsSuccessResponse).assignees,
+        );
+      }
     } catch {
       setErrorMessage("שגיאה בטעינת התשובות. נסה שוב.");
       setSubmissionsTask(null);
     } finally {
       setIsLoadingSubmissions(false);
+      if (needsAssigneeCount) {
+        setIsLoadingCompletions(false);
+      }
     }
+  };
+
+  const handleViewSubmissionFromCompletions = (userId: string) => {
+    if (!completionsTask) {
+      return;
+    }
+
+    setSubmissionsInitialUserId(userId);
+    setSubmissionsTask(completionsTask);
+    setCompletionsTask(null);
+    setIsLoadingSubmissions(false);
+  };
+
+  const handleViewAllSubmissionsFromCompletions = () => {
+    if (!completionsTask) {
+      return;
+    }
+
+    setSubmissionsInitialUserId(null);
+    setSubmissionsTask(completionsTask);
+    setCompletionsTask(null);
+    setIsLoadingSubmissions(false);
   };
 
   const handleCloseSubmissions = () => {
     setSubmissionsTask(null);
     setSubmissionFormFields([]);
     setSubmissions([]);
+    setSubmissionsInitialUserId(null);
   };
 
   const handleOpenDelete = (task: PublicTask) => {
@@ -272,18 +372,40 @@ export default function MyTasksPage() {
           </Typography>
         ) : (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            {sortedTasks.map((task) => (
-              <CreatedTaskCard
-                key={task.id}
-                task={task}
-                isDeleting={deletingTaskId === task.id}
-                onOpen={(taskId) => void router.push(`/tasks/${taskId}`)}
-                onEdit={() => void router.push(`/mytasks/${task.id}/edit`)}
-                onViewCompletions={() => void handleOpenCompletions(task)}
-                onViewSubmissions={() => void handleOpenSubmissions(task)}
-                onDelete={() => handleOpenDelete(task)}
-              />
-            ))}
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="חיפוש מטלות..."
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon fontSize="small" color="action" />
+                    </InputAdornment>
+                  ),
+                },
+              }}
+            />
+            {filteredTasks.length === 0 ? (
+              <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
+                לא נמצאו מטלות
+              </Typography>
+            ) : (
+              filteredTasks.map((task) => (
+                <CreatedTaskCard
+                  key={task.id}
+                  task={task}
+                  isDeleting={deletingTaskId === task.id}
+                  onOpen={(taskId) => void router.push(`/tasks/${taskId}`)}
+                  onEdit={() => void router.push(`/mytasks/${task.id}/edit`)}
+                  onViewCompletions={() => void handleOpenCompletions(task)}
+                  onViewSubmissions={() => void handleOpenSubmissions(task)}
+                  onDelete={() => handleOpenDelete(task)}
+                />
+              ))
+            )}
           </Box>
         )}
       </Container>
@@ -331,7 +453,19 @@ export default function MyTasksPage() {
         taskTitle={completionsTask?.title ?? ""}
         isLoading={isLoadingCompletions}
         assignees={assigneeStatuses}
+        hasFormFields={completionsTask?.hasFormFields ?? false}
+        submittedUserIds={submittedUserIds}
         onClose={handleCloseCompletions}
+        onViewSubmission={
+          completionsTask?.hasFormFields
+            ? handleViewSubmissionFromCompletions
+            : undefined
+        }
+        onViewAllSubmissions={
+          completionsTask?.hasFormFields
+            ? handleViewAllSubmissionsFromCompletions
+            : undefined
+        }
       />
       <TaskSubmissionsDialog
         open={submissionsTask !== null}
@@ -339,6 +473,8 @@ export default function MyTasksPage() {
         isLoading={isLoadingSubmissions}
         formFields={submissionFormFields}
         submissions={submissions}
+        totalAssignees={assigneeStatuses.length}
+        initialUserId={submissionsInitialUserId}
         onClose={handleCloseSubmissions}
       />
       </AppLayout>

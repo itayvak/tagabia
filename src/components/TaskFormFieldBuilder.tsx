@@ -172,7 +172,7 @@ export default function TaskFormFieldBuilder({
           gap: 1,
         }}
       >
-        <Typography variant="subtitle1">שדות טופס (אופציונלי)</Typography>
+        <Typography variant="subtitle1">שדות טופס</Typography>
         <Button
           size="small"
           startIcon={<AddIcon />}

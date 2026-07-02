@@ -2,6 +2,14 @@ import type { TaskFormField, TaskFormFieldInput, TaskSubmission } from "@/types/
 import type { Platoon, Role } from "@/types/user";
 import type { Timestamp } from "firebase-admin/firestore";
 
+export interface TaskMedia {
+  id: string;
+  name: string;
+  url: string;
+  contentType: string;
+  size: number;
+}
+
 export interface FirestoreTask {
   title: string;
   content: string;
@@ -13,6 +21,7 @@ export interface FirestoreTask {
   assignedTeams: number[];
   assignedUsers: string[];
   hasFormFields?: boolean;
+  media?: TaskMedia[];
 }
 
 export interface PublicTask {
@@ -28,6 +37,8 @@ export interface PublicTask {
   assignedUsers: string[];
   hasFormFields: boolean;
   formFields?: TaskFormField[];
+  submissionCount?: number;
+  media: TaskMedia[];
 }
 
 export interface AssignedTask extends PublicTask {

@@ -2,8 +2,8 @@ export function getTaskErrorMessage(error: string): string {
   switch (error) {
     case "Title is required":
       return "יש להזין כותרת";
-    case "Content is required":
-      return "יש להזין תוכן";
+    case "Content must be a string":
+      return "תוכן המטלה לא תקין";
     case "Due date is required":
       return "יש לבחור תאריך ושעת יעד";
     case "Invalid due date":
@@ -55,6 +55,22 @@ export function getTaskErrorMessage(error: string): string {
       return "שדה בחירה חייב לכלול לפחות שתי אפשרויות";
     case "Form answers are required":
       return "יש למלא את הטופס לפני סימון המטלה כבוצעה";
+    case "File is required":
+      return "יש לבחור קובץ להעלאה";
+    case "File type is not allowed":
+      return "סוג הקובץ אינו נתמך. ניתן להעלות תמונות, סרטונים וקבצי PDF";
+    case "File is too large":
+      return "הקובץ גדול מדי (מקסימום 10MB)";
+    case "Maximum number of media files reached":
+      return "הגעת למספר הקבצים המקסימלי למטלה";
+    case "Media not found":
+      return "הקובץ לא נמצא";
+    case "Upload task media failed":
+      return "העלאת הקובץ נכשלה";
+    case "Delete task media failed":
+      return "מחיקת הקובץ נכשלה";
+    case "Media ID is required":
+      return "מזהה קובץ חסר";
     default:
       if (error.startsWith("Required form field is missing:")) {
         return "יש למלא את כל שדות החובה בטופס";
