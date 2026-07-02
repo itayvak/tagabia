@@ -1,5 +1,7 @@
 export const MAX_TASK_MEDIA_FILES = 10;
-export const MAX_TASK_MEDIA_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+export const MAX_TASK_MEDIA_FILE_SIZE_MB = 20;
+export const MAX_TASK_MEDIA_FILE_SIZE_BYTES =
+  MAX_TASK_MEDIA_FILE_SIZE_MB * 1024 * 1024;
 
 const ALLOWED_CONTENT_TYPE_PREFIXES = ["image/", "video/"] as const;
 const ALLOWED_CONTENT_TYPES = new Set(["application/pdf"]);

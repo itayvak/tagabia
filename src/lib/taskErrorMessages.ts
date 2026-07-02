@@ -1,3 +1,5 @@
+import { MAX_TASK_MEDIA_FILE_SIZE_MB } from "@/lib/taskMediaValidation";
+
 export function getTaskErrorMessage(error: string): string {
   switch (error) {
     case "Title is required":
@@ -60,7 +62,7 @@ export function getTaskErrorMessage(error: string): string {
     case "File type is not allowed":
       return "סוג הקובץ אינו נתמך. ניתן להעלות תמונות, סרטונים וקבצי PDF";
     case "File is too large":
-      return "הקובץ גדול מדי (מקסימום 10MB)";
+      return `הקובץ גדול מדי (מקסימום ${MAX_TASK_MEDIA_FILE_SIZE_MB}MB)`;
     case "Maximum number of media files reached":
       return "הגעת למספר הקבצים המקסימלי למטלה";
     case "Media not found":

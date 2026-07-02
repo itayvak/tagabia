@@ -17,6 +17,7 @@ import { getTaskErrorMessage } from "@/lib/taskErrorMessages";
 import {
   formatTaskMediaFileSize,
   MAX_TASK_MEDIA_FILES,
+  MAX_TASK_MEDIA_FILE_SIZE_MB,
   validateTaskMediaFile,
 } from "@/lib/taskMediaValidation";
 import { uploadTaskMedia } from "@/lib/uploadTaskMedia";
@@ -200,7 +201,8 @@ export default function TaskMediaUpload({
     <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
       <Typography variant="subtitle1">קבצים מצורפים</Typography>
       <Typography variant="caption" color="text.secondary">
-        ניתן להעלות עד {MAX_TASK_MEDIA_FILES} קבצים (תמונות, סרטונים, PDF) עד 10MB
+        ניתן להעלות עד {MAX_TASK_MEDIA_FILES} קבצים (תמונות, סרטונים, PDF) עד{" "}
+        {MAX_TASK_MEDIA_FILE_SIZE_MB}MB
         לכל קובץ
       </Typography>
       <Button
