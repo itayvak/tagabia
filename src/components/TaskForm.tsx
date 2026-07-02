@@ -162,7 +162,7 @@ export default function TaskForm({
         }}
       />
       <TextField
-        label="תאריך ושעת יעד"
+        label='תג"ב'
         type="datetime-local"
         value={dueDate}
         onChange={(event) => setDueDate(event.target.value)}
@@ -215,7 +215,7 @@ export default function TaskForm({
                 ? "יוצר..."
                 : "שומר..."
               : isCreate
-                ? "יצירה"
+                ? "יאללה להטיל!"
                 : "שמירה"}
         </Button>
       </Box>

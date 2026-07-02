@@ -11,11 +11,15 @@ export interface FirestoreUser {
 
 export type Role = "peasant" 
 | "developer" // מפתח מערכת
-| "safetyPlatoon" // קצין בטיחות פלוגתי 
-| "logisticsPlatoon" // קצין לוגיסטיקה פלוגתי 
-| "logisticsBattalion" // קצין לוגיסטיקה גדודי
-| "teamCommander" // מפקד צוות
 | "platoonCommander" // מפקד פלוגה
+| "safetyPlatoon" // קצין בטיחות פלוגתי
+| "logisticsPlatoon" // קצין לוגיסטיקה פלוגתי
+| "medicalPlatoon" // קצין רפואה פלוגתי
+| "sportsPlatoon" // קצין אימון גופני פלוגתי
+| "tuitionPlatoon" // קצין הדרכה פלוגתי
+| "teamCommander" // מפקד צוות
+| "weeklyTeamCommander" // מפקד מתנסה שבועי
+| "tuitionTeam" // קצין הדרכה צוותי
 
 export interface PublicUser {
   id: string;

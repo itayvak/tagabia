@@ -18,11 +18,13 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import ImageIcon from "@mui/icons-material/Image";
 import SearchIcon from "@mui/icons-material/Search";
 import AppLayout from "@/components/AppLayout";
 import { APP_BOTTOM_BAR_HEIGHT } from "@/components/AppBottomBar";
 import CreatedTaskCard from "@/components/CreatedTaskCard";
 import TaskCompletionsDialog from "@/components/TaskCompletionsDialog";
+import TaskReportShareDialog from "@/components/TaskReportShareDialog";
 import TaskSubmissionsDialog from "@/components/TaskSubmissionsDialog";
 import { getSession } from "@/lib/authStorage";
 import { deleteTask } from "@/lib/deleteTask";
@@ -74,6 +76,8 @@ export default function MyTasksPage() {
   const [deletingTask, setDeletingTask] = useState<PublicTask | null>(null);
   const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const session = getSession();
@@ -372,22 +376,33 @@ export default function MyTasksPage() {
           </Typography>
         ) : (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <TextField
-              fullWidth
-              size="small"
-              placeholder="חיפוש מטלות..."
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon fontSize="small" color="action" />
-                    </InputAdornment>
-                  ),
-                },
-              }}
-            />
+            <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="חיפוש מטלות..."
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon fontSize="small" color="action" />
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+              />
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<ImageIcon />}
+                onClick={() => setIsReportDialogOpen(true)}
+                sx={{ flexShrink: 0, whiteSpace: "nowrap" }}
+              >
+                שתף דוח
+              </Button>
+            </Box>
             {filteredTasks.length === 0 ? (
               <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
                 לא נמצאו מטלות
@@ -477,6 +492,14 @@ export default function MyTasksPage() {
         initialUserId={submissionsInitialUserId}
         onClose={handleCloseSubmissions}
       />
+      <TaskReportShareDialog
+        open={isReportDialogOpen}
+        tasks={tasks}
+        userId={user.id}
+        onClose={() => setIsReportDialogOpen(false)}
+        onError={setErrorMessage}
+        onSuccess={setSuccessMessage}
+      />
       </AppLayout>
       <Snackbar
         open={errorMessage !== null}
@@ -491,6 +514,21 @@ export default function MyTasksPage() {
           sx={{ width: "100%" }}
         >
           {errorMessage}
+        </Alert>
+      </Snackbar>
+      <Snackbar
+        open={successMessage !== null}
+        autoHideDuration={4000}
+        onClose={() => setSuccessMessage(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSuccessMessage(null)}
+          severity="success"
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          {successMessage}
         </Alert>
       </Snackbar>
     </>
