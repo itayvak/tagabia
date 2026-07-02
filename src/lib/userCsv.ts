@@ -13,13 +13,16 @@ export const USER_CSV_HEADERS = [
 ] as const;
 
 const ROLES: Role[] = [
-  "peasant",
-  "developer",
-  "safetyPlatoon",
-  "logisticsPlatoon",
-  "logisticsBattalion",
-  "teamCommander",
-  "platoonCommander",
+  "developer", // מפתח מערכת
+  "platoonCommander", // מפקד פלוגה
+  "safetyPlatoon", // קצין בטיחות פלוגתי
+  "logisticsPlatoon", // קצין לוגיסטיקה פלוגתי
+  "medicalPlatoon", // קצין רפואה פלוגתי
+  "sportsPlatoon", // קצין אימון גופני פלוגתי
+  "tuitionPlatoon", // קצין הדרכה פלוגתי
+  "teamCommander", // מפקד צוות
+  "weeklyTeamCommander", // מפקד מתנסה שבועי
+  "tuitionTeam", // קצין הדרכה צוותי
 ];
 
 const PASSWORD_HASH_PATTERN = /^[a-fA-F0-9]{64}$/;
