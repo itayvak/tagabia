@@ -6,6 +6,7 @@ import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import HomeIcon from "@mui/icons-material/Home";
 import { BottomNavigation, BottomNavigationAction, Paper } from "@mui/material";
 import { isAdminUser } from "@/lib/admin";
+import { canManageTasks } from "@/lib/roles";
 import type { PublicUser } from "@/types/user";
 
 export const APP_BOTTOM_BAR_HEIGHT = 56;
@@ -23,7 +24,7 @@ type NavItem = {
 
 export default function AppBottomBar({ user }: AppBottomBarProps) {
   const router = useRouter();
-  const showMyTasks = user.role !== "peasant";
+  const showMyTasks = canManageTasks(user.role);
   const showAdmin = isAdminUser(user.id);
 
   const navItems: NavItem[] = [

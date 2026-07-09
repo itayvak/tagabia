@@ -28,6 +28,7 @@ import TaskReportShareDialog from "@/components/TaskReportShareDialog";
 import TaskSubmissionsDialog from "@/components/TaskSubmissionsDialog";
 import { getSession } from "@/lib/authStorage";
 import { deleteTask } from "@/lib/deleteTask";
+import { canManageTasks } from "@/lib/roles";
 import { fetchCreatedTasks } from "@/lib/fetchCreatedTasks";
 import { fetchTaskCompletions } from "@/lib/fetchTaskCompletions";
 import { fetchTaskSubmissions } from "@/lib/fetchTaskSubmissions";
@@ -86,7 +87,7 @@ export default function MyTasksPage() {
       return;
     }
 
-    if (session.user.role === "peasant") {
+    if (!canManageTasks(session.user.role)) {
       void router.replace("/home");
       return;
     }

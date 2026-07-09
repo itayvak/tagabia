@@ -3,7 +3,7 @@ import { Box, Button, Typography } from "@mui/material";
 import { clearSession } from "@/lib/authStorage";
 import type { PublicUser } from "@/types/user";
 import { formatPlatoonLabel } from "@/lib/platoons";
-import { getRoleLabel } from "@/lib/roleLabels";
+import { canManageTasks, getRoleLabel } from "@/lib/roles";
 
 interface AppTopBarProps {
   user: PublicUser;
@@ -36,7 +36,7 @@ export default function AppTopBar({ user }: AppTopBarProps) {
         <Typography variant="caption" color="text.secondary">
           פלוגת {formatPlatoonLabel(user.platoon)}, צוות {user.team}
         </Typography>
-        {user.role !== "peasant" && (
+        {canManageTasks(user.role) && (
           <Typography variant="caption" color="text.secondary">
             {getRoleLabel(user.role)}
           </Typography>

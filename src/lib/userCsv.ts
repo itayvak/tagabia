@@ -1,6 +1,7 @@
 import { hashPassword } from "@/lib/password";
 import { PLATOONS, TOTAL_TEAMS } from "@/lib/platoons";
-import type { FirestoreUser, Platoon, Role } from "@/types/user";
+import { isRole } from "@/lib/roles";
+import type { FirestoreUser, Platoon } from "@/types/user";
 
 export const USER_CSV_HEADERS = [
   "id",
@@ -11,19 +12,6 @@ export const USER_CSV_HEADERS = [
   "platoon",
   "team",
 ] as const;
-
-const ROLES: Role[] = [
-  "developer", // מפתח מערכת
-  "platoonCommander", // מפקד פלוגה
-  "safetyPlatoon", // קצין בטיחות פלוגתי
-  "logisticsPlatoon", // קצין לוגיסטיקה פלוגתי
-  "medicalPlatoon", // קצין רפואה פלוגתי
-  "sportsPlatoon", // קצין אימון גופני פלוגתי
-  "tuitionPlatoon", // קצין הדרכה פלוגתי
-  "teamCommander", // מפקד צוות
-  "weeklyTeamCommander", // מפקד מתנסה שבועי
-  "tuitionTeam", // קצין הדרכה צוותי
-];
 
 const PASSWORD_HASH_PATTERN = /^[a-fA-F0-9]{64}$/;
 
@@ -37,10 +25,6 @@ export function normalizeStoredPassword(password: string): string {
   return PASSWORD_HASH_PATTERN.test(trimmed)
     ? trimmed.toLowerCase()
     : hashPassword(trimmed);
-}
-
-function isRole(value: string): value is Role {
-  return ROLES.includes(value as Role);
 }
 
 function isPlatoon(value: string): value is Platoon {

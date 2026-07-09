@@ -29,7 +29,7 @@ import { completeTask } from "@/lib/completeTask";
 import { fetchTask } from "@/lib/fetchTask";
 import { triggerTaskConfetti } from "@/lib/taskConfetti";
 import { isUserAssignedToTask } from "@/lib/assigneeTeams";
-import { getRoleLabel } from "@/lib/roleLabels";
+import { getRoleLabel } from "@/lib/roles";
 import { formatDaysLeft, formatDueDate } from "@/lib/taskDate";
 import { shareTaskAsImage } from "@/lib/shareTaskAsImage";
 import { areRequiredFormAnswersFilled } from "@/lib/taskFormValidation";

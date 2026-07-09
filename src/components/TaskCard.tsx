@@ -17,7 +17,7 @@ import {
 import CheckIcon from "@mui/icons-material/Check";
 import DescriptionIcon from "@mui/icons-material/Description";
 import TaskTypeIcon from "@/components/TaskTypeIcon";
-import { getRoleLabel } from "@/lib/roleLabels";
+import { getRoleLabel } from "@/lib/roles";
 import { formatDaysLeft, formatDueDate } from "@/lib/taskDate";
 import type { AssignedTask } from "@/types/task";
 

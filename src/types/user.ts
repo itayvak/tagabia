@@ -1,3 +1,7 @@
+import type { Role } from "@/lib/roles";
+
+export type { Role } from "@/lib/roles";
+
 export type Platoon = "A" | "B" | "C" | "D" | "E";
 
 export interface FirestoreUser {
@@ -8,18 +12,6 @@ export interface FirestoreUser {
   platoon: Platoon;
   team: number;
 }
-
-export type Role = "peasant" 
-| "developer" // מפתח מערכת
-| "platoonCommander" // מפקד פלוגה
-| "safetyPlatoon" // קצין בטיחות פלוגתי
-| "logisticsPlatoon" // קצין לוגיסטיקה פלוגתי
-| "medicalPlatoon" // קצין רפואה פלוגתי
-| "sportsPlatoon" // קצין אימון גופני פלוגתי
-| "tuitionPlatoon" // קצין הדרכה פלוגתי
-| "teamCommander" // מפקד צוות
-| "weeklyTeamCommander" // מפקד מתנסה שבועי
-| "tuitionTeam" // קצין הדרכה צוותי
 
 export interface PublicUser {
   id: string;

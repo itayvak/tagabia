@@ -1,4 +1,4 @@
-import { getRoleLabel } from "@/lib/roleLabels";
+import { getRoleLabel } from "@/lib/roles";
 import { formatDaysLeft, formatDueDate, getDaysLeft } from "@/lib/taskDate";
 import type { TaskReportEntry } from "@/types/taskReport";
 

@@ -19,6 +19,7 @@ import AppLayout from "@/components/AppLayout";
 import TaskForm, { type TaskFormData } from "@/components/TaskForm";
 import { getSession } from "@/lib/authStorage";
 import { fetchTask } from "@/lib/fetchTask";
+import { canManageTasks } from "@/lib/roles";
 import { toDatetimeLocalValue } from "@/lib/taskDate";
 import { getTaskErrorMessage } from "@/lib/taskErrorMessages";
 import { haveFormFieldsChanged } from "@/lib/taskFormValidation";
@@ -82,7 +83,7 @@ export default function EditTaskPage() {
       return;
     }
 
-    if (session.user.role === "peasant") {
+    if (!canManageTasks(session.user.role)) {
       void router.replace("/home");
       return;
     }
