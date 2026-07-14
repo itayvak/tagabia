@@ -17,7 +17,11 @@ import {
   Typography,
 } from "@mui/material";
 import { fetchTaskCompletions } from "@/lib/fetchTaskCompletions";
-import { formatDueDate } from "@/lib/taskDate";
+import {
+  formatDueDate,
+  isDueThisWeek,
+  sortTasksByDueDateWithPastLast,
+} from "@/lib/taskDate";
 import { renderTaskReportImage } from "@/lib/renderTaskReportImage";
 import { shareImageFile } from "@/lib/shareImageFile";
 import type {
@@ -38,12 +42,6 @@ interface TaskReportShareDialogProps {
   onSuccess: (message: string) => void;
 }
 
-function sortTasksByDueDate(tasks: PublicTask[]): PublicTask[] {
-  return [...tasks].sort(
-    (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
-  );
-}
-
 export default function TaskReportShareDialog({
   open,
   tasks,
@@ -59,7 +57,10 @@ export default function TaskReportShareDialog({
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
 
-  const sortedTasks = useMemo(() => sortTasksByDueDate(tasks), [tasks]);
+  const sortedTasks = useMemo(
+    () => sortTasksByDueDateWithPastLast(tasks),
+    [tasks],
+  );
 
   const selectedTasks = useMemo(
     () => sortedTasks.filter((task) => selectedTaskIds.has(task.id)),
@@ -73,7 +74,13 @@ export default function TaskReportShareDialog({
 
     void Promise.resolve().then(() => {
       setStep("select");
-      setSelectedTaskIds(new Set(tasks.map((task) => task.id)));
+      setSelectedTaskIds(
+        new Set(
+          tasks
+            .filter((task) => isDueThisWeek(task.dueDate))
+            .map((task) => task.id),
+        ),
+      );
       setImageUrl(null);
       setImageBlob(null);
       setIsGenerating(false);

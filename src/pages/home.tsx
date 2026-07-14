@@ -16,7 +16,7 @@ import TaskCard from "@/components/TaskCard";
 import { getSession } from "@/lib/authStorage";
 import { completeTask } from "@/lib/completeTask";
 import { fetchAssignedTasks } from "@/lib/fetchAssignedTasks";
-import { triggerTaskConfetti } from "@/lib/taskConfetti";
+import { getDailySplashQuote } from "@/lib/splashQuotes";
 import type {
   AssignedTask,
   CompleteTaskErrorResponse,
@@ -180,17 +180,31 @@ export default function HomePage() {
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
+            gap: 1,
             mb: 3,
           }}
         >
           <Box
-            component="img"
-            src="/bahad1.png"
-            alt="בה״ד 1"
-            sx={{ width: 72, height: 72, mb: 1 }}
-          />
-          <Typography variant="h5" component="h1">
-            תג&quot;ביה
+            sx={{
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 1.5,
+            }}
+          >
+            <Box
+              component="img"
+              src="/bahad1.png"
+              alt="בה״ד 1"
+              sx={{ width: 52, height: 52 }}
+            />
+            <Typography variant="h5" component="h1">
+              תג&quot;ביה
+            </Typography>
+          </Box>
+          <Typography variant="body2" color="text.secondary" align="center">
+            {getDailySplashQuote()}
           </Typography>
         </Box>
         <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>

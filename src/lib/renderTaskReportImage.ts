@@ -10,7 +10,12 @@ const CARD_PADDING = 12;
 const COLUMN_WIDTH = 328;
 const CARD_INNER_WIDTH = COLUMN_WIDTH - CARD_PADDING * 2;
 const MAX_TASKS_PER_COLUMN = 5;
-const HEADER_HEIGHT = 56 + 8 + 24 + 18 + 8;
+const HEADER_LOGO_SIZE = 52;
+const HEADER_GAP = 12;
+const HEADER_TITLE_FONT_SIZE = 20;
+const HEADER_SUBTITLE_FONT_SIZE = 14;
+const HEADER_ROW_HEIGHT = HEADER_LOGO_SIZE;
+const HEADER_HEIGHT = HEADER_ROW_HEIGHT + 8 + 18 + 8;
 const CARD_FONT_SIZE = 13;
 const CARD_LINE_HEIGHT = 18;
 const CARD_TITLE_FONT_SIZE = 16;
@@ -177,6 +182,29 @@ function drawCardTextLine(
   return endY + CARD_LINE_GAP;
 }
 
+function drawCardTextLineCentered(
+  context: CanvasRenderingContext2D,
+  text: string,
+  centerX: number,
+  y: number,
+  fontFamily: string,
+  options: CardTextLineOptions = {},
+): number {
+  const {
+    font = getCardTextFont(fontFamily),
+    color = COLORS.textPrimary,
+    lineHeight = CARD_LINE_HEIGHT,
+  } = options;
+
+  context.fillStyle = color;
+  context.font = font;
+  context.direction = "rtl";
+  context.textAlign = "center";
+  context.fillText(text, centerX, y);
+
+  return y + lineHeight + CARD_LINE_GAP;
+}
+
 function formatCompletionStats(completedCount: number, totalCount: number): string {
   return `בוצעו ${completedCount}/${totalCount} צוערים`;
 }
@@ -298,10 +326,10 @@ function drawCard(
   );
 
   if (totalCount > 0) {
-    drawCardTextLine(
+    drawCardTextLineCentered(
       context,
       formatCompletionStats(completedCount, totalCount),
-      textRight,
+      x + COLUMN_WIDTH / 2,
       textY,
       fontFamily,
     );
@@ -362,24 +390,30 @@ export async function renderTaskReportImage(
 
   let y = PADDING;
 
+  const title = 'תג"ביה';
+  context.fillStyle = COLORS.textPrimary;
+  context.font = `700 ${HEADER_TITLE_FONT_SIZE}px ${fontFamily}`;
+  context.direction = "rtl";
+  const titleWidth = context.measureText(title).width;
+  const headerGroupWidth = titleWidth + HEADER_GAP + HEADER_LOGO_SIZE;
+  const headerGroupStartX = (reportWidth - headerGroupWidth) / 2;
+  const logoX = headerGroupStartX + titleWidth + HEADER_GAP;
+  const logoY = y + (HEADER_ROW_HEIGHT - HEADER_LOGO_SIZE) / 2;
+
   try {
     const logo = await loadImage("/bahad1.png");
-    const logoX = (reportWidth - 56) / 2;
-    context.drawImage(logo, logoX, y, 56, 56);
-    y += 56 + 8;
+    context.drawImage(logo, logoX, logoY, HEADER_LOGO_SIZE, HEADER_LOGO_SIZE);
   } catch {
-    y += 8;
+    // Continue without logo if it fails to load.
   }
 
-  context.fillStyle = COLORS.textPrimary;
-  context.font = `700 20px ${fontFamily}`;
-  context.direction = "rtl";
-  context.textAlign = "center";
-  context.fillText('תג"ביה', reportWidth / 2, y + 16);
-  y += 24;
+  context.textAlign = "right";
+  context.fillText(title, logoX - HEADER_GAP, y + HEADER_ROW_HEIGHT / 2 + 7);
+  y += HEADER_ROW_HEIGHT + 8;
 
   context.fillStyle = COLORS.textSecondary;
-  context.font = `400 14px ${fontFamily}`;
+  context.font = `400 ${HEADER_SUBTITLE_FONT_SIZE}px ${fontFamily}`;
+  context.textAlign = "center";
   context.fillText(subtitle, reportWidth / 2, y + 12);
   y += 18 + 8;
 

@@ -2,8 +2,9 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import { Box, Dialog, DialogContent, DialogTitle, IconButton, List, ListItemButton, ListItemText, Typography } from "@mui/material";
-import { formatDueDate, getCalendarDateKey, getDueDateCalendarKey } from "@/lib/taskDate";
+import { Box, Dialog, DialogContent, DialogTitle, IconButton, Typography } from "@mui/material";
+import TaskCard from "@/components/TaskCard";
+import { getCalendarDateKey, getDueDateCalendarKey } from "@/lib/taskDate";
 import type { PublicCalendarReminder } from "@/types/calendarReminder";
 import type { CalendarTask } from "@/types/task";
 
@@ -36,6 +37,8 @@ type CalendarDay = {
 interface MonthCalendarProps {
   tasks: CalendarTask[];
   reminders: PublicCalendarReminder[];
+  completingTaskId: string | null;
+  onCompleteTask: (taskId: string) => void;
 }
 
 function isSameDay(a: Date, b: Date): boolean {
@@ -174,7 +177,12 @@ function CalendarReminderLine({
   );
 }
 
-export default function MonthCalendar({ tasks, reminders }: MonthCalendarProps) {
+export default function MonthCalendar({
+  tasks,
+  reminders,
+  completingTaskId,
+  onCompleteTask,
+}: MonthCalendarProps) {
   const router = useRouter();
   const today = useMemo(() => new Date(), []);
   const [visibleMonth, setVisibleMonth] = useState(
@@ -411,7 +419,7 @@ export default function MonthCalendar({ tasks, reminders }: MonthCalendarProps) 
         open={dialogDate !== null}
         onClose={() => setDialogDate(null)}
         fullWidth
-        maxWidth="xs"
+        maxWidth="sm"
       >
         <DialogTitle>
           {dialogDate === null
@@ -421,36 +429,28 @@ export default function MonthCalendar({ tasks, reminders }: MonthCalendarProps) 
                 month: "long",
               })}`}
         </DialogTitle>
-        <DialogContent dividers sx={{ px: 0, py: 0 }}>
+        <DialogContent dividers sx={{ px: 2, py: 2 }}>
           {dialogDayTasks.length === 0 ? (
-            <Typography color="text.secondary" sx={{ px: 3, py: 2 }}>
+            <Typography color="text.secondary" align="center" sx={{ py: 2 }}>
               אין מטלות ביום זה
             </Typography>
           ) : (
-            <List disablePadding>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
               {dialogDayTasks.map((task) => (
-                <ListItemButton
+                <TaskCard
                   key={task.id}
-                  onClick={() => {
+                  task={task}
+                  isCompleting={completingTaskId === task.id}
+                  isCompleted={task.completed}
+                  completedAt={task.completedAt}
+                  onOpen={(taskId) => {
                     setDialogDate(null);
-                    openTask(task.id);
+                    openTask(taskId);
                   }}
-                >
-                  <ListItemText
-                    primary={task.title}
-                    secondary={formatDueDate(task.dueDate)}
-                    slotProps={{
-                      primary: {
-                        sx: {
-                          color: task.completed ? "text.disabled" : "text.primary",
-                        },
-                      },
-                      secondary: { variant: "caption" },
-                    }}
-                  />
-                </ListItemButton>
+                  onComplete={onCompleteTask}
+                />
               ))}
-            </List>
+            </Box>
           )}
         </DialogContent>
       </Dialog>

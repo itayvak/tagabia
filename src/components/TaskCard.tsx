@@ -4,8 +4,8 @@ import {
   Button,
   Card,
   CardActionArea,
-  CardActions,
   CardContent,
+  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -16,9 +16,8 @@ import {
 } from "@mui/material";
 import CheckIcon from "@mui/icons-material/Check";
 import DescriptionIcon from "@mui/icons-material/Description";
-import TaskTypeIcon from "@/components/TaskTypeIcon";
 import { getRoleLabel } from "@/lib/roles";
-import { formatDaysLeft, formatDueDate } from "@/lib/taskDate";
+import { formatDaysLeft, formatDueDate, getDaysLeftChipUrgency } from "@/lib/taskDate";
 import type { AssignedTask } from "@/types/task";
 
 interface TaskCardProps {
@@ -55,11 +54,34 @@ export default function TaskCard({
     setIsConfirmOpen(true);
   };
 
+  const actionLabel = isCompleting
+    ? "מסמן..."
+    : isCompleted
+      ? "סומן כבוצע"
+      : requiresForm
+        ? "מלא טופס"
+        : "בוצע";
+
+  const daysLeftUrgency = getDaysLeftChipUrgency(task.dueDate);
+
   return (
     <>
-      <Card variant="outlined">
-        <CardActionArea onClick={() => onOpen(task.id)}>
-          <CardContent sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+      <Card
+        variant="outlined"
+        sx={{
+          display: "flex",
+          flexDirection: "row",
+          alignItems: "stretch",
+        }}
+      >
+        <CardActionArea onClick={() => onOpen(task.id)} sx={{ flex: 1 }}>
+          <CardContent
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 0.2,
+            }}
+          >
             <Box
               sx={{
                 display: "flex",
@@ -71,7 +93,29 @@ export default function TaskCard({
               <Typography variant="h6" component="h2" sx={{ flex: 1 }}>
                 {task.title}
               </Typography>
-              <TaskTypeIcon hasFormFields={task.hasFormFields} />
+              <Chip
+                label={formatDaysLeft(task.dueDate)}
+                size="small"
+                variant="outlined"
+                sx={{
+                  flexShrink: 0,
+                  ...(daysLeftUrgency === "past" && {
+                    bgcolor: "#fde8e8",
+                    color: "#b42318",
+                    borderColor: "#f5c2c2",
+                  }),
+                  ...(daysLeftUrgency === "soon" && {
+                    bgcolor: "#fff0e0",
+                    color: "#c2410c",
+                    borderColor: "#fdba74",
+                  }),
+                  ...(daysLeftUrgency === "thisWeek" && {
+                    bgcolor: "#fef9c3",
+                    color: "#a16207",
+                    borderColor: "#fde047",
+                  }),
+                }}
+              />
             </Box>
             <Typography variant="body2" color="text.secondary">
               מאת {task.creatorRank} {task.creatorName} -{" "}
@@ -80,9 +124,6 @@ export default function TaskCard({
             <Typography variant="body2">
               תג"ב: {formatDueDate(task.dueDate)}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {formatDaysLeft(task.dueDate)}
-            </Typography>
             {isCompleted && completedAt && (
               <Typography variant="body2" color="text.secondary">
                 בוצע ב-{formatDueDate(completedAt)}
@@ -90,32 +131,35 @@ export default function TaskCard({
             )}
           </CardContent>
         </CardActionArea>
-        <CardActions sx={{ px: 2, pb: 2, pt: 0 }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "stretch",
+            p: 1.5,
+            flexShrink: 0,
+          }}
+        >
           <Button
             variant="contained"
-            size="small"
-            fullWidth
             disabled={isCompleting || isCompleted}
             onClick={handleActionClick}
-            startIcon={
-              isCompleting ? (
-                <CircularProgress size={16} color="inherit" />
-              ) : requiresForm ? (
-                <DescriptionIcon />
-              ) : (
-                <CheckIcon />
-              )
-            }
+            aria-label={actionLabel}
+            sx={{
+              alignSelf: "stretch",
+              minWidth: 48,
+              width: 48,
+              p: 0,
+            }}
           >
-            {isCompleting
-              ? "מסמן..."
-              : isCompleted
-                ? "סומן כבוצע"
-                : requiresForm
-                  ? "מלא טופס"
-                  : "בוצע"}
+            {isCompleting ? (
+              <CircularProgress size={20} color="inherit" />
+            ) : requiresForm ? (
+              <DescriptionIcon />
+            ) : (
+              <CheckIcon />
+            )}
           </Button>
-        </CardActions>
+        </Box>
       </Card>
       <Dialog
         open={isConfirmOpen && !requiresForm}

@@ -18,7 +18,7 @@ type AppPropsWithCache = AppProps & {
 export default function App({
   Component,
   pageProps,
-  emotionCache,
+  emotionCache = rtlCache,
 }: AppPropsWithCache) {
   useEffect(() => {
     document.documentElement.classList.add(googleSans.variable);
@@ -28,7 +28,7 @@ export default function App({
   }, []);
 
   return (
-    <AppCacheProvider emotionCache={emotionCache ?? rtlCache}>
+    <AppCacheProvider emotionCache={emotionCache}>
       <Head>
         <title>{APP_TITLE}</title>
       </Head>

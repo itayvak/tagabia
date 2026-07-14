@@ -9,12 +9,10 @@ export function getDueDateCalendarKey(dueDate: string): string {
 }
 
 export function formatDueDate(dueDate: string): string {
-  return new Date(dueDate).toLocaleString("he-IL", {
-    day: "numeric",
-    month: "long",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const date = new Date(dueDate);
+  const pad = (value: number) => String(value).padStart(2, "0");
+
+  return `${pad(date.getDate())}/${pad(date.getMonth() + 1)} בשעה ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
 export function toDatetimeLocalValue(iso: string): string {
@@ -63,4 +61,67 @@ export function formatDaysLeft(dueDate: string): string {
   }
 
   return `${Math.abs(daysLeft)} ימים באיחור`;
+}
+
+export type DaysLeftChipUrgency = "past" | "soon" | "thisWeek" | "default";
+
+export function getDaysLeftChipUrgency(dueDate: string): DaysLeftChipUrgency {
+  const daysLeft = getDaysLeft(dueDate);
+
+  if (daysLeft < 0) {
+    return "past";
+  }
+
+  if (daysLeft <= 3) {
+    return "soon";
+  }
+
+  const dayOfWeek = new Date().getDay();
+  const daysUntilEndOfWeek = 6 - dayOfWeek;
+
+  if (daysLeft <= daysUntilEndOfWeek) {
+    return "thisWeek";
+  }
+
+  return "default";
+}
+
+export function isDueThisWeek(
+  dueDate: string,
+  referenceDate: Date = new Date(),
+): boolean {
+  const startOfToday = new Date(
+    referenceDate.getFullYear(),
+    referenceDate.getMonth(),
+    referenceDate.getDate(),
+  );
+  const startOfWeek = new Date(startOfToday);
+  startOfWeek.setDate(startOfToday.getDate() - startOfToday.getDay());
+
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+  const due = new Date(dueDate);
+  const startOfDue = new Date(
+    due.getFullYear(),
+    due.getMonth(),
+    due.getDate(),
+  );
+
+  return startOfDue >= startOfWeek && startOfDue <= endOfWeek;
+}
+
+export function sortTasksByDueDateWithPastLast<T extends { dueDate: string }>(
+  tasks: T[],
+): T[] {
+  return [...tasks].sort((a, b) => {
+    const aIsPast = getDaysLeft(a.dueDate) < 0;
+    const bIsPast = getDaysLeft(b.dueDate) < 0;
+
+    if (aIsPast !== bIsPast) {
+      return aIsPast ? 1 : -1;
+    }
+
+    return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+  });
 }

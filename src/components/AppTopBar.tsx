@@ -1,5 +1,6 @@
 import { useRouter } from "next/router";
-import { Box, Button, Typography } from "@mui/material";
+import LogoutIcon from "@mui/icons-material/Logout";
+import { Box, IconButton, Typography } from "@mui/material";
 import { clearSession } from "@/lib/authStorage";
 import type { PublicUser } from "@/types/user";
 import { formatPlatoonLabel } from "@/lib/platoons";
@@ -42,9 +43,9 @@ export default function AppTopBar({ user }: AppTopBarProps) {
           </Typography>
         )}
       </Box>
-      <Button size="small" variant="outlined" onClick={handleLogout}>
-        התנתק
-      </Button>
+      <IconButton aria-label="התנתק" onClick={handleLogout}>
+        <LogoutIcon />
+      </IconButton>
     </Box>
   );
 }

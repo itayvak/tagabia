@@ -8,8 +8,14 @@ import MonthCalendar from "@/components/MonthCalendar";
 import { getSession } from "@/lib/authStorage";
 import { fetchCalendarReminders } from "@/lib/fetchCalendarReminders";
 import { fetchCalendarTasks } from "@/lib/fetchCalendarTasks";
+import { completeTask } from "@/lib/completeTask";
+import { triggerTaskConfetti } from "@/lib/taskConfetti";
 import type { PublicCalendarReminder } from "@/types/calendarReminder";
-import type { CalendarTask } from "@/types/task";
+import type {
+  CalendarTask,
+  CompleteTaskErrorResponse,
+  CompleteTaskSuccessResponse,
+} from "@/types/task";
 import type { PublicUser } from "@/types/user";
 
 function getErrorMessage(error: string): string {
@@ -22,6 +28,14 @@ function getErrorMessage(error: string): string {
       return "טעינת המטלות נכשלה";
     case "List calendar reminders failed":
       return "טעינת התזכורות נכשלה";
+    case "Task not found":
+      return "המטלה לא נמצאה";
+    case "User is not assigned to this task":
+      return "אין לך הרשאה לסמן מטלה זו";
+    case "Task already completed":
+      return "המטלה כבר סומנה כבוצעה";
+    case "Complete task failed":
+      return "סימון המטלה נכשל";
     default:
       return error;
   }
@@ -33,6 +47,7 @@ export default function CalendarPage() {
   const [tasks, setTasks] = useState<CalendarTask[]>([]);
   const [reminders, setReminders] = useState<PublicCalendarReminder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -88,6 +103,41 @@ export default function CalendarPage() {
     void loadCalendarData();
   }, [user]);
 
+  const handleCompleteTask = async (taskId: string) => {
+    if (!user) {
+      return;
+    }
+
+    setCompletingTaskId(taskId);
+    setErrorMessage(null);
+
+    try {
+      const { response, data } = await completeTask(taskId, {
+        userId: user.id,
+      });
+
+      if (!response.ok) {
+        const { error } = data as CompleteTaskErrorResponse;
+        setErrorMessage(getErrorMessage(error ?? "סימון המטלה נכשל"));
+        return;
+      }
+
+      const { completedAt } = data as CompleteTaskSuccessResponse;
+      setTasks((currentTasks) =>
+        currentTasks.map((task) =>
+          task.id === taskId
+            ? { ...task, completed: true, completedAt }
+            : task,
+        ),
+      );
+      void triggerTaskConfetti();
+    } catch {
+      setErrorMessage("שגיאה בסימון המטלה. נסה שוב.");
+    } finally {
+      setCompletingTaskId(null);
+    }
+  };
+
   if (!user) {
     return (
       <Box
@@ -131,7 +181,12 @@ export default function CalendarPage() {
               <CircularProgress />
             </Box>
           ) : null}
-          <MonthCalendar tasks={tasks} reminders={reminders} />
+          <MonthCalendar
+            tasks={tasks}
+            reminders={reminders}
+            completingTaskId={completingTaskId}
+            onCompleteTask={(taskId) => void handleCompleteTask(taskId)}
+          />
         </Box>
       </AppLayout>
       <Snackbar

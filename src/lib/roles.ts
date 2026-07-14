@@ -1,15 +1,18 @@
 export const ROLES = {
-  peasant: "חייל",
-  developer: 'מפתח תגב"ייה',
-  platoonCommander: 'מ"פ',
-  safetyPlatoon: "קצין בטיחות פלוגתי",
-  logisticsPlatoon: "קצין לוגיסטיקה פלוגתי",
+  peasant: "צוער",
+  commander: "סגל ההכשרה",
+  developer: "מפתח תגבייה",
   medicalPlatoon: "קצין רפואה פלוגתי",
-  sportsPlatoon: "קצין אימון גופני פלוגתי",
+  safetyPlatoon: "קצין בטיחות פלוגתי",
+  educationPlatoon: "קצין חינוך ומורשת פלוגתי",
   tuitionPlatoon: "קצין הדרכה פלוגתי",
-  teamCommander: 'מפק"צ',
+  logisticsPlatoon: "קצין לוגיסטיקה פלוגתי",
+  sportsPlatoon: "קצין אימון גופני פלוגתי",
+  missionsPlatoon: "קצין מבצעים פלוגתי",
+  simulationPlatoon: "קצין סימולציות פלוגתי",
   weeklyTeamCommander: 'ממ"ש',
   tuitionTeam: "קצין הדרכה צוותי",
+  simulationTeam: "קצין סימולציות צוותי",
 } as const;
 
 export type Role = keyof typeof ROLES;
