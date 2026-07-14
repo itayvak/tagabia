@@ -136,6 +136,7 @@ export default function TaskCard({
             display: "flex",
             alignItems: "stretch",
             p: 1.5,
+            pl: 0,
             flexShrink: 0,
           }}
         >
