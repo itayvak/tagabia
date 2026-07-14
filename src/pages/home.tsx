@@ -17,6 +17,7 @@ import { getSession } from "@/lib/authStorage";
 import { completeTask } from "@/lib/completeTask";
 import { fetchAssignedTasks } from "@/lib/fetchAssignedTasks";
 import { getDailySplashQuote } from "@/lib/splashQuotes";
+import { triggerTaskConfetti } from "@/lib/taskConfetti";
 import type {
   AssignedTask,
   CompleteTaskErrorResponse,
