@@ -169,6 +169,8 @@ export default function HomePage() {
     );
   }
 
+  const dailyQuote = getDailySplashQuote();
+
   return (
     <>
       <Head>
@@ -204,9 +206,24 @@ export default function HomePage() {
               תג&quot;ביה
             </Typography>
           </Box>
-          <Typography variant="body2" color="text.secondary" align="center">
-            {getDailySplashQuote()}
-          </Typography>
+          <Box
+            sx={{
+              display: "flex",
+              flexWrap: "wrap",
+              justifyContent: "center",
+              alignItems: "baseline",
+              gap: 0.75,
+            }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              &ldquo;{dailyQuote.text}&rdquo;
+            </Typography>
+            {dailyQuote.author ? (
+              <Typography variant="caption" color="text.secondary">
+                - {dailyQuote.author}
+              </Typography>
+            ) : null}
+          </Box>
         </Box>
         <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
           <ToggleButtonGroup
