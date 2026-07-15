@@ -10,6 +10,7 @@ export const ROLES = {
   sportsPlatoon: "קצין אימון גופני פלוגתי",
   missionsPlatoon: "קצין מבצעים פלוגתי",
   simulationPlatoon: "קצין סימולציות פלוגתי",
+  trainingPlatoon: "קצין אימונים פלוגתי",
   weeklyTeamCommander: 'ממ"ש',
   tuitionTeam: "קצין הדרכה צוותי",
   simulationTeam: "קצין סימולציות צוותי",
