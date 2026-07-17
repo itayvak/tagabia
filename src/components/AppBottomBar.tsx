@@ -4,6 +4,7 @@ import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import HomeIcon from "@mui/icons-material/Home";
+import PersonIcon from "@mui/icons-material/Person";
 import { BottomNavigation, BottomNavigationAction, Paper } from "@mui/material";
 import { isAdminUser } from "@/lib/admin";
 import { canManageTasks } from "@/lib/roles";
@@ -61,6 +62,12 @@ export default function AppBottomBar({ user }: AppBottomBarProps) {
           },
         ]
       : []),
+    {
+      label: "פרופיל",
+      href: "/profile",
+      icon: <PersonIcon />,
+      match: (pathname) => pathname === "/profile",
+    },
   ];
 
   const activeIndex = navItems.findIndex((item) => item.match(router.pathname));

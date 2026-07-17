@@ -16,6 +16,8 @@ import TaskCard from "@/components/TaskCard";
 import { getSession } from "@/lib/authStorage";
 import { completeTask } from "@/lib/completeTask";
 import { fetchAssignedTasks } from "@/lib/fetchAssignedTasks";
+import { fetchCourseConfig } from "@/lib/fetchCourseConfig";
+import { getCurrentWeek } from "@/lib/courseWeek";
 import { getDailySplashQuote } from "@/lib/splashQuotes";
 import { triggerTaskConfetti } from "@/lib/taskConfetti";
 import type {
@@ -25,6 +27,10 @@ import type {
   ListAssignedTasksSuccessResponse,
   ListTasksErrorResponse,
 } from "@/types/task";
+import type {
+  GetCourseConfigSuccessResponse,
+  PublicCourseConfig,
+} from "@/types/courseConfig";
 import type { PublicUser } from "@/types/user";
 
 type HomepageTaskFilter = "pending" | "completed";
@@ -56,6 +62,9 @@ export default function HomePage() {
   const [isLoadingTasks, setIsLoadingTasks] = useState(true);
   const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [courseConfig, setCourseConfig] = useState<PublicCourseConfig | null>(
+    null,
+  );
 
   useEffect(() => {
     const session = getSession();
@@ -98,6 +107,29 @@ export default function HomePage() {
 
     void loadTasks();
   }, [user]);
+
+  useEffect(() => {
+    const loadCourseConfig = async () => {
+      try {
+        const { response, data } = await fetchCourseConfig();
+
+        if (!response.ok) {
+          return;
+        }
+
+        setCourseConfig((data as GetCourseConfigSuccessResponse).config);
+      } catch {
+        // Keep the week subtitle hidden when config cannot be loaded.
+      }
+    };
+
+    void loadCourseConfig();
+  }, []);
+
+  const currentWeek = useMemo(
+    () => getCurrentWeek(courseConfig),
+    [courseConfig],
+  );
 
   const visibleTasks = useMemo(() => {
     const filtered =
@@ -177,55 +209,87 @@ export default function HomePage() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
       <AppLayout user={user}>
-        <Container maxWidth="sm" sx={{ py: 3 }}>
         <Box
           sx={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 1,
-            mb: 3,
+            ...(currentWeek
+              ? {
+                  backgroundImage: `
+                    linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
+                    url(${currentWeek.image})
+                  `,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }
+              : {}),
+            mb: 2,
           }}
         >
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 1.5,
-            }}
-          >
+          <Container maxWidth="sm" sx={{ py: 3 }}>
             <Box
-              component="img"
-              src="/bahad1.png"
-              alt="בה״ד 1"
-              sx={{ width: 52, height: 52 }}
-            />
-            <Typography variant="h5" component="h1">
-              תג&quot;ביה
-            </Typography>
-          </Box>
-          <Box
-            sx={{
-              display: "flex",
-              flexWrap: "wrap",
-              justifyContent: "center",
-              alignItems: "baseline",
-              gap: 0.75,
-            }}
-          >
-            <Typography variant="body2" color="text.secondary">
-              &ldquo;{dailyQuote.text}&rdquo;
-            </Typography>
-            {dailyQuote.author ? (
-              <Typography variant="caption" color="text.secondary">
-                - {dailyQuote.author}
-              </Typography>
-            ) : null}
-          </Box>
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 1.5,
+              }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 1.5,
+                }}
+              >
+                <Box>
+                  <Typography
+                    variant="h5"
+                    component="h1"
+                    sx={{ color: "common.white" }}
+                  >
+                    All In One
+                  </Typography>
+                  {currentWeek ? (
+                    <Typography
+                      variant="body2"
+                      sx={{ color: "grey.100" }}
+                    >
+                      {currentWeek.name}
+                    </Typography>
+                  ) : null}
+                </Box>
+                <Box
+                  component="img"
+                  src="/bahad1.png"
+                  alt="בה״ד 1"
+                  sx={{ width: 52, height: 52 }}
+                />
+              </Box>
+              <Box
+                sx={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  justifyContent: "center",
+                  alignItems: "baseline",
+                  gap: 0.75,
+                  textAlign: "center",
+                }}
+              >
+                <Typography variant="body2" sx={{ color: "grey.100" }}>
+                  &ldquo;{dailyQuote.text}&rdquo;
+                </Typography>
+                {dailyQuote.author ? (
+                  <Typography variant="caption" sx={{ color: "grey.300" }}>
+                    - {dailyQuote.author}
+                  </Typography>
+                ) : null}
+              </Box>
+            </Box>
+          </Container>
         </Box>
-        <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
+        <Container maxWidth="sm" sx={{ pb: 3 }}>
+        <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
           <ToggleButtonGroup
             exclusive
             value={taskFilter}

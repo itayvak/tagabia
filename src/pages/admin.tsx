@@ -10,6 +10,7 @@ import {
   Snackbar,
 } from "@mui/material";
 import AppLayout from "@/components/AppLayout";
+import CourseWeeksDialog from "@/components/CourseWeeksDialog";
 import { isAdminUser } from "@/lib/admin";
 import { getSession } from "@/lib/authStorage";
 import { downloadUsersCsv } from "@/lib/downloadUsersCsv";
@@ -36,6 +37,14 @@ function getErrorMessage(error: string): string {
       return "כותרות הקובץ אינן תקינות";
     case "Import users failed":
       return "העלאת רשימת המשתמשים נכשלה";
+    case "Get course config failed":
+      return "טעינת הגדרות הקורס נכשלה";
+    case "Update course config failed":
+      return "שמירת הגדרות הקורס נכשלה";
+    case "Start date is required":
+      return "יש לבחור תאריך התחלה";
+    case "At least one week is required":
+      return "יש להוסיף לפחות שבוע אחד";
     default:
       return error.startsWith("Row ")
         ? `שגיאה בקובץ: ${error}`
@@ -73,6 +82,7 @@ export default function AdminPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isCourseWeeksDialogOpen, setIsCourseWeeksDialogOpen] = useState(false);
 
   useEffect(() => {
     const session = getSession();
@@ -173,6 +183,13 @@ export default function AdminPage() {
         <Container maxWidth="md" sx={{ py: 3 }}>
         <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
           <Button
+            variant="outlined"
+            onClick={() => setIsCourseWeeksDialogOpen(true)}
+            disabled={isDownloading || isUploading}
+          >
+            עריכת שבועות הקורס
+          </Button>
+          <Button
             variant="contained"
             onClick={() => void handleDownloadUsers()}
             disabled={isDownloading || isUploading}
@@ -195,6 +212,13 @@ export default function AdminPage() {
           />
         </Box>
       </Container>
+      <CourseWeeksDialog
+        open={isCourseWeeksDialogOpen}
+        userId={user.id}
+        onClose={() => setIsCourseWeeksDialogOpen(false)}
+        onSaved={() => setSuccessMessage("הגדרות הקורס נשמרו")}
+        onError={(message) => setErrorMessage(message)}
+      />
       </AppLayout>
       <Snackbar
         open={Boolean(errorMessage)}
