@@ -253,7 +253,7 @@ export default function HomePage() {
                   {currentWeek ? (
                     <Typography
                       variant="body2"
-                      sx={{ color: "grey.100" }}
+                      sx={{ color: "grey.100", textAlign: "end" }}
                     >
                       {currentWeek.name}
                     </Typography>
