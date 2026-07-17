@@ -289,7 +289,18 @@ export default function HomePage() {
           </Container>
         </Box>
         <Container maxWidth="sm" sx={{ pb: 3 }}>
-        <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 2,
+            mb: 2,
+          }}
+        >
+          <Typography variant="subtitle1" component="h2" sx={{ fontWeight: 600 }}>
+            {"תג\"ביה"}
+          </Typography>
           <ToggleButtonGroup
             exclusive
             value={taskFilter}
