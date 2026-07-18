@@ -1,4 +1,5 @@
 import type { TaskFormField, TaskFormFieldInput, TaskSubmission } from "@/types/taskForm";
+import type { TaskCategory } from "@/lib/taskCategory";
 import type { Platoon, Role } from "@/types/user";
 import type { Timestamp } from "firebase-admin/firestore";
 
@@ -13,6 +14,7 @@ export interface TaskMedia {
 export interface FirestoreTask {
   title: string;
   content: string;
+  category: TaskCategory;
   creatorId: string;
   creatorName: string;
   creatorRank: string;
@@ -28,6 +30,7 @@ export interface PublicTask {
   id: string;
   title: string;
   content: string;
+  category: TaskCategory;
   creatorId: string;
   creatorName: string;
   creatorRank: string;
@@ -74,6 +77,7 @@ export interface ListTasksErrorResponse {
 export interface CreateTaskRequestBody {
   title: string;
   content: string;
+  category: TaskCategory;
   creatorId: string;
   dueDate: string;
   assignedTeams: number[];
@@ -93,6 +97,7 @@ export interface UpdateTaskRequestBody {
   userId: string;
   title: string;
   content: string;
+  category: TaskCategory;
   dueDate: string;
   assignedTeams: number[];
   assignedUsers?: string[];
@@ -143,6 +148,18 @@ export interface CompleteTaskSuccessResponse {
 }
 
 export interface CompleteTaskErrorResponse {
+  error: string;
+}
+
+export interface UncompleteTaskRequestBody {
+  userId: string;
+}
+
+export interface UncompleteTaskSuccessResponse {
+  uncompleted: true;
+}
+
+export interface UncompleteTaskErrorResponse {
   error: string;
 }
 

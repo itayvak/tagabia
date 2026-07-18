@@ -92,7 +92,7 @@ export default function AdminPage() {
     }
 
     if (!canAccessAdmin(session.user)) {
-      void router.replace("/home");
+      void router.replace("/allTasks");
       return;
     }
 

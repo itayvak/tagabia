@@ -4,6 +4,7 @@ import {
   normalizeUserIds,
 } from "@/lib/assigneeTeams";
 import { getAdminFirestore } from "@/lib/firebaseAdmin";
+import { isTaskCategory } from "@/lib/taskCategory";
 import { syncTaskFormFields } from "@/lib/taskFormFirestore";
 import { validateFormFieldInputs } from "@/lib/taskFormValidation";
 import type {
@@ -30,7 +31,7 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { title, content, creatorId, dueDate, assignedTeams, assignedUsers, formFields } =
+  const { title, content, category, creatorId, dueDate, assignedTeams, assignedUsers, formFields } =
     req.body as Partial<CreateTaskRequestBody>;
 
   if (!isNonEmptyString(title)) {
@@ -53,6 +54,10 @@ export default async function handler(
 
   if (!isNonEmptyString(dueDate)) {
     return res.status(400).json({ error: "Due date is required" });
+  }
+
+  if (!isTaskCategory(category)) {
+    return res.status(400).json({ error: "Invalid task category" });
   }
 
   const normalizedTeams = normalizeTeamIdsOptional(assignedTeams);
@@ -98,6 +103,7 @@ export default async function handler(
     const taskRef = await db.collection("tasks").add({
       title: title.trim(),
       content: trimmedContent,
+      category,
       creatorId: trimmedCreatorId,
       creatorName: creatorData.fullname,
       creatorRank: creatorData.rank,

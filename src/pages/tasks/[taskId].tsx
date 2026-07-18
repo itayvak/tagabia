@@ -20,6 +20,7 @@ import {
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CheckIcon from "@mui/icons-material/Check";
 import ShareIcon from "@mui/icons-material/Share";
+import UndoIcon from "@mui/icons-material/Undo";
 import AppLayout from "@/components/AppLayout";
 import { APP_BOTTOM_BAR_HEIGHT } from "@/components/AppBottomBar";
 import LinkifiedText from "@/components/LinkifiedText";
@@ -28,6 +29,7 @@ import TaskMediaAttachments from "@/components/TaskMediaAttachments";
 import { getSession } from "@/lib/authStorage";
 import { completeTask } from "@/lib/completeTask";
 import { fetchTask } from "@/lib/fetchTask";
+import { uncompleteTask } from "@/lib/uncompleteTask";
 import { triggerTaskConfetti } from "@/lib/taskConfetti";
 import { isUserAssignedToTask } from "@/lib/assigneeTeams";
 import { getRoleLabel } from "@/lib/roles";
@@ -39,6 +41,7 @@ import type {
   CompleteTaskErrorResponse,
   GetTaskErrorResponse,
   GetTaskSuccessResponse,
+  UncompleteTaskErrorResponse,
 } from "@/types/task";
 import type { PublicUser } from "@/types/user";
 
@@ -59,6 +62,10 @@ function getErrorMessage(error: string): string {
       return "המטלה כבר סומנה כבוצעה";
     case "Complete task failed":
       return "סימון המטלה נכשל";
+    case "Task is not completed":
+      return "המטלה לא סומנה כבוצעה";
+    case "Uncomplete task failed":
+      return "ביטול סימון המטלה נכשל";
     case "Form answers are required":
       return "יש למלא את הטופס לפני סימון המטלה כבוצעה";
     default:
@@ -80,8 +87,11 @@ export default function TaskPage() {
   const [task, setTask] = useState<AssignedTask | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
+  const [isUncompleting, setIsUncompleting] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<"complete" | "uncomplete" | null>(
+    null,
+  );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -148,7 +158,7 @@ export default function TaskPage() {
     }
 
     setIsCompleting(true);
-    setIsConfirmOpen(false);
+    setConfirmAction(null);
     setErrorMessage(null);
 
     try {
@@ -164,11 +174,48 @@ export default function TaskPage() {
       }
 
       void triggerTaskConfetti();
-      await router.replace("/home");
+      await router.replace("/allTasks");
     } catch {
       setErrorMessage("שגיאה בסימון המטלה. נסה שוב.");
     } finally {
       setIsCompleting(false);
+    }
+  };
+
+  const handleUncompleteTask = async () => {
+    if (!user || !task || !task.completed || !isAssignee) {
+      return;
+    }
+
+    setIsUncompleting(true);
+    setConfirmAction(null);
+    setErrorMessage(null);
+
+    try {
+      const { response, data } = await uncompleteTask(task.id, {
+        userId: user.id,
+      });
+
+      if (!response.ok) {
+        const { error } = data as UncompleteTaskErrorResponse;
+        setErrorMessage(getErrorMessage(error ?? "ביטול סימון המטלה נכשל"));
+        return;
+      }
+
+      setTask((currentTask) =>
+        currentTask
+          ? {
+              ...currentTask,
+              completed: false,
+              completedAt: null,
+            }
+          : currentTask,
+      );
+      setSuccessMessage("סימון המטלה בוטל");
+    } catch {
+      setErrorMessage("שגיאה בביטול סימון המטלה. נסה שוב.");
+    } finally {
+      setIsUncompleting(false);
     }
   };
 
@@ -291,6 +338,11 @@ export default function TaskPage() {
                       </Typography>
                     </Box>
                     <Box>
+                      <Typography variant="subtitle2" color="text.secondary">
+                        קטגוריה: {task.category}
+                      </Typography>
+                    </Box>
+                    <Box>
                       <Typography variant="subtitle2">
                         תג"ב: {formatDueDate(task.dueDate)}
                       </Typography>
@@ -335,33 +387,52 @@ export default function TaskPage() {
                 <Button
                   variant="contained"
                   fullWidth
+                  color={task.completed ? "inherit" : "primary"}
                   disabled={
                     isCompleting ||
-                    task.completed ||
+                    isUncompleting ||
                     !isAssignee ||
-                    (hasFormFields && !canCompleteForm)
+                    (task.completed
+                      ? false
+                      : hasFormFields && !canCompleteForm)
                   }
                   onClick={() => {
-                    if (!isAssignee) return;
-                    setIsConfirmOpen(true);
+                    if (!isAssignee) {
+                      return;
+                    }
+
+                    setConfirmAction(task.completed ? "uncomplete" : "complete");
                   }}
                   startIcon={
-                    isCompleting ? (
+                    isCompleting || isUncompleting ? (
                       <CircularProgress size={20} color="inherit" />
+                    ) : isAssignee && task.completed ? (
+                      <UndoIcon />
                     ) : isAssignee && !task.completed ? (
                       <CheckIcon />
                     ) : (
                       undefined
                     )
                   }
+                  sx={
+                    task.completed
+                      ? {
+                          bgcolor: "grey.300",
+                          color: "text.primary",
+                          "&:hover": { bgcolor: "grey.400" },
+                        }
+                      : undefined
+                  }
                 >
                   {isCompleting
                     ? "מסמן..."
-                    : task.completed
-                      ? "סומן כבוצע"
-                      : isAssignee
-                        ? "בוצע"
-                        : "אינך משויך למטלה זו"}
+                    : isUncompleting
+                      ? "מבטל..."
+                      : task.completed
+                        ? "הגשה סימון"
+                        : isAssignee
+                          ? "בוצע"
+                          : "אינך משויך למטלה זו"}
                 </Button>
               </Box>
             )}
@@ -369,20 +440,33 @@ export default function TaskPage() {
         </Box>
       </AppLayout>
       <Dialog
-        open={isConfirmOpen}
-        onClose={() => setIsConfirmOpen(false)}
+        open={confirmAction !== null}
+        onClose={() => setConfirmAction(null)}
         fullWidth
         maxWidth="xs"
       >
-        <DialogTitle>סימון מטלה כבוצעה</DialogTitle>
+        <DialogTitle>
+          {confirmAction === "uncomplete"
+            ? "ביטול הגשה"
+            : "הגשת מטלה"}
+        </DialogTitle>
         <DialogContent>
           <DialogContentText>
-            האם אתה בטוח שברצונך לסמן את &quot;{task?.title}&quot; כבוצעה?
+            {confirmAction === "uncomplete"
+              ? `האם אתה בטוח שאתה רוצה לבטל את ההגשה של המטלה "${task?.title}"?`
+              : `האם אתה בטוח שאתה רוצה להגיש את המטלה "${task?.title}"?`}
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setIsConfirmOpen(false)}>ביטול</Button>
-          <Button variant="contained" onClick={() => void handleCompleteTask()}>
+          <Button onClick={() => setConfirmAction(null)}>ביטול</Button>
+          <Button
+            variant="contained"
+            onClick={() =>
+              void (confirmAction === "uncomplete"
+                ? handleUncompleteTask()
+                : handleCompleteTask())
+            }
+          >
             אישור
           </Button>
         </DialogActions>

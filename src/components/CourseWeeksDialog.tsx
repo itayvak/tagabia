@@ -18,7 +18,7 @@ import {
 } from "@mui/material";
 import { fetchCourseConfig } from "@/lib/fetchCourseConfig";
 import { updateCourseConfig } from "@/lib/updateCourseConfig";
-import { getWeekDefinition, WEEK_CATALOG } from "@/lib/weekCatalog";
+import { WEEK_CATALOG } from "@/lib/weekCatalog";
 import type {
   GetCourseConfigSuccessResponse,
   StoredCourseWeek,
@@ -184,10 +184,7 @@ export default function CourseWeeksDialog({
             />
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
               <Typography variant="subtitle2">שבועות הקורס</Typography>
-              {weeks.map((week, index) => {
-                const selectedWeek = getWeekDefinition(week.weekId);
-
-                return (
+              {weeks.map((week, index) => (
                   <Box
                     key={index}
                     sx={{ display: "flex", alignItems: "center", gap: 1 }}
@@ -218,20 +215,6 @@ export default function CourseWeeksDialog({
                         </MenuItem>
                       ))}
                     </TextField>
-                    <Box
-                      component="img"
-                      src={selectedWeek?.image}
-                      alt={selectedWeek?.name ?? ""}
-                      sx={{
-                        width: 48,
-                        height: 32,
-                        objectFit: "cover",
-                        borderRadius: 1,
-                        flexShrink: 0,
-                        bgcolor: "action.hover",
-                        display: selectedWeek ? "block" : "none",
-                      }}
-                    />
                     <Box sx={{ display: "flex", flexDirection: "column" }}>
                       <IconButton
                         aria-label={`הזז שבוע ${index + 1} למעלה`}
@@ -258,8 +241,7 @@ export default function CourseWeeksDialog({
                       <DeleteIcon />
                     </IconButton>
                   </Box>
-                );
-              })}
+              ))}
               <Button
                 startIcon={<AddIcon />}
                 onClick={handleAddWeek}

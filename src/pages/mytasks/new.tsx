@@ -37,7 +37,7 @@ export default function NewTaskPage() {
     }
 
     if (!canManageTasks(session.user.role)) {
-      void router.replace("/home");
+      void router.replace("/allTasks");
       return;
     }
 
@@ -60,6 +60,7 @@ export default function NewTaskPage() {
       const { response, data } = await createTask({
         title: task.title,
         content: task.content,
+        category: task.category,
         creatorId: user.id,
         dueDate: task.dueDate,
         assignedTeams: task.assignedTeams,

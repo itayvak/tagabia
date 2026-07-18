@@ -1,3 +1,4 @@
+import { normalizeTaskCategory } from "@/lib/taskCategory";
 import type { FirestoreTask, PublicTask, TaskMedia } from "@/types/task";
 import type { Timestamp } from "firebase-admin/firestore";
 
@@ -46,6 +47,7 @@ export function toPublicTask(
     id,
     title: task.title,
     content: task.content ?? "",
+    category: normalizeTaskCategory(task.category),
     creatorId: task.creatorId ?? "",
     creatorName: task.creatorName,
     creatorRank: task.creatorRank,

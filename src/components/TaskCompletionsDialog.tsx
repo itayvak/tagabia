@@ -4,6 +4,7 @@ import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 import { useEffect, useMemo, useState } from "react";
 import {
   Box,
+  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -20,7 +21,7 @@ import {
   Typography,
 } from "@mui/material";
 import { formatPlatoonLabel } from "@/lib/platoons";
-import { formatDueDate } from "@/lib/taskDate";
+import { formatDueDate, isCompletedLate } from "@/lib/taskDate";
 import type { TaskAssigneeStatus } from "@/types/task";
 
 type CompletionFilter = "all" | "completed" | "pending";
@@ -28,6 +29,7 @@ type CompletionFilter = "all" | "completed" | "pending";
 interface TaskCompletionsDialogProps {
   open: boolean;
   taskTitle: string;
+  dueDate: string;
   isLoading: boolean;
   assignees: TaskAssigneeStatus[];
   hasFormFields?: boolean;
@@ -74,6 +76,7 @@ function getEmptyFilterMessage(filter: CompletionFilter): string {
 export default function TaskCompletionsDialog({
   open,
   taskTitle,
+  dueDate,
   isLoading,
   assignees,
   hasFormFields = false,
@@ -186,6 +189,11 @@ export default function TaskCompletionsDialog({
                 submittedUserIdSet.has(assignee.userId);
               const canViewSubmission =
                 hasSubmission && onViewSubmission !== undefined;
+              const completedLate =
+                dueDate !== "" &&
+                assignee.completed &&
+                assignee.completedAt !== null &&
+                isCompletedLate(dueDate, assignee.completedAt);
 
               const listContent = (
                 <>
@@ -197,7 +205,33 @@ export default function TaskCompletionsDialog({
                     )}
                   </ListItemIcon>
                   <ListItemText
-                    primary={`${assignee.assigneeName}`.trim()}
+                    primary={
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <Typography component="span">
+                          {`${assignee.assigneeName}`.trim()}
+                        </Typography>
+                        {completedLate ? (
+                          <Chip
+                            label="באיחור"
+                            size="small"
+                            variant="outlined"
+                            sx={{
+                              bgcolor: "#fde8e8",
+                              color: "#b42318",
+                              borderColor: "#f5c2c2",
+                              height: 22,
+                            }}
+                          />
+                        ) : null}
+                      </Box>
+                    }
                     secondary={
                       <>
                         {`פלוגת ${formatPlatoonLabel(assignee.platoon)}, צוות ${assignee.team}`}

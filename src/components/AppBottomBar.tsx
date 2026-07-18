@@ -4,7 +4,6 @@ import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import HomeIcon from "@mui/icons-material/Home";
-import PersonIcon from "@mui/icons-material/Person";
 import { BottomNavigation, BottomNavigationAction, Paper } from "@mui/material";
 import { canAccessAdmin } from "@/lib/admin";
 import { canManageTasks } from "@/lib/roles";
@@ -30,10 +29,11 @@ export default function AppBottomBar({ user }: AppBottomBarProps) {
 
   const navItems: NavItem[] = [
     {
-      label: "בית",
-      href: "/home",
+      label: "תג\"בייה",
+      href: "/allTasks",
       icon: <HomeIcon />,
-      match: (pathname) => pathname === "/home" || pathname.startsWith("/tasks/"),
+      match: (pathname) =>
+        pathname === "/allTasks" || pathname.startsWith("/tasks/"),
     },
     {
       label: "לוח שנה",
@@ -62,12 +62,6 @@ export default function AppBottomBar({ user }: AppBottomBarProps) {
           },
         ]
       : []),
-    {
-      label: "פרופיל",
-      href: "/profile",
-      icon: <PersonIcon />,
-      match: (pathname) => pathname === "/profile",
-    },
   ];
 
   const activeIndex = navItems.findIndex((item) => item.match(router.pathname));

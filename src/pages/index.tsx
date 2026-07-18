@@ -83,7 +83,7 @@ export default function LoginPage() {
           (data as LoginSuccessResponse).user,
           session.credentials,
         );
-        await router.replace("/home");
+        await router.replace("/allTasks");
       } catch {
         clearSession();
         setIsCheckingSession(false);
@@ -119,7 +119,7 @@ export default function LoginPage() {
         id: id.trim(),
         password,
       });
-      await router.replace("/home");
+      await router.replace("/allTasks");
     } catch {
       setErrorMessage("שגיאה בהתחברות. נסה שוב.");
     } finally {
@@ -155,7 +155,7 @@ export default function LoginPage() {
         id: setupUserId,
         password: newPassword,
       });
-      await router.replace("/home");
+      await router.replace("/allTasks");
     } catch {
       setErrorMessage("שגיאה בשמירת הסיסמה. נסה שוב.");
     } finally {

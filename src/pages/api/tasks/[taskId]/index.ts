@@ -5,6 +5,7 @@ import {
   normalizeUserIds,
 } from "@/lib/assigneeTeams";
 import { getAdminFirestore } from "@/lib/firebaseAdmin";
+import { isTaskCategory } from "@/lib/taskCategory";
 import { toPublicTask } from "@/lib/taskMapper";
 import {
   deleteTaskSubcollection,
@@ -133,7 +134,7 @@ async function handleGet(
       .get();
 
     let submission = null;
-    if (completionDoc.exists && formFields.length > 0) {
+    if (formFields.length > 0) {
       const submissionDoc = await db
         .collection("tasks")
         .doc(taskId)
@@ -179,7 +180,7 @@ async function handlePut(
 ) {
   const taskId =
     typeof req.query.taskId === "string" ? req.query.taskId.trim() : "";
-  const { userId, title, content, dueDate, assignedTeams, assignedUsers, formFields } =
+  const { userId, title, content, category, dueDate, assignedTeams, assignedUsers, formFields } =
     req.body as Partial<UpdateTaskRequestBody>;
 
   if (!taskId) {
@@ -206,6 +207,10 @@ async function handlePut(
 
   if (!isNonEmptyString(dueDate)) {
     return res.status(400).json({ error: "Due date is required" });
+  }
+
+  if (!isTaskCategory(category)) {
+    return res.status(400).json({ error: "Invalid task category" });
   }
 
   const normalizedTeams = normalizeTeamIdsOptional(assignedTeams);
@@ -253,6 +258,7 @@ async function handlePut(
     await taskRef.update({
       title: title.trim(),
       content: trimmedContent,
+      category,
       dueDate: Timestamp.fromDate(parsedDueDate),
       assignedTeams: normalizedTeams,
       assignedUsers: normalizedUsers,

@@ -41,6 +41,12 @@ export function getDaysLeft(dueDate: string): number {
   );
 }
 
+function formatHebrewWeekday(dueDate: string): string {
+  return new Intl.DateTimeFormat("he-IL", { weekday: "long" }).format(
+    new Date(dueDate),
+  );
+}
+
 export function formatDaysLeft(dueDate: string): string {
   const daysLeft = getDaysLeft(dueDate);
 
@@ -49,18 +55,18 @@ export function formatDaysLeft(dueDate: string): string {
   }
 
   if (daysLeft === 1) {
-    return "יום אחד נותר";
+    return "מחר";
   }
 
-  if (daysLeft > 1) {
-    return `${daysLeft} ימים נותרו`;
+  if (daysLeft >= 2 && daysLeft <= 6) {
+    return formatHebrewWeekday(dueDate);
   }
 
-  if (daysLeft === -1) {
-    return "יום אחד באיחור";
+  if (daysLeft > 6) {
+    return `בעוד ${daysLeft} ימים`;
   }
 
-  return `${Math.abs(daysLeft)} ימים באיחור`;
+  return "באיחור";
 }
 
 export type DaysLeftChipUrgency = "past" | "soon" | "thisWeek" | "default";
@@ -109,6 +115,13 @@ export function isDueThisWeek(
   );
 
   return startOfDue >= startOfWeek && startOfDue <= endOfWeek;
+}
+
+export function isCompletedLate(
+  dueDate: string,
+  completedAt: string,
+): boolean {
+  return new Date(completedAt).getTime() > new Date(dueDate).getTime();
 }
 
 export function sortTasksByDueDateWithPastLast<T extends { dueDate: string }>(

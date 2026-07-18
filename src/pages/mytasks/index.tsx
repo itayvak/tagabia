@@ -88,7 +88,7 @@ export default function MyTasksPage() {
     }
 
     if (!canManageTasks(session.user.role)) {
-      void router.replace("/home");
+      void router.replace("/allTasks");
       return;
     }
 
@@ -467,6 +467,7 @@ export default function MyTasksPage() {
       <TaskCompletionsDialog
         open={completionsTask !== null}
         taskTitle={completionsTask?.title ?? ""}
+        dueDate={completionsTask?.dueDate ?? ""}
         isLoading={isLoadingCompletions}
         assignees={assigneeStatuses}
         hasFormFields={completionsTask?.hasFormFields ?? false}

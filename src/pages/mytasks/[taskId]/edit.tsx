@@ -59,6 +59,7 @@ export default function EditTaskPage() {
     return {
       title: task.title,
       content: task.content,
+      category: task.category,
       dueDate: toDatetimeLocalValue(task.dueDate),
       assignedTeams: task.assignedTeams,
       assignedUsers: task.assignedUsers,
@@ -84,7 +85,7 @@ export default function EditTaskPage() {
     }
 
     if (!canManageTasks(session.user.role)) {
-      void router.replace("/home");
+      void router.replace("/allTasks");
       return;
     }
 
@@ -145,6 +146,7 @@ export default function EditTaskPage() {
         userId: user.id,
         title: formData.title,
         content: formData.content,
+        category: formData.category,
         dueDate: formData.dueDate,
         assignedTeams: formData.assignedTeams,
         assignedUsers: formData.assignedUsers,

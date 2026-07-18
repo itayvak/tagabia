@@ -43,6 +43,9 @@ export default function CreatedTaskCard({
           תג"ב: {formatDueDate(task.dueDate)}
         </Typography>
         <Typography variant="body2" color="text.secondary">
+          {task.category}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
           {formatDaysLeft(task.dueDate)}
         </Typography>
       </CardContent>

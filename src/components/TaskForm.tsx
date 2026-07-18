@@ -1,6 +1,13 @@
 import { FormEvent, useEffect, useState } from "react";
-import { Alert, Box, Button, CircularProgress, TextField } from "@mui/material";
+import {
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  TextField,
+} from "@mui/material";
 import TaskAssigneePicker from "@/components/TaskAssigneePicker";
+import TaskCategoryPicker from "@/components/TaskCategoryPicker";
 import TaskFormFieldBuilder, {
   toBuilderFormFields,
   toFormFieldInputs,
@@ -9,12 +16,17 @@ import TaskFormFieldBuilder, {
 } from "@/components/TaskFormFieldBuilder";
 import TaskMediaUpload from "@/components/TaskMediaUpload";
 import { hasTaskAssignment } from "@/lib/assigneeTeams";
+import {
+  DEFAULT_TASK_CATEGORY,
+  type TaskCategory,
+} from "@/lib/taskCategory";
 import type { TaskMedia } from "@/types/task";
 import type { TaskFormFieldInput } from "@/types/taskForm";
 
 export interface TaskFormData {
   title: string;
   content: string;
+  category: TaskCategory;
   dueDate: string;
   assignedTeams: number[];
   assignedUsers: string[];
@@ -39,6 +51,7 @@ interface TaskFormProps {
 const emptyForm: TaskFormData = {
   title: "",
   content: "",
+  category: DEFAULT_TASK_CATEGORY,
   dueDate: "",
   assignedTeams: [],
   assignedUsers: [],
@@ -61,6 +74,9 @@ export default function TaskForm({
 }: TaskFormProps) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [category, setCategory] = useState<TaskCategory | null>(() =>
+    mode === "create" ? null : DEFAULT_TASK_CATEGORY,
+  );
   const [dueDate, setDueDate] = useState("");
   const [assignedTeams, setAssignedTeams] = useState<number[]>([]);
   const [assignedUsers, setAssignedUsers] = useState<string[]>([]);
@@ -74,6 +90,7 @@ export default function TaskForm({
 
     setTitle(initialValues.title);
     setContent(initialValues.content);
+    setCategory(initialValues.category);
     setDueDate(initialValues.dueDate);
     setAssignedTeams(initialValues.assignedTeams);
     setAssignedUsers(initialValues.assignedUsers);
@@ -92,6 +109,11 @@ export default function TaskForm({
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    if (!category) {
+      onError?.("יש לבחור קטגוריה");
+      return;
+    }
+
     if (!hasTaskAssignment(assignedTeams, assignedUsers)) {
       onError?.("יש לבחור לפחות צוות או צוער אחד");
       return;
@@ -106,6 +128,7 @@ export default function TaskForm({
     onSubmit({
       title: title.trim(),
       content: content.trim(),
+      category,
       dueDate,
       assignedTeams,
       assignedUsers,
@@ -137,13 +160,20 @@ export default function TaskForm({
       onSubmit={handleSubmit}
       sx={{ display: "flex", flexDirection: "column", gap: 2 }}
     >
+      <TaskCategoryPicker
+        value={category}
+        onChange={setCategory}
+        disabled={isFormBusy}
+        autoOpen={isCreate}
+        requireSelection={isCreate}
+      />
       <TextField
         label="כותרת"
         value={title}
         onChange={(event) => setTitle(event.target.value)}
         required
         fullWidth
-        autoFocus
+        autoFocus={!isCreate || category !== null}
         disabled={isFormBusy}
         slotProps={{
           htmlInput: { dir: "rtl" },

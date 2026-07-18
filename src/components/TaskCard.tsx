@@ -12,11 +12,14 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  IconButton,
   Typography,
 } from "@mui/material";
 import CheckIcon from "@mui/icons-material/Check";
 import DescriptionIcon from "@mui/icons-material/Description";
-import { getRoleLabel } from "@/lib/roles";
+import PushPinIcon from "@mui/icons-material/PushPin";
+import PushPinOutlinedIcon from "@mui/icons-material/PushPinOutlined";
+import TaskCategoryIcon from "@/components/TaskCategoryIcon";
 import { formatDaysLeft, formatDueDate, getDaysLeftChipUrgency } from "@/lib/taskDate";
 import type { AssignedTask } from "@/types/task";
 
@@ -25,6 +28,8 @@ interface TaskCardProps {
   isCompleting: boolean;
   isCompleted?: boolean;
   completedAt?: string | null;
+  isPinned?: boolean;
+  onTogglePin?: (taskId: string) => void;
   onOpen: (taskId: string) => void;
   onComplete: (taskId: string) => void;
 }
@@ -34,6 +39,8 @@ export default function TaskCard({
   isCompleting,
   isCompleted = false,
   completedAt = null,
+  isPinned = false,
+  onTogglePin,
   onOpen,
   onComplete,
 }: TaskCardProps) {
@@ -85,14 +92,34 @@ export default function TaskCard({
             <Box
               sx={{
                 display: "flex",
-                alignItems: "flex-start",
+                alignItems: "center",
                 justifyContent: "space-between",
-                gap: 1,
+                gap: 0.5,
               }}
             >
-              <Typography variant="h6" component="h2" sx={{ flex: 1 }}>
+              <Typography variant="h6" component="h2" sx={{ flex: 1, m: 0 }}>
                 {task.title}
               </Typography>
+              {onTogglePin ? (
+                <IconButton
+                  size="small"
+                  aria-label={isPinned ? "בטל הצמדה" : "הצמד למעלה"}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onTogglePin(task.id);
+                  }}
+                  sx={{
+                    flexShrink: 0,
+                    color: isPinned ? "primary.main" : "action.active",
+                  }}
+                >
+                  {isPinned ? (
+                    <PushPinIcon fontSize="small" />
+                  ) : (
+                    <PushPinOutlinedIcon fontSize="small" />
+                  )}
+                </IconButton>
+              ) : null}
               <Chip
                 label={formatDaysLeft(task.dueDate)}
                 size="small"
@@ -117,13 +144,21 @@ export default function TaskCard({
                 }}
               />
             </Box>
-            <Typography variant="body2" color="text.secondary">
-              מאת {task.creatorRank} {task.creatorName} -{" "}
-              {getRoleLabel(task.creatorRole)}
-            </Typography>
             <Typography variant="body2">
               תג"ב: {formatDueDate(task.dueDate)}
             </Typography>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 0.5,
+              }}
+            >
+              <TaskCategoryIcon category={task.category} />
+              <Typography variant="caption" color="text.secondary">
+                {task.category}
+              </Typography>
+            </Box>
             {isCompleted && completedAt && (
               <Typography variant="body2" color="text.secondary">
                 בוצע ב-{formatDueDate(completedAt)}
@@ -143,7 +178,10 @@ export default function TaskCard({
           <Button
             variant="contained"
             disabled={isCompleting || isCompleted}
-            onClick={handleActionClick}
+            onClick={(event) => {
+              event.stopPropagation();
+              handleActionClick();
+            }}
             aria-label={actionLabel}
             sx={{
               alignSelf: "stretch",
