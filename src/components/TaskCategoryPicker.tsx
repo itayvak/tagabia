@@ -81,7 +81,6 @@ export default function TaskCategoryPicker({
       <Dialog
         open={isDialogOpen}
         onClose={handleDialogClose}
-        disableEscapeKeyDown={requireSelection && !value}
         fullWidth
         maxWidth="sm"
       >
