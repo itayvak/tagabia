@@ -122,7 +122,7 @@ export default async function handler(
         unchanged += 1;
         continue;
       } else {
-        batch.set(db.collection("users").doc(id), data);
+        batch.set(db.collection("users").doc(id), { ...existing, ...data });
         updated += 1;
       }
 

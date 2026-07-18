@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import ChecklistIcon from "@mui/icons-material/Checklist";
 import HomeIcon from "@mui/icons-material/Home";
 import { BottomNavigation, BottomNavigationAction, Paper } from "@mui/material";
 import { canAccessAdmin } from "@/lib/admin";
@@ -40,6 +41,12 @@ export default function AppBottomBar({ user }: AppBottomBarProps) {
       href: "/calendar",
       icon: <CalendarMonthIcon />,
       match: (pathname) => pathname === "/calendar",
+    },
+    {
+      label: "רשימה אישית",
+      href: "/todo",
+      icon: <ChecklistIcon />,
+      match: (pathname) => pathname === "/todo",
     },
     ...(showMyTasks
       ? [

@@ -33,6 +33,7 @@ import {
 } from "@/lib/pinnedTasksStorage";
 import { triggerTaskConfetti } from "@/lib/taskConfetti";
 import { getUserInitials } from "@/lib/userInitials";
+import { delaGothicOne } from "@/lib/fonts";
 import { TASK_CATEGORIES, type TaskCategory } from "@/lib/taskCategory";
 import type {
   AssignedTask,
@@ -48,6 +49,40 @@ import type {
 import type { PublicUser } from "@/types/user";
 
 type AllTasksTaskFilter = "pending" | "completed";
+
+const APP_TITLE = "All In One";
+
+function StretchedAppTitle({ stretched }: { stretched: boolean }) {
+  return (
+    <Typography
+      variant="h5"
+      component="h1"
+      dir="ltr"
+      style={
+        stretched
+          ? {
+              display: "flex",
+              flexDirection: "row",
+              justifyContent: "space-between",
+              width: "100%",
+            }
+          : undefined
+      }
+      sx={{
+        color: "common.white",
+        fontFamily: delaGothicOne.style.fontFamily,
+      }}
+    >
+      {stretched
+        ? APP_TITLE.split("").map((char, index) => (
+            <Box component="span" key={index}>
+              {char === " " ? "\u00A0" : char}
+            </Box>
+          ))
+        : APP_TITLE}
+    </Typography>
+  );
+}
 
 function toggleCategorySelection(
   selected: TaskCategory[],
@@ -337,6 +372,18 @@ export default function AllTasksPage() {
               </Avatar>
             </IconButton>
             <Box
+              component="img"
+              src="/bahad1.png"
+              alt="בה״ד 1"
+              sx={{
+                position: "absolute",
+                top: 24,
+                insetInlineEnd: 16,
+                width: 40,
+                height: 40,
+              }}
+            />
+            <Box
               sx={{
                 display: "flex",
                 flexDirection: "column",
@@ -346,36 +393,20 @@ export default function AllTasksPage() {
             >
               <Box
                 sx={{
-                  display: "flex",
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 1.5,
+                  display: "inline-flex",
+                  flexDirection: "column",
+                  alignItems: "stretch",
                 }}
               >
-                <Box>
+                <StretchedAppTitle stretched={Boolean(currentWeek)} />
+                {currentWeek ? (
                   <Typography
-                    variant="h5"
-                    component="h1"
-                    sx={{ color: "common.white" }}
+                    variant="body2"
+                    sx={{ color: "grey.100", textAlign: "end" }}
                   >
-                    All In One
+                    {currentWeek.name}
                   </Typography>
-                  {currentWeek ? (
-                    <Typography
-                      variant="body2"
-                      sx={{ color: "grey.100", textAlign: "end" }}
-                    >
-                      {currentWeek.name}
-                    </Typography>
-                  ) : null}
-                </Box>
-                <Box
-                  component="img"
-                  src="/bahad1.png"
-                  alt="בה״ד 1"
-                  sx={{ width: 52, height: 52 }}
-                />
+                ) : null}
               </Box>
               <Box
                 sx={{

@@ -4,6 +4,13 @@ export type { Role } from "@/lib/roles";
 
 export type Platoon = "A" | "B" | "C" | "D" | "E";
 
+export interface PersonalTodoItem {
+  id: string;
+  text: string;
+  completed: boolean;
+  createdAt: string;
+}
+
 export interface FirestoreUser {
   fullname: string;
   password: string;
@@ -11,6 +18,7 @@ export interface FirestoreUser {
   role: Role;
   platoon: Platoon;
   team: number;
+  personalTodos?: PersonalTodoItem[];
 }
 
 export interface PublicUser {
@@ -66,5 +74,26 @@ export interface ImportUsersSuccessResponse {
 }
 
 export interface ImportUsersErrorResponse {
+  error: string;
+}
+
+export interface GetPersonalTodosSuccessResponse {
+  todos: PersonalTodoItem[];
+}
+
+export interface GetPersonalTodosErrorResponse {
+  error: string;
+}
+
+export interface SavePersonalTodosRequestBody {
+  userId: string;
+  todos: PersonalTodoItem[];
+}
+
+export interface SavePersonalTodosSuccessResponse {
+  todos: PersonalTodoItem[];
+}
+
+export interface SavePersonalTodosErrorResponse {
   error: string;
 }

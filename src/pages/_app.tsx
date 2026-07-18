@@ -9,7 +9,7 @@ import type { AppProps } from "next/app";
 import Head from "next/head";
 import { useEffect } from "react";
 
-const APP_TITLE = "תגביה";
+const APP_TITLE = "All In One";
 
 type AppPropsWithCache = AppProps & {
   emotionCache?: EmotionCache;

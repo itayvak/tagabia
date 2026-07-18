@@ -21,6 +21,11 @@ export const WEEK_CATALOG: readonly WeekDefinition[] = [
     image: "/weekBanners/weekLeadershipIntro.jpeg",
   },
   {
+    id: "armyProffeshion",
+    name: "שבוע מקצוע צבאי",
+    image: "/weekBanners/weekArmyProffeshion.jpeg",
+  },
+  {
     id: "field",
     name: "שבוע שטח",
     image: "/weekBanners/weekField.jpeg",
@@ -28,7 +33,7 @@ export const WEEK_CATALOG: readonly WeekDefinition[] = [
   {
     id: "sadach",
     name: "שבוע סד״ח",
-    image: "/weekBanners/weekSdach.jpeg",
+    image: "/weekBanners/weekSadach.jpeg",
   },
   {
     id: "commandAndCare",
