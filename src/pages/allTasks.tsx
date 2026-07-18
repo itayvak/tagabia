@@ -388,7 +388,7 @@ export default function AllTasksPage() {
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                gap: 1.5,
+                gap: 3,
               }}
             >
               <Box
