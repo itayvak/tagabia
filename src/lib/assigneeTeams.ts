@@ -202,6 +202,35 @@ export async function getUsersByIds(
   return sortUsersInTeam(users);
 }
 
+export async function searchUsers(
+  db: Firestore,
+  query: string,
+  limit = 20,
+): Promise<UserInTeam[]> {
+  const trimmed = query.trim();
+  if (!trimmed) {
+    return [];
+  }
+
+  const normalizedQuery = trimmed.toLocaleLowerCase("he");
+  const snapshot = await db.collection("users").get();
+
+  const matches = snapshot.docs
+    .map((doc) => ({
+      id: doc.id,
+      data: doc.data() as FirestoreUser,
+    }))
+    .filter(({ id, data }) => {
+      if (id.toLocaleLowerCase("he").includes(normalizedQuery)) {
+        return true;
+      }
+
+      return data.fullname.toLocaleLowerCase("he").includes(normalizedQuery);
+    });
+
+  return sortUsersInTeam(matches).slice(0, limit);
+}
+
 export async function getTaskAssignees(
   db: Firestore,
   assignedTeams: number[],

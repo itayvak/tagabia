@@ -6,7 +6,7 @@ import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import HomeIcon from "@mui/icons-material/Home";
 import PersonIcon from "@mui/icons-material/Person";
 import { BottomNavigation, BottomNavigationAction, Paper } from "@mui/material";
-import { isAdminUser } from "@/lib/admin";
+import { canAccessAdmin } from "@/lib/admin";
 import { canManageTasks } from "@/lib/roles";
 import type { PublicUser } from "@/types/user";
 
@@ -26,7 +26,7 @@ type NavItem = {
 export default function AppBottomBar({ user }: AppBottomBarProps) {
   const router = useRouter();
   const showMyTasks = canManageTasks(user.role);
-  const showAdmin = isAdminUser(user.id);
+  const showAdmin = canAccessAdmin(user);
 
   const navItems: NavItem[] = [
     {
@@ -44,7 +44,7 @@ export default function AppBottomBar({ user }: AppBottomBarProps) {
     ...(showMyTasks
       ? [
           {
-            label: "מטלות שיצרתי",
+            label: "ניהול מטלות",
             href: "/mytasks",
             icon: <AssignmentIcon />,
             match: (pathname: string) =>
@@ -55,7 +55,7 @@ export default function AppBottomBar({ user }: AppBottomBarProps) {
     ...(showAdmin
       ? [
           {
-            label: "ניהול",
+            label: "מפתחים",
             href: "/admin",
             icon: <AdminPanelSettingsIcon />,
             match: (pathname: string) => pathname === "/admin",

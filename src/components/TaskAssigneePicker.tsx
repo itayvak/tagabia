@@ -3,16 +3,19 @@ import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
+  Autocomplete,
   Box,
   Checkbox,
   Chip,
   CircularProgress,
   Collapse,
+  TextField,
   Typography,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { fetchUsersByIds } from "@/lib/fetchUsersByIds";
 import { fetchUsersByTeams } from "@/lib/fetchUsersByTeams";
+import { fetchUsersSearch } from "@/lib/fetchUsersSearch";
 import {
   selectionToTeamIds,
   teamIdsToSelection,
@@ -23,6 +26,7 @@ import {
   formatPlatoonLabel,
   getTeamsForPlatoon,
   isEntireBattalionSelected,
+  getPlatoonForTeam,
 } from "@/lib/platoons";
 import type { Platoon, PublicUser } from "@/types/user";
 
@@ -30,6 +34,16 @@ function formatTeamHierarchyLabel(platoon: Platoon, team: number): string {
   const platoonTeams = getTeamsForPlatoon(platoon);
   const localIndex = platoonTeams.indexOf(team) + 1;
   return `צוות ${localIndex}`;
+}
+
+function formatUserSearchLabel(user: PublicUser): string {
+  const platoon = getPlatoonForTeam(user.team);
+  const teamLabel =
+    platoon !== null
+      ? `${formatPlatoonLabel(platoon)}, ${formatTeamHierarchyLabel(platoon, user.team)}`
+      : `צוות ${user.team}`;
+
+  return `${user.rank} ${user.fullname} (${teamLabel})`;
 }
 
 const hierarchyLineSx = {
@@ -184,6 +198,10 @@ export default function TaskAssigneePicker({
   const [expandedPlatoons, setExpandedPlatoons] = useState<Set<Platoon>>(
     new Set(),
   );
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<PublicUser[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   const assignedUsersKey = assignedUsers.join(",");
 
@@ -211,6 +229,54 @@ export default function TaskAssigneePicker({
       cancelled = true;
     };
   }, [assignedUsersKey]);
+
+  useEffect(() => {
+    const trimmedQuery = searchQuery.trim();
+    if (!trimmedQuery) {
+      setSearchResults([]);
+      setSearchError(null);
+      setIsSearching(false);
+      return;
+    }
+
+    let cancelled = false;
+    setIsSearching(true);
+    setSearchError(null);
+
+    const timeoutId = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const { response, data } = await fetchUsersSearch(trimmedQuery);
+
+          if (cancelled) {
+            return;
+          }
+
+          if (!response.ok) {
+            setSearchResults([]);
+            setSearchError("חיפוש הצוערים נכשל");
+            return;
+          }
+
+          setSearchResults("users" in data ? data.users : []);
+        } catch {
+          if (!cancelled) {
+            setSearchResults([]);
+            setSearchError("שגיאה בחיפוש צוערים");
+          }
+        } finally {
+          if (!cancelled) {
+            setIsSearching(false);
+          }
+        }
+      })();
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [searchQuery]);
 
   const loadTeamUsers = useCallback(async (teamId: number) => {
     setLoadingTeams((current) => {
@@ -399,6 +465,24 @@ export default function TaskAssigneePicker({
     return assignedUsers.includes(userId);
   };
 
+  const isUserAssigned = (user: PublicUser) => isMemberChecked(user.team, user.id);
+
+  const handleSelectSearchedUser = (user: PublicUser | null) => {
+    if (!user || disabled || isUserAssigned(user)) {
+      return;
+    }
+
+    setUsersByTeam((current) => cacheUsersByTeam([user], current));
+    handleMemberChange(user.team, user.id, true);
+    setSearchQuery("");
+    setSearchResults([]);
+  };
+
+  const selectableSearchResults = useMemo(
+    () => searchResults.filter((user) => !isUserAssigned(user)),
+    [searchResults, assignedTeams, assignedUsers],
+  );
+
   const selection = useMemo(() => teamIdsToSelection(assignedTeams), [assignedTeams]);
 
   const handleEntireBattalionChange = (checked: boolean) => {
@@ -507,6 +591,33 @@ export default function TaskAssigneePicker({
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
       <Typography variant="subtitle1">שיוך לצוערים</Typography>
+
+      <Autocomplete
+        options={selectableSearchResults}
+        loading={isSearching}
+        inputValue={searchQuery}
+        onInputChange={(_event, value) => setSearchQuery(value)}
+        value={null}
+        onChange={(_event, user) => handleSelectSearchedUser(user)}
+        getOptionLabel={formatUserSearchLabel}
+        isOptionEqualToValue={(option, value) => option.id === value.id}
+        filterOptions={(options) => options}
+        disabled={disabled}
+        noOptionsText={
+          searchQuery.trim()
+            ? searchError ?? "לא נמצאו צוערים"
+            : "הקלד שם לחיפוש"
+        }
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            label="חיפוש צוער"
+            placeholder="הקלד שם או מזהה..."
+            error={searchError !== null}
+            helperText={searchError ?? undefined}
+          />
+        )}
+      />
 
       <AssigneeSelectionRow
         label="כל הגדוד"

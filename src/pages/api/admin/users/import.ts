@@ -1,4 +1,5 @@
-import { getAdminUserId, isAdminUser } from "@/lib/admin";
+import { getAdminUserId } from "@/lib/admin";
+import { canAccessAdminByUserId } from "@/lib/adminAccess";
 import { parseCsv } from "@/lib/csv";
 import { getAdminFirestore } from "@/lib/firebaseAdmin";
 import {
@@ -41,7 +42,7 @@ export default async function handler(
     return res.status(400).json({ error: "CSV content is required" });
   }
 
-  if (!isAdminUser(userId.trim())) {
+  if (!(await canAccessAdminByUserId(userId.trim()))) {
     return res.status(403).json({ error: "Forbidden" });
   }
 

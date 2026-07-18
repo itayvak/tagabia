@@ -12,8 +12,48 @@ export const WEEK_CATALOG: readonly WeekDefinition[] = [
   },
   {
     id: "fundamentals",
-    name: 'שבוע יסודות צה"ל',
+    name: "שבוע יסודות צה״ל",
     image: "/weekBanners/weekFundamentals.jpeg",
+  },
+  {
+    id: "leadershipIntro",
+    name: "שבוע מבוא למנהיגות",
+    image: "/weekBanners/weekLeadershipIntro.jpeg",
+  },
+  {
+    id: "field",
+    name: "שבוע שטח",
+    image: "/weekBanners/weekField.jpeg",
+  },
+  {
+    id: "sadach",
+    name: "שבוע סד״ח",
+    image: "/weekBanners/weekSdach.jpeg",
+  },
+  {
+    id: "commandAndCare",
+    name: "שבוע פיקוד וטיפול בפרט",
+    image: "/weekBanners/weekCommandAndCare.jpeg",
+  },
+  {
+    id: "haganash",
+    name: 'שבוע הגנ"ש',
+    image: "/weekBanners/weekHaganash.jpeg",
+  },
+  {
+    id: "identity",
+    name: "שבוע זהות",
+    image: "/weekBanners/weekIdentity.jpeg",
+  },
+  {
+    id: "summary",
+    name: "שבוע מסכם",
+    image: "/weekBanners/weekSummary.jpeg",
+  },
+  {
+    id: "completion",
+    name: "שבוע סיום",
+    image: "/weekBanners/weekCompletion.jpeg",
   },
 ];
 

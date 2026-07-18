@@ -17,6 +17,7 @@ import {
   Snackbar,
   Typography,
 } from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CheckIcon from "@mui/icons-material/Check";
 import ShareIcon from "@mui/icons-material/Share";
 import AppLayout from "@/components/AppLayout";
@@ -225,6 +226,15 @@ export default function TaskPage() {
           }}
         >
           <Container maxWidth="sm">
+            <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 1 }}>
+              <Button
+                endIcon={<ArrowBackIcon />}
+                onClick={() => void router.back()}
+                sx={{ color: "text.secondary" }}
+              >
+                חזור
+              </Button>
+            </Box>
             {isLoading ? (
               <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
                 <CircularProgress />

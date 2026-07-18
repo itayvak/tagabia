@@ -1,4 +1,4 @@
-import { isAdminUser } from "@/lib/admin";
+import { canAccessAdminByUserId } from "@/lib/adminAccess";
 import {
   COURSE_CONFIG_COLLECTION,
   COURSE_CONFIG_DOC_ID,
@@ -34,7 +34,7 @@ export default async function handler(
     return res.status(400).json({ error: "User ID is required" });
   }
 
-  if (!isAdminUser(userId.trim())) {
+  if (!(await canAccessAdminByUserId(userId.trim()))) {
     return res.status(403).json({ error: "Forbidden" });
   }
 

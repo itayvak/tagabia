@@ -11,7 +11,7 @@ import {
 } from "@mui/material";
 import AppLayout from "@/components/AppLayout";
 import CourseWeeksDialog from "@/components/CourseWeeksDialog";
-import { isAdminUser } from "@/lib/admin";
+import { canAccessAdmin } from "@/lib/admin";
 import { getSession } from "@/lib/authStorage";
 import { downloadUsersCsv } from "@/lib/downloadUsersCsv";
 import { uploadUsersCsv } from "@/lib/uploadUsersCsv";
@@ -91,7 +91,7 @@ export default function AdminPage() {
       return;
     }
 
-    if (!isAdminUser(session.user.id)) {
+    if (!canAccessAdmin(session.user)) {
       void router.replace("/home");
       return;
     }
