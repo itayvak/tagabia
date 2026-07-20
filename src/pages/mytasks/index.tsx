@@ -410,7 +410,7 @@ export default function MyTasksPage() {
           sx={{ mb: 2 }}
         >
           <ToggleButton value="created">מטלות שיצרתי</ToggleButton>
-          <ToggleButton value="assigned">מטלות שהוטלו עלי</ToggleButton>
+          <ToggleButton value="assigned">מטלות של אחרים</ToggleButton>
         </ToggleButtonGroup>
         {isLoadingTasks ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
@@ -420,7 +420,7 @@ export default function MyTasksPage() {
           <Typography color="text.secondary" align="center" sx={{ py: 6 }}>
             {activeTab === "created"
               ? "אין מטלות שיצרת"
-              : "אין מטלות שהוטלו עליך"}
+              : "אין מטלות של אחרים"}
           </Typography>
         ) : (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
