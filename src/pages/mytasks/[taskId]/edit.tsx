@@ -65,6 +65,7 @@ export default function EditTaskPage() {
       assignedUsers: task.assignedUsers,
       formFields: task.formFields ?? [],
       pendingMedia: [],
+      requiresCampusSubmission: task.requiresCampusSubmission,
     };
   }, [task]);
 
@@ -151,6 +152,7 @@ export default function EditTaskPage() {
         assignedTeams: formData.assignedTeams,
         assignedUsers: formData.assignedUsers,
         formFields: formData.formFields,
+        requiresCampusSubmission: formData.requiresCampusSubmission,
       });
 
       if (!response.ok) {

@@ -180,8 +180,17 @@ async function handlePut(
 ) {
   const taskId =
     typeof req.query.taskId === "string" ? req.query.taskId.trim() : "";
-  const { userId, title, content, category, dueDate, assignedTeams, assignedUsers, formFields } =
-    req.body as Partial<UpdateTaskRequestBody>;
+  const {
+    userId,
+    title,
+    content,
+    category,
+    dueDate,
+    assignedTeams,
+    assignedUsers,
+    formFields,
+    requiresCampusSubmission,
+  } = req.body as Partial<UpdateTaskRequestBody>;
 
   if (!taskId) {
     return res.status(400).json({ error: "Task ID is required" });
@@ -263,6 +272,7 @@ async function handlePut(
       assignedTeams: normalizedTeams,
       assignedUsers: normalizedUsers,
       hasFormFields: formFieldsValidation.fields.length > 0,
+      requiresCampusSubmission: requiresCampusSubmission === true,
     });
 
     await syncTaskFormFields(db, taskId, formFieldsValidation.fields);

@@ -3,7 +3,9 @@ import {
   Alert,
   Box,
   Button,
+  Checkbox,
   CircularProgress,
+  FormControlLabel,
   TextField,
 } from "@mui/material";
 import TaskAssigneePicker from "@/components/TaskAssigneePicker";
@@ -32,6 +34,7 @@ export interface TaskFormData {
   assignedUsers: string[];
   formFields: TaskFormFieldInput[];
   pendingMedia: File[];
+  requiresCampusSubmission: boolean;
 }
 
 interface TaskFormProps {
@@ -57,6 +60,7 @@ const emptyForm: TaskFormData = {
   assignedUsers: [],
   formFields: [],
   pendingMedia: [],
+  requiresCampusSubmission: false,
 };
 
 export default function TaskForm({
@@ -82,6 +86,7 @@ export default function TaskForm({
   const [assignedUsers, setAssignedUsers] = useState<string[]>([]);
   const [formFields, setFormFields] = useState<BuilderFormField[]>([]);
   const [pendingMedia, setPendingMedia] = useState<File[]>([]);
+  const [requiresCampusSubmission, setRequiresCampusSubmission] = useState(false);
 
   useEffect(() => {
     if (!initialValues) {
@@ -96,6 +101,7 @@ export default function TaskForm({
     setAssignedUsers(initialValues.assignedUsers);
     setFormFields(toBuilderFormFields(initialValues.formFields));
     setPendingMedia(initialValues.pendingMedia);
+    setRequiresCampusSubmission(initialValues.requiresCampusSubmission);
   }, [initialValues]);
 
   const handleCancel = () => {
@@ -134,6 +140,7 @@ export default function TaskForm({
       assignedUsers,
       formFields: toFormFieldInputs(formFields),
       pendingMedia,
+      requiresCampusSubmission,
     });
   };
 
@@ -203,6 +210,16 @@ export default function TaskForm({
           inputLabel: { shrink: true },
           htmlInput: { dir: "ltr" },
         }}
+      />
+      <FormControlLabel
+        control={
+          <Checkbox
+            checked={requiresCampusSubmission}
+            onChange={(event) => setRequiresCampusSubmission(event.target.checked)}
+            disabled={isFormBusy}
+          />
+        }
+        label="יש להגיש בקמפוס"
       />
       <TaskMediaUpload
         mode={mode}

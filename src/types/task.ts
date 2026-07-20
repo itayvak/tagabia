@@ -23,6 +23,7 @@ export interface FirestoreTask {
   assignedTeams: number[];
   assignedUsers: string[];
   hasFormFields?: boolean;
+  requiresCampusSubmission?: boolean;
   media?: TaskMedia[];
 }
 
@@ -39,6 +40,7 @@ export interface PublicTask {
   assignedTeams: number[];
   assignedUsers: string[];
   hasFormFields: boolean;
+  requiresCampusSubmission: boolean;
   formFields?: TaskFormField[];
   submissionCount?: number;
   media: TaskMedia[];
@@ -83,6 +85,7 @@ export interface CreateTaskRequestBody {
   assignedTeams: number[];
   assignedUsers?: string[];
   formFields?: TaskFormFieldInput[];
+  requiresCampusSubmission?: boolean;
 }
 
 export interface CreateTaskSuccessResponse {
@@ -102,6 +105,7 @@ export interface UpdateTaskRequestBody {
   assignedTeams: number[];
   assignedUsers?: string[];
   formFields?: TaskFormFieldInput[];
+  requiresCampusSubmission?: boolean;
 }
 
 export interface UpdateTaskSuccessResponse {

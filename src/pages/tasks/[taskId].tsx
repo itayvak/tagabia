@@ -111,6 +111,14 @@ export default function TaskPage() {
           task.assignedUsers,
         );
 
+  const handleBack = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      void router.back();
+    } else {
+      void router.push("/allTasks");
+    }
+  };
+
   useEffect(() => {
     const session = getSession();
     if (!session) {
@@ -276,7 +284,7 @@ export default function TaskPage() {
             <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 1 }}>
               <Button
                 endIcon={<ArrowBackIcon />}
-                onClick={() => void router.back()}
+                onClick={handleBack}
                 sx={{ color: "text.secondary" }}
               >
                 חזור
@@ -362,6 +370,12 @@ export default function TaskPage() {
                     <TaskMediaAttachments media={task.media} />
                   </CardContent>
                 </Card>
+
+                {task.requiresCampusSubmission ? (
+                  <Alert severity="info" sx={{ borderRadius: 2 }}>
+                    זכור! יש להגיש מטלה זו גם בקמפוס.
+                  </Alert>
+                ) : null}
 
                 {hasFormFields ? (
                   <Card elevation={0} sx={{ borderRadius: 2 }}>

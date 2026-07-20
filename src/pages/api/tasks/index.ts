@@ -31,8 +31,17 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { title, content, category, creatorId, dueDate, assignedTeams, assignedUsers, formFields } =
-    req.body as Partial<CreateTaskRequestBody>;
+  const {
+    title,
+    content,
+    category,
+    creatorId,
+    dueDate,
+    assignedTeams,
+    assignedUsers,
+    formFields,
+    requiresCampusSubmission,
+  } = req.body as Partial<CreateTaskRequestBody>;
 
   if (!isNonEmptyString(title)) {
     return res.status(400).json({ error: "Title is required" });
@@ -112,6 +121,7 @@ export default async function handler(
       assignedTeams: normalizedTeams,
       assignedUsers: normalizedUsers,
       hasFormFields: formFieldsValidation.fields.length > 0,
+      requiresCampusSubmission: requiresCampusSubmission === true,
     });
 
     if (formFieldsValidation.fields.length > 0) {

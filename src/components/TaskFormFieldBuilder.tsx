@@ -172,7 +172,7 @@ export default function TaskFormFieldBuilder({
           gap: 1,
         }}
       >
-        <Typography variant="subtitle1">שדות טופס</Typography>
+        <Typography variant="subtitle1">שדה סקר</Typography>
         <Button
           size="small"
           startIcon={<AddIcon />}
@@ -185,7 +185,7 @@ export default function TaskFormFieldBuilder({
 
       {fields.length === 0 ? (
         <Typography variant="body2" color="text.secondary">
-          ניתן להוסיף שדות טקסט, בחירה יחידה או בחירה מרובה שהממונים ימלאו לפני
+          ניתן להוסיף סקר בעל שדות טקסט, בחירה יחידה או בחירה מרובה שהממונים ימלאו לפני
           סימון המטלה כבוצעה.
         </Typography>
       ) : null}

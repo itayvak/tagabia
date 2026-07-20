@@ -66,6 +66,7 @@ export default function NewTaskPage() {
         assignedTeams: task.assignedTeams,
         assignedUsers: task.assignedUsers,
         formFields: task.formFields,
+        requiresCampusSubmission: task.requiresCampusSubmission,
       });
 
       if (!response.ok) {

@@ -66,6 +66,7 @@ export function toPublicTask(
         )
       : [],
     hasFormFields: task.hasFormFields === true,
+    requiresCampusSubmission: task.requiresCampusSubmission === true,
     media: parseTaskMedia(task.media),
   };
 }

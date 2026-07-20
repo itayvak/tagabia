@@ -1,29 +1,23 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
-import { useCallback, useEffect, useState } from "react";
-import AddIcon from "@mui/icons-material/Add";
-import DeleteIcon from "@mui/icons-material/Delete";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   Box,
-  Checkbox,
+  Button,
   CircularProgress,
   Container,
-  IconButton,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
   Snackbar,
-  TextField,
   Typography,
 } from "@mui/material";
 import AppLayout from "@/components/AppLayout";
+import PersonalTodoList from "@/components/PersonalTodoList";
 import { getSession } from "@/lib/authStorage";
 import { fetchPersonalTodos } from "@/lib/fetchPersonalTodos";
 import { savePersonalTodos } from "@/lib/savePersonalTodos";
 import type { PersonalTodoItem, PublicUser } from "@/types/user";
+
+const UNDO_DELETE_MS = 5000;
 
 function getErrorMessage(error: string): string {
   switch (error) {
@@ -52,6 +46,12 @@ export default function TodoPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{
+    item: PersonalTodoItem;
+    index: number;
+    updatedTodos: PersonalTodoItem[];
+  } | null>(null);
+  const deleteTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const session = getSession();
@@ -94,6 +94,14 @@ export default function TodoPage() {
 
     void loadTodos();
   }, [user]);
+
+  useEffect(() => {
+    return () => {
+      if (deleteTimeoutRef.current) {
+        clearTimeout(deleteTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const persistTodos = useCallback(
     async (updatedTodos: PersonalTodoItem[]) => {
@@ -170,13 +178,92 @@ export default function TodoPage() {
     }
   };
 
-  const handleDeleteItem = async (id: string) => {
+  const finalizeDelete = useCallback(
+    async (updatedTodos: PersonalTodoItem[], deletedItem: PersonalTodoItem) => {
+      setPendingDelete(null);
+
+      const saved = await persistTodos(updatedTodos);
+      if (!saved) {
+        setTodos((current) => {
+          const exists = current.some((todo) => todo.id === deletedItem.id);
+          return exists ? current : [...current, deletedItem];
+        });
+      }
+    },
+    [persistTodos],
+  );
+
+  const handleDeleteItem = (id: string) => {
+    if (isSaving) {
+      return;
+    }
+
+    const index = todos.findIndex((item) => item.id === id);
+    if (index === -1) {
+      return;
+    }
+
+    const item = todos[index];
+    const updatedTodos = todos.filter((todo) => todo.id !== id);
+    setTodos(updatedTodos);
+    setPendingDelete({ item, index, updatedTodos });
+
+    if (deleteTimeoutRef.current) {
+      clearTimeout(deleteTimeoutRef.current);
+    }
+
+    deleteTimeoutRef.current = setTimeout(() => {
+      deleteTimeoutRef.current = null;
+      void finalizeDelete(updatedTodos, item);
+    }, UNDO_DELETE_MS);
+  };
+
+  const handleUndoDelete = () => {
+    if (!pendingDelete) {
+      return;
+    }
+
+    if (deleteTimeoutRef.current) {
+      clearTimeout(deleteTimeoutRef.current);
+      deleteTimeoutRef.current = null;
+    }
+
+    const { item, index } = pendingDelete;
+    setPendingDelete(null);
+
+    setTodos((current) => {
+      if (current.some((todo) => todo.id === item.id)) {
+        return current;
+      }
+
+      const next = [...current];
+      next.splice(Math.min(index, next.length), 0, item);
+      return next;
+    });
+  };
+
+  const handleEditItem = async (id: string, text: string) => {
     if (isSaving) {
       return;
     }
 
     const previousTodos = todos;
-    const updatedTodos = todos.filter((item) => item.id !== id);
+    const updatedTodos = todos.map((item) => (item.id === id ? { ...item, text } : item));
+    setTodos(updatedTodos);
+
+    const saved = await persistTodos(updatedTodos);
+    if (!saved) {
+      setTodos(previousTodos);
+    }
+  };
+
+  const handleClearCompleted = async () => {
+    if (isSaving) {
+      return;
+    }
+
+    const previousTodos = todos;
+    const updatedTodos = todos.filter((item) => !item.completed);
     setTodos(updatedTodos);
 
     const saved = await persistTodos(updatedTodos);
@@ -207,88 +294,25 @@ export default function TodoPage() {
       </Head>
       <AppLayout user={user}>
         <Container maxWidth="sm" sx={{ py: 3 }}>
-          <Typography variant="h5" component="h1" sx={{ mb: 3 }}>
+          <Typography variant="h5" component="h1" sx={{ mb: 0.5 }}>
             רשימה אישית
           </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            רשימת משימות פרטית — רק שלך
+          </Typography>
 
-          <Box sx={{ display: "flex", gap: 1, mb: 3 }}>
-            <TextField
-              fullWidth
-              size="small"
-              placeholder="הוסף פריט חדש..."
-              value={newItemText}
-              onChange={(event) => setNewItemText(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  void handleAddItem();
-                }
-              }}
-              disabled={isSaving}
-            />
-            <IconButton
-              color="primary"
-              aria-label="הוסף פריט"
-              onClick={() => void handleAddItem()}
-              disabled={!newItemText.trim() || isSaving}
-            >
-              <AddIcon />
-            </IconButton>
-          </Box>
-
-          {isLoading ? (
-            <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-              <CircularProgress />
-            </Box>
-          ) : todos.length === 0 ? (
-            <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
-              אין פריטים ברשימה
-            </Typography>
-          ) : (
-            <List disablePadding>
-              {todos.map((item) => (
-                <ListItem
-                  key={item.id}
-                  disablePadding
-                  secondaryAction={
-                    <IconButton
-                      edge="end"
-                      aria-label="מחק פריט"
-                      onClick={() => void handleDeleteItem(item.id)}
-                      disabled={isSaving}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  }
-                >
-                  <ListItemButton
-                    onClick={() => void handleToggleComplete(item.id)}
-                    disabled={isSaving}
-                    dense
-                  >
-                    <ListItemIcon sx={{ minWidth: 42 }}>
-                      <Checkbox
-                        edge="start"
-                        checked={item.completed}
-                        tabIndex={-1}
-                        disableRipple
-                      />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={item.text}
-                      slotProps={{
-                        primary: {
-                          sx: item.completed
-                            ? { textDecoration: "line-through", color: "text.secondary" }
-                            : undefined,
-                        },
-                      }}
-                    />
-                  </ListItemButton>
-                </ListItem>
-              ))}
-            </List>
-          )}
+          <PersonalTodoList
+            todos={todos}
+            isLoading={isLoading}
+            isSaving={isSaving}
+            newItemText={newItemText}
+            onNewItemTextChange={setNewItemText}
+            onAddItem={() => void handleAddItem()}
+            onToggleComplete={(id) => void handleToggleComplete(id)}
+            onDeleteItem={handleDeleteItem}
+            onEditItem={(id, text) => void handleEditItem(id, text)}
+            onClearCompleted={() => void handleClearCompleted()}
+          />
         </Container>
       </AppLayout>
 
@@ -302,6 +326,18 @@ export default function TodoPage() {
           {errorMessage}
         </Alert>
       </Snackbar>
+
+      <Snackbar
+        open={Boolean(pendingDelete)}
+        autoHideDuration={UNDO_DELETE_MS}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        message="הפריט נמחק"
+        action={
+          <Button color="inherit" size="small" onClick={handleUndoDelete}>
+            בטל
+          </Button>
+        }
+      />
     </>
   );
 }
