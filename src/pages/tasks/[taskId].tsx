@@ -112,11 +112,28 @@ export default function TaskPage() {
         );
 
   const handleBack = () => {
-    if (typeof window !== "undefined" && window.history.length > 1) {
-      void router.back();
-    } else {
+    if (typeof window === "undefined") {
       void router.push("/allTasks");
+      return;
     }
+
+    const currentPath = router.asPath;
+    let didNavigate = false;
+
+    const onRouteChangeComplete = () => {
+      didNavigate = true;
+      router.events.off("routeChangeComplete", onRouteChangeComplete);
+    };
+
+    router.events.on("routeChangeComplete", onRouteChangeComplete);
+    void router.back();
+
+    window.setTimeout(() => {
+      router.events.off("routeChangeComplete", onRouteChangeComplete);
+      if (!didNavigate && router.asPath === currentPath) {
+        void router.push("/allTasks");
+      }
+    }, 400);
   };
 
   useEffect(() => {

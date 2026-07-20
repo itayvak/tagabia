@@ -4,7 +4,7 @@ export const ROLES = {
   developer: "מפתח תגבייה",
   digitalBatallion: "ק. דיגיטל גדודי",
   AIBatallion: "ק. AI גדודי",
-  administrationsBatallion: "ק. מנהלות גדודי",
+  administrationsBatallion: "ק. מנהות גדודי",
   logisticsBatallion: "ק. לוגיסטיקה גדודי",
   sportsBatallion: "ק. אימון גופני גדודי",
   tuitionBatallion: "ק. הדרכה גדודי",

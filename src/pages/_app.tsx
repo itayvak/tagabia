@@ -1,8 +1,9 @@
 import "@/styles/globals.css";
 import { googleSans } from "@/lib/fonts";
 import { rtlCache } from "@/lib/rtlCache";
-import ColorModeProvider from "@/components/ColorModeProvider";
+import { theme } from "@/theme";
 import { AppCacheProvider } from "@mui/material-nextjs/v16-pagesRouter";
+import { CssBaseline, ThemeProvider } from "@mui/material";
 import type { EmotionCache } from "@emotion/react";
 import type { AppProps } from "next/app";
 import Head from "next/head";
@@ -31,11 +32,12 @@ export default function App({
       <Head>
         <title>{APP_TITLE}</title>
       </Head>
-      <ColorModeProvider>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
         <main>
           <Component {...pageProps} />
         </main>
-      </ColorModeProvider>
+      </ThemeProvider>
     </AppCacheProvider>
   );
 }

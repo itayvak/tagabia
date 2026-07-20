@@ -1,8 +1,8 @@
-import { createTheme, type PaletteMode } from "@mui/material";
+import { createTheme } from "@mui/material";
 import { googleSans } from "@/lib/fonts";
 
-const baseTheme = {
-  direction: "rtl" as const,
+export const theme = createTheme({
+  direction: "rtl",
   typography: {
     fontFamily: `${googleSans.style.fontFamily}, "Segoe UI", Arial, sans-serif`,
   },
@@ -13,13 +13,4 @@ const baseTheme = {
       },
     },
   },
-};
-
-export function getTheme(mode: PaletteMode) {
-  return createTheme({
-    ...baseTheme,
-    palette: {
-      mode,
-    },
-  });
-}
+});
