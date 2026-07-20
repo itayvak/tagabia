@@ -16,7 +16,6 @@ import {
   CircularProgress,
   Collapse,
   IconButton,
-  InputAdornment,
   LinearProgress,
   Stack,
   TextField,
@@ -373,43 +372,33 @@ export default function PersonalTodoList({
       )}
 
       <Card variant="outlined" sx={{ p: 2 }}>
-        <Stack spacing={1.5}>
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-            <TextField
-              fullWidth
-              size="small"
-              label="כותרת"
-              placeholder="מה צריך לעשות?"
-              value={newItemText}
-              onChange={(event) => onNewItemTextChange(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  onAddItem();
-                }
-              }}
-              disabled={isSaving}
-              slotProps={{
-                htmlInput: { dir: "rtl", "aria-label": "פריט חדש" },
-                input: {
-                  endAdornment: newItemText.trim() ? (
-                    <InputAdornment position="end">
-                      <Chip label="Enter" size="small" variant="outlined" sx={{ height: 22, fontSize: 11 }} />
-                    </InputAdornment>
-                  ) : undefined,
-                },
-              }}
-            />
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={onAddItem}
-              disabled={!newItemText.trim() || isSaving}
-              sx={{ flexShrink: 0, whiteSpace: "nowrap", alignSelf: { xs: "stretch", sm: "flex-start" } }}
-            >
-              הוסף
-            </Button>
-          </Stack>
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={1}
+          sx={{
+            flexWrap: { sm: "wrap" },
+            alignItems: { sm: "flex-start" },
+          }}
+        >
+          <TextField
+            fullWidth
+            size="small"
+            label="כותרת"
+            placeholder="מה צריך לעשות?"
+            value={newItemText}
+            onChange={(event) => onNewItemTextChange(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                onAddItem();
+              }
+            }}
+            disabled={isSaving}
+            sx={{ order: 1, flex: { sm: 1 }, minWidth: { sm: 200 } }}
+            slotProps={{
+              htmlInput: { dir: "rtl", "aria-label": "פריט חדש" },
+            }}
+          />
           <TextField
             fullWidth
             size="small"
@@ -420,10 +409,25 @@ export default function PersonalTodoList({
             disabled={isSaving}
             multiline
             minRows={2}
+            sx={{ order: { xs: 2, sm: 3 }, width: "100%" }}
             slotProps={{
               htmlInput: { dir: "rtl", "aria-label": "תיאור פריט חדש" },
             }}
           />
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={onAddItem}
+            disabled={!newItemText.trim() || isSaving}
+            sx={{
+              order: { xs: 3, sm: 2 },
+              flexShrink: 0,
+              whiteSpace: "nowrap",
+              alignSelf: { xs: "stretch", sm: "flex-start" },
+            }}
+          >
+            הוסף
+          </Button>
         </Stack>
       </Card>
 

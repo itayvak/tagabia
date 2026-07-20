@@ -39,5 +39,6 @@ export async function shareTaskAsImage(
 ): Promise<ShareImageResult> {
   const entry = await buildTaskReportEntry(task, userId);
   const blob = await renderTaskReportImage([entry], { subtitle: "מטלה" });
-  return shareImageFile(blob, `tagabia-task-${task.id}.png`, "מטלה");
+  const taskUrl = `${window.location.origin}/tasks/${task.id}`;
+  return shareImageFile(blob, `tagabia-task-${task.id}.png`, "מטלה", taskUrl);
 }

@@ -1,9 +1,11 @@
 import LogoutIcon from "@mui/icons-material/Logout";
+import { useColorMode } from "@/components/ColorModeProvider";
 import {
   Avatar,
   Box,
   Button,
   Divider,
+  Switch,
   Typography,
 } from "@mui/material";
 import { formatPlatoonLabel } from "@/lib/platoons";
@@ -41,6 +43,8 @@ interface ProfilePanelProps {
 }
 
 export default function ProfilePanel({ user, onLogout }: ProfilePanelProps) {
+  const { mode, setMode } = useColorMode();
+
   return (
     <Box sx={{ px: 3, py: 4 }}>
       <Box
@@ -77,6 +81,24 @@ export default function ProfilePanel({ user, onLogout }: ProfilePanelProps) {
         <ProfileDetailRow label="צוות" value={String(user.team)} />
         <Divider />
         <ProfileDetailRow label="תפקיד" value={getRoleLabel(user.role)} />
+        <Divider />
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            py: 1.5,
+          }}
+        >
+          <Typography variant="body2" color="text.secondary">
+            מצב כהה
+          </Typography>
+          <Switch
+            checked={mode === "dark"}
+            onChange={(_, checked) => setMode(checked ? "dark" : "light")}
+            slotProps={{ input: { "aria-label": "מצב כהה" } }}
+          />
+        </Box>
       </Box>
 
       <Button
