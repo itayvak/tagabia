@@ -1,3 +1,4 @@
+import FeedbackIcon from "@mui/icons-material/Feedback";
 import LogoutIcon from "@mui/icons-material/Logout";
 import {
   Avatar,
@@ -10,6 +11,9 @@ import { formatPlatoonLabel } from "@/lib/platoons";
 import { getRoleLabel } from "@/lib/roles";
 import { getUserInitials } from "@/lib/userInitials";
 import type { PublicUser } from "@/types/user";
+
+const FEEDBACK_FORM_URL =
+  "https://docs.google.com/forms/d/e/1FAIpQLSc6QOkRktlo0b812z-NUpECznByQnEcp5AAS4481z2kjJnhIw/viewform?usp=publish-editor";
 
 function ProfileDetailRow({
   label,
@@ -78,6 +82,20 @@ export default function ProfilePanel({ user, onLogout }: ProfilePanelProps) {
         <Divider />
         <ProfileDetailRow label="תפקיד" value={getRoleLabel(user.role)} />
       </Box>
+
+      <Button
+        fullWidth
+        variant="outlined"
+        size="large"
+        startIcon={<FeedbackIcon />}
+        component="a"
+        href={FEEDBACK_FORM_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        sx={{ mb: 2 }}
+      >
+       משוב על המערכת
+      </Button>
 
       <Button
         fullWidth
