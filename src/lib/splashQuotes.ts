@@ -4,7 +4,7 @@ export type SplashQuote = {
 };
 
 export const SPLASH_QUOTES: readonly SplashQuote[] = [
-  { text: "להיות אדם טוב ולהשתפר כל הזמן", author: 'ארז אורבוך ז"ל' },
+  { text: "להיות אדם טוב ולהשתפר כל הזמן", author: 'ארז אורבך ז"ל' },
 ];
 
 function getDayOfYear(date: Date): number {

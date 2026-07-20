@@ -2,18 +2,24 @@ export const ROLES = {
   peasant: "צוער",
   commander: "סגל ההכשרה",
   developer: "מפתח תגבייה",
-  medicalPlatoon: "קצין רפואה פלוגתי",
-  safetyPlatoon: "קצין בטיחות פלוגתי",
-  educationPlatoon: "קצין חינוך ומורשת פלוגתי",
-  tuitionPlatoon: "קצין הדרכה פלוגתי",
-  logisticsPlatoon: "קצין לוגיסטיקה פלוגתי",
-  sportsPlatoon: "קצין אימון גופני פלוגתי",
-  missionsPlatoon: "קצין מבצעים פלוגתי",
-  simulationPlatoon: "קצין סימולציות פלוגתי",
-  trainingPlatoon: "קצין אימונים פלוגתי",
+  digitalBatallion: "ק. דיגיטל גדודי",
+  AIBatallion: "ק. AI גדודי",
+  administrationsBatallion: "ק. מנהלות גדודי",
+  logisticsBatallion: "ק. לוגיסטיקה גדודי",
+  sportsBatallion: "ק. אימון גופני גדודי",
+  medicalPlatoon: "ק. רפואה פלוגתי",
+  safetyPlatoon: "ק. בטיחות פלוגתי",
+  educationPlatoon: "ק. חינוך ומורשת פלוגתי",
+  tuitionPlatoon: "ק. הדרכה פלוגתי",
+  logisticsPlatoon: "ק. לוגיסטיקה פלוגתי",
+  sportsPlatoon: "ק. אימון גופני פלוגתי",
+  missionsPlatoon: "ק. מבצעים פלוגתי",
+  simulationPlatoon: "ק. סימולציות פלוגתי",
+  trainingPlatoon: "ק. אימונים פלוגתי",
+  platoonAssistant: 'סמ"פ', 
   weeklyTeamCommander: 'ממ"ש',
-  tuitionTeam: "קצין הדרכה צוותי",
-  simulationTeam: "קצין סימולציות צוותי",
+  tuitionTeam: "ק. הדרכה צוותי",
+  simulationTeam: "ק. סימולציות צוותי",
 } as const;
 
 export type Role = keyof typeof ROLES;
@@ -32,4 +38,8 @@ export function isRole(value: string): value is Role {
 
 export function canManageTasks(role: Role): boolean {
   return role !== "peasant";
+}
+
+export function hasDeveloperAccess(role: Role): boolean {
+  return role === "developer" || role === "AIBatallion";
 }

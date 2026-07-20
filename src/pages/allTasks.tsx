@@ -443,7 +443,7 @@ export default function AllTasksPage() {
           <TextField
             fullWidth
             size="small"
-            placeholder="חיפוש מטלות..."
+            placeholder='חיפוש תג"בייה...'
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             slotProps={{

@@ -1,4 +1,5 @@
 import { isAdminUser } from "@/lib/admin";
+import { hasDeveloperAccess } from "@/lib/roles";
 import { getAdminFirestore } from "@/lib/firebaseAdmin";
 import type { FirestoreUser } from "@/types/user";
 
@@ -15,5 +16,5 @@ export async function canAccessAdminByUserId(
   }
 
   const user = userDoc.data() as FirestoreUser;
-  return user.role === "developer";
+  return hasDeveloperAccess(user.role);
 }

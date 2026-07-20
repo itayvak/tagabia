@@ -6,11 +6,14 @@ import AppLayout from "@/components/AppLayout";
 import { APP_BOTTOM_BAR_HEIGHT } from "@/components/AppBottomBar";
 import MonthCalendar from "@/components/MonthCalendar";
 import { getSession } from "@/lib/authStorage";
-import { fetchCalendarReminders } from "@/lib/fetchCalendarReminders";
 import { fetchCalendarTasks } from "@/lib/fetchCalendarTasks";
+import { fetchCourseConfig } from "@/lib/fetchCourseConfig";
 import { completeTask } from "@/lib/completeTask";
 import { triggerTaskConfetti } from "@/lib/taskConfetti";
-import type { PublicCalendarReminder } from "@/types/calendarReminder";
+import type {
+  GetCourseConfigSuccessResponse,
+  PublicCourseConfig,
+} from "@/types/courseConfig";
 import type {
   CalendarTask,
   CompleteTaskErrorResponse,
@@ -26,8 +29,6 @@ function getErrorMessage(error: string): string {
       return "מזהה יוצר חסר";
     case "List tasks failed":
       return "טעינת המטלות נכשלה";
-    case "List calendar reminders failed":
-      return "טעינת התזכורות נכשלה";
     case "Task not found":
       return "המטלה לא נמצאה";
     case "User is not assigned to this task":
@@ -45,7 +46,9 @@ export default function CalendarPage() {
   const router = useRouter();
   const [user, setUser] = useState<PublicUser | null>(null);
   const [tasks, setTasks] = useState<CalendarTask[]>([]);
-  const [reminders, setReminders] = useState<PublicCalendarReminder[]>([]);
+  const [courseConfig, setCourseConfig] = useState<PublicCourseConfig | null>(
+    null,
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -61,6 +64,24 @@ export default function CalendarPage() {
   }, [router]);
 
   useEffect(() => {
+    const loadCourseConfig = async () => {
+      try {
+        const { response, data } = await fetchCourseConfig();
+
+        if (!response.ok) {
+          return;
+        }
+
+        setCourseConfig((data as GetCourseConfigSuccessResponse).config);
+      } catch {
+        // Keep week labels hidden when config cannot be loaded.
+      }
+    };
+
+    void loadCourseConfig();
+  }, []);
+
+  useEffect(() => {
     if (!user) {
       return;
     }
@@ -70,10 +91,7 @@ export default function CalendarPage() {
       setErrorMessage(null);
 
       try {
-        const [tasksResult, remindersResult] = await Promise.all([
-          fetchCalendarTasks(user),
-          fetchCalendarReminders(),
-        ]);
+        const tasksResult = await fetchCalendarTasks(user);
 
         if (!tasksResult.response.ok) {
           setErrorMessage(
@@ -82,17 +100,7 @@ export default function CalendarPage() {
           return;
         }
 
-        if (!remindersResult.response.ok) {
-          setErrorMessage(
-            getErrorMessage(
-              remindersResult.error ?? "טעינת התזכורות נכשלה",
-            ),
-          );
-          return;
-        }
-
         setTasks(tasksResult.tasks);
-        setReminders(remindersResult.reminders);
       } catch {
         setErrorMessage("שגיאה בטעינת לוח השנה. נסה שוב.");
       } finally {
@@ -183,7 +191,7 @@ export default function CalendarPage() {
           ) : null}
           <MonthCalendar
             tasks={tasks}
-            reminders={reminders}
+            courseConfig={courseConfig}
             completingTaskId={completingTaskId}
             onCompleteTask={(taskId) => void handleCompleteTask(taskId)}
           />

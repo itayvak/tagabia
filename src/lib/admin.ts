@@ -1,3 +1,4 @@
+import { hasDeveloperAccess } from "@/lib/roles";
 import type { PublicUser } from "@/types/user";
 
 export function getAdminUserId(): string | undefined {
@@ -10,5 +11,5 @@ export function isAdminUser(userId: string): boolean {
 }
 
 export function canAccessAdmin(user: Pick<PublicUser, "id" | "role">): boolean {
-  return user.role === "developer" || isAdminUser(user.id);
+  return hasDeveloperAccess(user.role) || isAdminUser(user.id);
 }

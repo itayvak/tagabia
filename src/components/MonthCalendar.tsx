@@ -4,8 +4,9 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { Box, Dialog, DialogContent, DialogTitle, IconButton, Typography } from "@mui/material";
 import TaskCard from "@/components/TaskCard";
+import { getCurrentWeekName } from "@/lib/courseWeek";
 import { getCalendarDateKey, getDueDateCalendarKey } from "@/lib/taskDate";
-import type { PublicCalendarReminder } from "@/types/calendarReminder";
+import type { PublicCourseConfig } from "@/types/courseConfig";
 import type { CalendarTask } from "@/types/task";
 
 const WEEKDAY_LABELS = ["א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ש׳"];
@@ -36,7 +37,7 @@ type CalendarDay = {
 
 interface MonthCalendarProps {
   tasks: CalendarTask[];
-  reminders: PublicCalendarReminder[];
+  courseConfig: PublicCourseConfig | null;
   completingTaskId: string | null;
   onCompleteTask: (taskId: string) => void;
 }
@@ -117,69 +118,28 @@ function chunkWeeks(days: CalendarDay[]): CalendarDay[][] {
   return weeks;
 }
 
-function getRemindersForWeek(
-  week: CalendarDay[],
-  reminders: PublicCalendarReminder[],
-): PublicCalendarReminder[] {
-  const weekDateKeys = new Set(week.map((day) => getCalendarDateKey(day.date)));
-
-  return reminders
-    .filter((reminder) => weekDateKeys.has(reminder.dateKey))
-    .sort((a, b) => a.dateKey.localeCompare(b.dateKey));
-}
-
-function CalendarReminderLine({
-  week,
-  reminder,
-}: {
-  week: CalendarDay[];
-  reminder: PublicCalendarReminder;
-}) {
-  const columnIndex = week.findIndex(
-    (day) => getCalendarDateKey(day.date) === reminder.dateKey,
-  );
-
-  if (columnIndex === -1) {
-    return null;
-  }
-
+function CourseWeekLabel({ name }: { name: string }) {
   return (
-    <Box
+    <Typography
+      variant="caption"
       sx={{
-        display: "grid",
-        gap: 0.5,
-        gridTemplateColumns: "repeat(7, 1fr)",
-        minHeight: 20,
+        color: "text.secondary",
+        display: "block",
+        fontSize: "0.65rem",
+        lineHeight: 1.2,
+        minHeight: 16,
+        textAlign: "start",
+        width: "100%",
       }}
     >
-      {Array.from({ length: columnIndex }, (_, index) => (
-        <Box key={`spacer-${index}`} />
-      ))}
-      <Box
-        sx={{
-          gridColumn: `${columnIndex + 1} / -1`,
-          minWidth: 0,
-        }}
-      >
-        <Typography
-          variant="caption"
-          sx={{
-            color: "text.disabled",
-            fontSize: "0.65rem",
-            lineHeight: 1.2,
-            whiteSpace: "normal",
-          }}
-        >
-          {reminder.text}
-        </Typography>
-      </Box>
-    </Box>
+      {name}
+    </Typography>
   );
 }
 
 export default function MonthCalendar({
   tasks,
-  reminders,
+  courseConfig,
   completingTaskId,
   onCompleteTask,
 }: MonthCalendarProps) {
@@ -287,7 +247,7 @@ export default function MonthCalendar({
         }}
       >
         {weeks.map((week) => {
-          const weekReminders = getRemindersForWeek(week, reminders);
+          const weekName = getCurrentWeekName(courseConfig, week[0]?.date);
 
           return (
             <Box
@@ -297,16 +257,10 @@ export default function MonthCalendar({
                 flex: 1,
                 flexDirection: "column",
                 gap: 0.5,
-                minHeight: weekReminders.length > 0 ? "auto" : 0,
+                minHeight: 0,
               }}
             >
-              {weekReminders.map((reminder) => (
-                <CalendarReminderLine
-                  key={reminder.id}
-                  week={week}
-                  reminder={reminder}
-                />
-              ))}
+              {weekName ? <CourseWeekLabel name={weekName} /> : null}
 
               <Box
                 sx={{

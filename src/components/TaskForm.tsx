@@ -245,7 +245,7 @@ export default function TaskForm({
                 ? "יוצר..."
                 : "שומר..."
               : isCreate
-                ? "יאללה להטיל!"
+                ? "שיוך מטלה"
                 : "שמירה"}
         </Button>
       </Box>
