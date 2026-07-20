@@ -33,6 +33,8 @@ function getErrorMessage(error: string): string {
       return "יש להזין טקסט לפריט";
     case "Too many todos (max 100)":
       return "הגעת למקסימום של 100 פריטים";
+    case "Todo description is too long (max 500)":
+      return "התיאור ארוך מדי";
     default:
       return error;
   }
@@ -43,6 +45,7 @@ export default function TodoPage() {
   const [user, setUser] = useState<PublicUser | null>(null);
   const [todos, setTodos] = useState<PersonalTodoItem[]>([]);
   const [newItemText, setNewItemText] = useState("");
+  const [newItemDescription, setNewItemDescription] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -143,9 +146,12 @@ export default function TodoPage() {
       return;
     }
 
+    const description = newItemDescription.trim();
+
     const newItem: PersonalTodoItem = {
       id: crypto.randomUUID(),
       text,
+      ...(description ? { description } : {}),
       completed: false,
       createdAt: new Date().toISOString(),
     };
@@ -154,6 +160,7 @@ export default function TodoPage() {
     const updatedTodos = [...todos, newItem];
     setTodos(updatedTodos);
     setNewItemText("");
+    setNewItemDescription("");
 
     const saved = await persistTodos(updatedTodos);
     if (!saved) {
@@ -242,13 +249,33 @@ export default function TodoPage() {
     });
   };
 
-  const handleEditItem = async (id: string, text: string) => {
+  const handleEditItem = async (
+    id: string,
+    updates: { text: string; description?: string },
+  ) => {
     if (isSaving) {
       return;
     }
 
     const previousTodos = todos;
-    const updatedTodos = todos.map((item) => (item.id === id ? { ...item, text } : item));
+    const updatedTodos = todos.map((item) => {
+      if (item.id !== id) {
+        return item;
+      }
+
+      const nextItem: PersonalTodoItem = {
+        ...item,
+        text: updates.text,
+      };
+
+      if (updates.description) {
+        nextItem.description = updates.description;
+      } else {
+        delete nextItem.description;
+      }
+
+      return nextItem;
+    });
     setTodos(updatedTodos);
 
     const saved = await persistTodos(updatedTodos);
@@ -306,11 +333,13 @@ export default function TodoPage() {
             isLoading={isLoading}
             isSaving={isSaving}
             newItemText={newItemText}
+            newItemDescription={newItemDescription}
             onNewItemTextChange={setNewItemText}
+            onNewItemDescriptionChange={setNewItemDescription}
             onAddItem={() => void handleAddItem()}
             onToggleComplete={(id) => void handleToggleComplete(id)}
             onDeleteItem={handleDeleteItem}
-            onEditItem={(id, text) => void handleEditItem(id, text)}
+            onEditItem={(id, updates) => void handleEditItem(id, updates)}
             onClearCompleted={() => void handleClearCompleted()}
           />
         </Container>

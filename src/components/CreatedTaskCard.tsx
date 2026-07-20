@@ -1,16 +1,23 @@
 import {
-  Button,
+  Box,
   Card,
   CardActionArea,
-  CardActions,
   CardContent,
+  Chip,
+  IconButton,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import GroupIcon from "@mui/icons-material/Group";
 import ListAltIcon from "@mui/icons-material/ListAlt";
-import { formatDaysLeft, formatDueDate } from "@/lib/taskDate";
+import TaskCategoryIcon from "@/components/TaskCategoryIcon";
+import {
+  formatDaysLeft,
+  formatDueDate,
+  getDaysLeftChipUrgency,
+} from "@/lib/taskDate";
 import type { PublicTask } from "@/types/task";
 
 interface CreatedTaskCardProps {
@@ -32,62 +39,112 @@ export default function CreatedTaskCard({
   onViewSubmissions,
   onDelete,
 }: CreatedTaskCardProps) {
+  const daysLeftUrgency = getDaysLeftChipUrgency(task.dueDate);
+
   return (
     <Card variant="outlined">
       <CardActionArea onClick={() => onOpen(task.id)}>
-        <CardContent sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-          <Typography variant="h6" component="h2">
-            {task.title}
-          </Typography>
-        <Typography variant="body2" color="text.secondary">
-          תג"ב: {formatDueDate(task.dueDate)}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {task.category}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {formatDaysLeft(task.dueDate)}
-        </Typography>
-      </CardContent>
-      </CardActionArea>
-      <CardActions sx={{ px: 2, pb: 2, pt: 0, gap: 0, flexWrap: "wrap" }}>
-        <Button
-          size="small"
-          variant="outlined"
-          startIcon={<EditIcon />}
-          onClick={onEdit}
+        <CardContent
+          sx={{ display: "flex", flexDirection: "column", gap: 0.5, pb: 1.5 }}
         >
-          עריכה
-        </Button>
-        <Button
-          size="small"
-          variant="outlined"
-          startIcon={<GroupIcon />}
-          onClick={onViewCompletions}
-        >
-          סטטוס ביצוע
-        </Button>
-        {task.hasFormFields && onViewSubmissions ? (
-          <Button
-            size="small"
-            variant="outlined"
-            startIcon={<ListAltIcon />}
-            onClick={onViewSubmissions}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 0.5,
+            }}
           >
-            תשובות
-          </Button>
+            <Typography variant="h6" component="h2" sx={{ flex: 1, m: 0 }}>
+              {task.title}
+            </Typography>
+            <Chip
+              label={formatDaysLeft(task.dueDate)}
+              size="small"
+              variant="outlined"
+              sx={{
+                flexShrink: 0,
+                ...(daysLeftUrgency === "past" && {
+                  bgcolor: "#fde8e8",
+                  color: "#b42318",
+                  borderColor: "#f5c2c2",
+                }),
+                ...(daysLeftUrgency === "soon" && {
+                  bgcolor: "#fff0e0",
+                  color: "#c2410c",
+                  borderColor: "#fdba74",
+                }),
+                ...(daysLeftUrgency === "thisWeek" && {
+                  bgcolor: "#fef9c3",
+                  color: "#a16207",
+                  borderColor: "#fde047",
+                }),
+              }}
+            />
+          </Box>
+          <Typography variant="body2" color="text.secondary">
+            תג"ב: {formatDueDate(task.dueDate)}
+          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            <TaskCategoryIcon category={task.category} />
+            <Typography variant="caption" color="text.secondary">
+              {task.category}
+            </Typography>
+          </Box>
+        </CardContent>
+      </CardActionArea>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 0.25,
+          px: 0.5,
+          py: 0.25,
+          borderTop: 1,
+          borderColor: "divider",
+        }}
+      >
+        <Tooltip title="סטטוס ביצוע">
+          <IconButton
+            size="small"
+            aria-label="סטטוס ביצוע"
+            onClick={onViewCompletions}
+            color="primary"
+          >
+            <GroupIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+        {task.hasFormFields && onViewSubmissions ? (
+          <Tooltip title="תשובות">
+            <IconButton
+              size="small"
+              aria-label="תשובות"
+              onClick={onViewSubmissions}
+            >
+              <ListAltIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
         ) : null}
-        <Button
-          size="small"
-          variant="outlined"
-          color="error"
-          startIcon={<DeleteIcon />}
-          disabled={isDeleting}
-          onClick={onDelete}
-        >
-          {isDeleting ? "מוחק..." : "מחיקה"}
-        </Button>
-      </CardActions>
+        <Tooltip title="עריכה">
+          <IconButton size="small" aria-label="עריכה" onClick={onEdit}>
+            <EditIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+        <Box sx={{ flex: 1 }} />
+        <Tooltip title={isDeleting ? "מוחק..." : "מחיקה"}>
+          <span>
+            <IconButton
+              size="small"
+              aria-label="מחיקה"
+              color="error"
+              disabled={isDeleting}
+              onClick={onDelete}
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </span>
+        </Tooltip>
+      </Box>
     </Card>
   );
 }

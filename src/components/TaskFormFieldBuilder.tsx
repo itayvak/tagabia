@@ -185,8 +185,7 @@ export default function TaskFormFieldBuilder({
 
       {fields.length === 0 ? (
         <Typography variant="body2" color="text.secondary">
-          ניתן להוסיף סקר בעל שדות טקסט, בחירה יחידה או בחירה מרובה שהממונים ימלאו לפני
-          סימון המטלה כבוצעה.
+          ניתן להוסיף סקר שהצוערים ימלאו לפני סימון המטלה כבוצעה.
         </Typography>
       ) : null}
 

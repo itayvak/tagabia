@@ -11,6 +11,7 @@ import type {
 import type { NextApiRequest, NextApiResponse } from "next";
 
 const MAX_TODOS = 100;
+const MAX_DESCRIPTION_LENGTH = 500;
 
 type GetPersonalTodosResponse =
   | GetPersonalTodosSuccessResponse
@@ -49,7 +50,7 @@ function validatePersonalTodos(value: unknown): PersonalTodoItem[] | { error: st
       return { error: "Invalid todo item" };
     }
 
-    const { id, text, completed, createdAt } = item as Partial<PersonalTodoItem>;
+    const { id, text, description, completed, createdAt } = item as Partial<PersonalTodoItem>;
 
     if (!isNonEmptyString(id)) {
       return { error: "Todo id is required" };
@@ -57,6 +58,16 @@ function validatePersonalTodos(value: unknown): PersonalTodoItem[] | { error: st
 
     if (!isNonEmptyString(text)) {
       return { error: "Todo text is required" };
+    }
+
+    if (description !== undefined && description !== null) {
+      if (typeof description !== "string") {
+        return { error: "Todo description must be a string" };
+      }
+
+      if (description.trim().length > MAX_DESCRIPTION_LENGTH) {
+        return { error: `Todo description is too long (max ${MAX_DESCRIPTION_LENGTH})` };
+      }
     }
 
     if (typeof completed !== "boolean") {
@@ -67,9 +78,15 @@ function validatePersonalTodos(value: unknown): PersonalTodoItem[] | { error: st
       return { error: "Todo createdAt must be a valid ISO date" };
     }
 
+    const normalizedDescription =
+      typeof description === "string" && description.trim().length > 0
+        ? description.trim()
+        : undefined;
+
     todos.push({
       id: id.trim(),
       text: text.trim(),
+      ...(normalizedDescription ? { description: normalizedDescription } : {}),
       completed,
       createdAt,
     });

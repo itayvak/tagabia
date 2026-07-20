@@ -34,36 +34,14 @@ interface PersonalTodoListProps {
   isLoading: boolean;
   isSaving: boolean;
   newItemText: string;
+  newItemDescription: string;
   onNewItemTextChange: (text: string) => void;
+  onNewItemDescriptionChange: (description: string) => void;
   onAddItem: () => void;
   onToggleComplete: (id: string) => void;
   onDeleteItem: (id: string) => void;
-  onEditItem: (id: string, text: string) => void;
+  onEditItem: (id: string, updates: { text: string; description?: string }) => void;
   onClearCompleted: () => void;
-}
-
-function formatAddedDate(isoDate: string): string {
-  const date = new Date(isoDate);
-  const now = new Date();
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const startOfDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const diffDays = Math.round(
-    (startOfToday.getTime() - startOfDate.getTime()) / (1000 * 60 * 60 * 24),
-  );
-
-  if (diffDays === 0) {
-    return "היום";
-  }
-
-  if (diffDays === 1) {
-    return "אתמול";
-  }
-
-  if (diffDays > 1 && diffDays < 7) {
-    return `לפני ${diffDays} ימים`;
-  }
-
-  return date.toLocaleDateString("he-IL", { day: "numeric", month: "short" });
 }
 
 function TodoItemCard({
@@ -71,7 +49,9 @@ function TodoItemCard({
   isSaving,
   isEditing,
   editingText,
+  editingDescription,
   onEditingTextChange,
+  onEditingDescriptionChange,
   onStartEdit,
   onSaveEdit,
   onCancelEdit,
@@ -82,7 +62,9 @@ function TodoItemCard({
   isSaving: boolean;
   isEditing: boolean;
   editingText: string;
+  editingDescription: string;
   onEditingTextChange: (text: string) => void;
+  onEditingDescriptionChange: (description: string) => void;
   onStartEdit: () => void;
   onSaveEdit: () => void;
   onCancelEdit: () => void;
@@ -94,7 +76,7 @@ function TodoItemCard({
       variant="outlined"
       sx={{
         display: "flex",
-        alignItems: "stretch",
+        alignItems: isEditing ? "flex-start" : "stretch",
         opacity: item.completed ? 0.75 : 1,
         transition: "opacity 0.2s ease, box-shadow 0.2s ease",
         "&:hover": {
@@ -136,27 +118,45 @@ function TodoItemCard({
 
       <Box sx={{ flex: 1, py: 1.25, pr: 1, minWidth: 0 }}>
         {isEditing ? (
-          <TextField
-            fullWidth
-            size="small"
-            value={editingText}
-            onChange={(event) => onEditingTextChange(event.target.value)}
-            autoFocus
-            disabled={isSaving}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                onSaveEdit();
-              }
-              if (event.key === "Escape") {
-                event.preventDefault();
-                onCancelEdit();
-              }
-            }}
-            slotProps={{
-              htmlInput: { dir: "rtl", "aria-label": "עריכת פריט" },
-            }}
-          />
+          <Stack spacing={1}>
+            <TextField
+              fullWidth
+              size="small"
+              label="כותרת"
+              value={editingText}
+              onChange={(event) => onEditingTextChange(event.target.value)}
+              autoFocus
+              disabled={isSaving}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") {
+                  event.preventDefault();
+                  onCancelEdit();
+                }
+              }}
+              slotProps={{
+                htmlInput: { dir: "rtl", "aria-label": "עריכת כותרת" },
+              }}
+            />
+            <TextField
+              fullWidth
+              size="small"
+              label="תיאור (אופציונלי)"
+              value={editingDescription}
+              onChange={(event) => onEditingDescriptionChange(event.target.value)}
+              disabled={isSaving}
+              multiline
+              minRows={2}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") {
+                  event.preventDefault();
+                  onCancelEdit();
+                }
+              }}
+              slotProps={{
+                htmlInput: { dir: "rtl", "aria-label": "עריכת תיאור" },
+              }}
+            />
+          </Stack>
         ) : (
           <>
             <Typography
@@ -169,23 +169,34 @@ function TodoItemCard({
             >
               {item.text}
             </Typography>
-            <Typography variant="caption" color="text.disabled" sx={{ mt: 0.25, display: "block" }}>
-              נוסף {formatAddedDate(item.createdAt)}
-            </Typography>
+            {item.description && (
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{
+                  mt: 0.25,
+                  display: "block",
+                  wordBreak: "break-word",
+                  textDecoration: item.completed ? "line-through" : "none",
+                }}
+              >
+                {item.description}
+              </Typography>
+            )}
           </>
         )}
       </Box>
 
-      <Stack direction="row" sx={{ pr: 0.5, alignItems: "center" }}>
+      <Stack direction="row" sx={{ pr: 0.5, pt: isEditing ? 1 : 0, alignItems: "center" }}>
         {isEditing ? (
-          <>
+          <Stack spacing={0.5}>
             <Button size="small" onClick={onSaveEdit} disabled={!editingText.trim() || isSaving}>
               שמור
             </Button>
             <Button size="small" color="inherit" onClick={onCancelEdit} disabled={isSaving}>
               ביטול
             </Button>
-          </>
+          </Stack>
         ) : (
           <>
             <Tooltip title="עריכה">
@@ -252,7 +263,9 @@ export default function PersonalTodoList({
   isLoading,
   isSaving,
   newItemText,
+  newItemDescription,
   onNewItemTextChange,
+  onNewItemDescriptionChange,
   onAddItem,
   onToggleComplete,
   onDeleteItem,
@@ -263,6 +276,7 @@ export default function PersonalTodoList({
   const [completedExpanded, setCompletedExpanded] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
+  const [editingDescription, setEditingDescription] = useState("");
 
   const activeTodos = useMemo(() => todos.filter((item) => !item.completed), [todos]);
   const completedTodos = useMemo(() => todos.filter((item) => item.completed), [todos]);
@@ -283,11 +297,13 @@ export default function PersonalTodoList({
   const startEdit = (item: PersonalTodoItem) => {
     setEditingId(item.id);
     setEditingText(item.text);
+    setEditingDescription(item.description ?? "");
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     setEditingText("");
+    setEditingDescription("");
   };
 
   const saveEdit = () => {
@@ -300,7 +316,11 @@ export default function PersonalTodoList({
       return;
     }
 
-    onEditItem(editingId, trimmed);
+    const trimmedDescription = editingDescription.trim();
+    onEditItem(editingId, {
+      text: trimmed,
+      description: trimmedDescription || undefined,
+    });
     cancelEdit();
   };
 
@@ -311,7 +331,9 @@ export default function PersonalTodoList({
       isSaving={isSaving}
       isEditing={editingId === item.id}
       editingText={editingText}
+      editingDescription={editingDescription}
       onEditingTextChange={setEditingText}
+      onEditingDescriptionChange={setEditingDescription}
       onStartEdit={() => startEdit(item)}
       onSaveEdit={saveEdit}
       onCancelEdit={cancelEdit}
@@ -351,40 +373,57 @@ export default function PersonalTodoList({
       )}
 
       <Card variant="outlined" sx={{ p: 2 }}>
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+        <Stack spacing={1.5}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+            <TextField
+              fullWidth
+              size="small"
+              label="כותרת"
+              placeholder="מה צריך לעשות?"
+              value={newItemText}
+              onChange={(event) => onNewItemTextChange(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  onAddItem();
+                }
+              }}
+              disabled={isSaving}
+              slotProps={{
+                htmlInput: { dir: "rtl", "aria-label": "פריט חדש" },
+                input: {
+                  endAdornment: newItemText.trim() ? (
+                    <InputAdornment position="end">
+                      <Chip label="Enter" size="small" variant="outlined" sx={{ height: 22, fontSize: 11 }} />
+                    </InputAdornment>
+                  ) : undefined,
+                },
+              }}
+            />
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={onAddItem}
+              disabled={!newItemText.trim() || isSaving}
+              sx={{ flexShrink: 0, whiteSpace: "nowrap", alignSelf: { xs: "stretch", sm: "flex-start" } }}
+            >
+              הוסף
+            </Button>
+          </Stack>
           <TextField
             fullWidth
             size="small"
-            placeholder="מה צריך לעשות?"
-            value={newItemText}
-            onChange={(event) => onNewItemTextChange(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                onAddItem();
-              }
-            }}
+            label="תיאור (אופציונלי)"
+            placeholder="פרטים נוספים..."
+            value={newItemDescription}
+            onChange={(event) => onNewItemDescriptionChange(event.target.value)}
             disabled={isSaving}
+            multiline
+            minRows={2}
             slotProps={{
-              htmlInput: { dir: "rtl", "aria-label": "פריט חדש" },
-              input: {
-                endAdornment: newItemText.trim() ? (
-                  <InputAdornment position="end">
-                    <Chip label="Enter" size="small" variant="outlined" sx={{ height: 22, fontSize: 11 }} />
-                  </InputAdornment>
-                ) : undefined,
-              },
+              htmlInput: { dir: "rtl", "aria-label": "תיאור פריט חדש" },
             }}
           />
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={onAddItem}
-            disabled={!newItemText.trim() || isSaving}
-            sx={{ flexShrink: 0, whiteSpace: "nowrap" }}
-          >
-            הוסף
-          </Button>
         </Stack>
       </Card>
 

@@ -7,6 +7,7 @@ export const ROLES = {
   administrationsBatallion: "ק. מנהלות גדודי",
   logisticsBatallion: "ק. לוגיסטיקה גדודי",
   sportsBatallion: "ק. אימון גופני גדודי",
+  tuitionBatallion: "ק. הדרכה גדודי",
   medicalPlatoon: "ק. רפואה פלוגתי",
   safetyPlatoon: "ק. בטיחות פלוגתי",
   educationPlatoon: "ק. חינוך ומורשת פלוגתי",

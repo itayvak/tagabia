@@ -1,12 +1,16 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { FormEvent, useEffect, useState } from "react";
+import Visibility from "@mui/icons-material/Visibility";
+import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import {
   Alert,
   Box,
   Button,
   CircularProgress,
   Container,
+  IconButton,
+  InputAdornment,
   Paper,
   Snackbar,
   TextField,
@@ -49,6 +53,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [id, setId] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [setupUserId, setSetupUserId] = useState<string | null>(null);
@@ -318,7 +323,7 @@ export default function LoginPage() {
                 />
                 <TextField
                   label="סיסמה"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   fullWidth
@@ -326,6 +331,21 @@ export default function LoginPage() {
                   disabled={isSubmitting}
                   helperText="השאר ריק אם זו התחברות ראשונה"
                   slotProps={{
+                    input: {
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            aria-label={showPassword ? "הסתר סיסמה" : "הצג סיסמה"}
+                            onClick={() => setShowPassword((prev) => !prev)}
+                            onMouseDown={(event) => event.preventDefault()}
+                            edge="end"
+                            disabled={isSubmitting}
+                          >
+                            {showPassword ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    },
                     htmlInput: { dir: "rtl" },
                   }}
                 />

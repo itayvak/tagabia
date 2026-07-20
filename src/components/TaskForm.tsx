@@ -172,7 +172,6 @@ export default function TaskForm({
         onChange={setCategory}
         disabled={isFormBusy}
         autoOpen={isCreate}
-        requireSelection={isCreate}
       />
       <TextField
         label="כותרת"
@@ -248,7 +247,7 @@ export default function TaskForm({
         <Button
           type="submit"
           variant="contained"
-          disabled={isFormBusy}
+          disabled={isFormBusy || (isCreate && !category)}
           startIcon={
             isFormBusy ? (
               <CircularProgress size={20} color="inherit" />

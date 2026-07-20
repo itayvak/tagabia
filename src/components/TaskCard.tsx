@@ -17,6 +17,7 @@ import {
 } from "@mui/material";
 import CheckIcon from "@mui/icons-material/Check";
 import DescriptionIcon from "@mui/icons-material/Description";
+import UndoIcon from "@mui/icons-material/Undo";
 import PushPinIcon from "@mui/icons-material/PushPin";
 import PushPinOutlinedIcon from "@mui/icons-material/PushPinOutlined";
 import TaskCategoryIcon from "@/components/TaskCategoryIcon";
@@ -26,30 +27,42 @@ import type { AssignedTask } from "@/types/task";
 interface TaskCardProps {
   task: AssignedTask;
   isCompleting: boolean;
+  isUncompleting?: boolean;
   isCompleted?: boolean;
   completedAt?: string | null;
   isPinned?: boolean;
   onTogglePin?: (taskId: string) => void;
   onOpen: (taskId: string) => void;
   onComplete: (taskId: string) => void;
+  onUncomplete?: (taskId: string) => void;
 }
 
 export default function TaskCard({
   task,
   isCompleting,
+  isUncompleting = false,
   isCompleted = false,
   completedAt = null,
   isPinned = false,
   onTogglePin,
   onOpen,
   onComplete,
+  onUncomplete,
 }: TaskCardProps) {
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<"complete" | "uncomplete" | null>(
+    null,
+  );
   const requiresForm = task.hasFormFields && !isCompleted;
+  const canUncomplete = isCompleted && Boolean(onUncomplete);
+  const isActionPending = isCompleting || isUncompleting;
 
   const handleConfirm = () => {
-    setIsConfirmOpen(false);
-    onComplete(task.id);
+    if (confirmAction === "uncomplete") {
+      onUncomplete?.(task.id);
+    } else {
+      onComplete(task.id);
+    }
+    setConfirmAction(null);
   };
 
   const handleActionClick = () => {
@@ -58,16 +71,20 @@ export default function TaskCard({
       return;
     }
 
-    setIsConfirmOpen(true);
+    setConfirmAction(canUncomplete ? "uncomplete" : "complete");
   };
 
   const actionLabel = isCompleting
     ? "מסמן..."
-    : isCompleted
-      ? "סומן כבוצע"
-      : requiresForm
-        ? "מלא טופס"
-        : "בוצע";
+    : isUncompleting
+      ? "מבטל..."
+      : isCompleted
+        ? canUncomplete
+          ? "ביטול הגשה"
+          : "סומן כבוצע"
+        : requiresForm
+          ? "מלא טופס"
+          : "בוצע";
 
   const daysLeftUrgency = getDaysLeftChipUrgency(task.dueDate);
 
@@ -177,7 +194,8 @@ export default function TaskCard({
         >
           <Button
             variant="contained"
-            disabled={isCompleting || isCompleted}
+            color={canUncomplete ? "inherit" : "primary"}
+            disabled={isActionPending || (isCompleted && !canUncomplete)}
             onClick={(event) => {
               event.stopPropagation();
               handleActionClick();
@@ -188,12 +206,19 @@ export default function TaskCard({
               minWidth: 48,
               width: 48,
               p: 0,
+              ...(canUncomplete && {
+                bgcolor: "grey.300",
+                color: "text.primary",
+                "&:hover": { bgcolor: "grey.400" },
+              }),
             }}
           >
-            {isCompleting ? (
+            {isActionPending ? (
               <CircularProgress size={20} color="inherit" />
             ) : requiresForm ? (
               <DescriptionIcon />
+            ) : canUncomplete ? (
+              <UndoIcon />
             ) : (
               <CheckIcon />
             )}
@@ -201,19 +226,23 @@ export default function TaskCard({
         </Box>
       </Card>
       <Dialog
-        open={isConfirmOpen && !requiresForm}
-        onClose={() => setIsConfirmOpen(false)}
+        open={confirmAction !== null && !requiresForm}
+        onClose={() => setConfirmAction(null)}
         fullWidth
         maxWidth="xs"
       >
-        <DialogTitle>סימון מטלה כבוצעה</DialogTitle>
+        <DialogTitle>
+          {confirmAction === "uncomplete" ? "ביטול הגשה" : "סימון מטלה כבוצעה"}
+        </DialogTitle>
         <DialogContent>
           <DialogContentText>
-            האם אתה בטוח שברצונך לסמן את &quot;{task.title}&quot; כבוצעה?
+            {confirmAction === "uncomplete"
+              ? `האם אתה בטוח שאתה רוצה לבטל את ההגשה של המטלה "${task.title}"?`
+              : `האם אתה בטוח שברצונך לסמן את "${task.title}" כבוצעה?`}
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setIsConfirmOpen(false)}>ביטול</Button>
+          <Button onClick={() => setConfirmAction(null)}>ביטול</Button>
           <Button variant="contained" onClick={handleConfirm}>
             אישור
           </Button>

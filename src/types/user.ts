@@ -7,6 +7,7 @@ export type Platoon = "A" | "B" | "C" | "D" | "E";
 export interface PersonalTodoItem {
   id: string;
   text: string;
+  description?: string;
   completed: boolean;
   createdAt: string;
 }

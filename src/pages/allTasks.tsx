@@ -32,6 +32,7 @@ import {
   togglePinnedTask,
 } from "@/lib/pinnedTasksStorage";
 import { triggerTaskConfetti } from "@/lib/taskConfetti";
+import { uncompleteTask } from "@/lib/uncompleteTask";
 import { getUserInitials } from "@/lib/userInitials";
 import { delaGothicOne } from "@/lib/fonts";
 import { TASK_CATEGORIES, type TaskCategory } from "@/lib/taskCategory";
@@ -41,6 +42,7 @@ import type {
   CompleteTaskSuccessResponse,
   ListAssignedTasksSuccessResponse,
   ListTasksErrorResponse,
+  UncompleteTaskErrorResponse,
 } from "@/types/task";
 import type {
   GetCourseConfigSuccessResponse,
@@ -107,6 +109,10 @@ function getErrorMessage(error: string): string {
       return "המטלה כבר סומנה כבוצעה";
     case "Complete task failed":
       return "סימון המטלה נכשל";
+    case "Task is not completed":
+      return "המטלה לא סומנה כבוצעה";
+    case "Uncomplete task failed":
+      return "ביטול סימון המטלה נכשל";
     default:
       return error;
   }
@@ -124,6 +130,7 @@ export default function AllTasksPage() {
   const [pinnedTaskIds, setPinnedTaskIds] = useState<string[]>([]);
   const [isLoadingTasks, setIsLoadingTasks] = useState(true);
   const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
+  const [uncompletingTaskId, setUncompletingTaskId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [courseConfig, setCourseConfig] = useState<PublicCourseConfig | null>(
     null,
@@ -305,6 +312,39 @@ export default function AllTasksPage() {
       setErrorMessage("שגיאה בסימון המטלה. נסה שוב.");
     } finally {
       setCompletingTaskId(null);
+    }
+  };
+
+  const handleUncompleteTask = async (taskId: string) => {
+    if (!user) {
+      return;
+    }
+
+    setUncompletingTaskId(taskId);
+    setErrorMessage(null);
+
+    try {
+      const { response, data } = await uncompleteTask(taskId, {
+        userId: user.id,
+      });
+
+      if (!response.ok) {
+        const { error } = data as UncompleteTaskErrorResponse;
+        setErrorMessage(getErrorMessage(error ?? "ביטול סימון המטלה נכשל"));
+        return;
+      }
+
+      setTasks((currentTasks) =>
+        currentTasks.map((task) =>
+          task.id === taskId
+            ? { ...task, completed: false, completedAt: null }
+            : task,
+        ),
+      );
+    } catch {
+      setErrorMessage("שגיאה בביטול סימון המטלה. נסה שוב.");
+    } finally {
+      setUncompletingTaskId(null);
     }
   };
 
@@ -527,12 +567,14 @@ export default function AllTasksPage() {
                 key={task.id}
                 task={task}
                 isCompleting={completingTaskId === task.id}
+                isUncompleting={uncompletingTaskId === task.id}
                 isCompleted={task.completed}
                 completedAt={task.completedAt}
                 isPinned={pinnedTaskIds.includes(task.id)}
                 onTogglePin={handleTogglePin}
                 onOpen={(taskId) => void router.push(`/tasks/${taskId}`)}
                 onComplete={(taskId) => void handleCompleteTask(taskId)}
+                onUncomplete={(taskId) => void handleUncompleteTask(taskId)}
               />
             ))}
           </Box>

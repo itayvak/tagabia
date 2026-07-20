@@ -443,7 +443,7 @@ export default function TaskPage() {
                     : isUncompleting
                       ? "מבטל..."
                       : task.completed
-                        ? "הגשה סימון"
+                        ? "ביטול הגשה"
                         : isAssignee
                           ? "בוצע"
                           : "אינך משויך למטלה זו"}

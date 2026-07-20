@@ -20,7 +20,6 @@ interface TaskCategoryPickerProps {
   onChange: (category: TaskCategory) => void;
   disabled?: boolean;
   autoOpen?: boolean;
-  requireSelection?: boolean;
 }
 
 export default function TaskCategoryPicker({
@@ -28,20 +27,11 @@ export default function TaskCategoryPicker({
   onChange,
   disabled = false,
   autoOpen = false,
-  requireSelection = false,
 }: TaskCategoryPickerProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(autoOpen);
 
   const handleSelect = (category: TaskCategory) => {
     onChange(category);
-    setIsDialogOpen(false);
-  };
-
-  const handleDialogClose = () => {
-    if (requireSelection && !value) {
-      return;
-    }
-
     setIsDialogOpen(false);
   };
 
@@ -80,7 +70,7 @@ export default function TaskCategoryPicker({
       </Button>
       <Dialog
         open={isDialogOpen}
-        onClose={handleDialogClose}
+        onClose={() => setIsDialogOpen(false)}
         fullWidth
         maxWidth="sm"
       >
