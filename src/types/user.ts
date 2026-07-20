@@ -8,6 +8,7 @@ export interface PersonalTodoItem {
   id: string;
   text: string;
   description?: string;
+  dueDate?: string;
   completed: boolean;
   createdAt: string;
 }

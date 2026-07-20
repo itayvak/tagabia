@@ -22,6 +22,28 @@ export function toDatetimeLocalValue(iso: string): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+export function fromDatetimeLocalValue(datetimeLocal: string): string {
+  return new Date(datetimeLocal).toISOString();
+}
+
+export function toDateInputValue(iso: string): string {
+  const date = new Date(iso);
+  const pad = (value: number) => String(value).padStart(2, "0");
+
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+export function fromDateInputValue(dateInput: string): string {
+  return new Date(`${dateInput}T00:00:00`).toISOString();
+}
+
+export function formatDateOnly(iso: string): string {
+  const date = new Date(iso);
+  const pad = (value: number) => String(value).padStart(2, "0");
+
+  return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
+}
+
 export function getDaysLeft(dueDate: string): number {
   const now = new Date();
   const startOfToday = new Date(

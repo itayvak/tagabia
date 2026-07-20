@@ -23,6 +23,9 @@ import type { PublicTask } from "@/types/task";
 interface CreatedTaskCardProps {
   task: PublicTask;
   isDeleting?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  showCreator?: boolean;
   onOpen: (taskId: string) => void;
   onEdit: () => void;
   onViewCompletions: () => void;
@@ -33,6 +36,9 @@ interface CreatedTaskCardProps {
 export default function CreatedTaskCard({
   task,
   isDeleting = false,
+  canEdit = true,
+  canDelete = true,
+  showCreator = false,
   onOpen,
   onEdit,
   onViewCompletions,
@@ -91,6 +97,11 @@ export default function CreatedTaskCard({
               {task.category}
             </Typography>
           </Box>
+          {showCreator ? (
+            <Typography variant="caption" color="text.secondary">
+              הוטלה על ידי: {task.creatorRank} {task.creatorName}
+            </Typography>
+          ) : null}
         </CardContent>
       </CardActionArea>
       <Box
@@ -125,25 +136,29 @@ export default function CreatedTaskCard({
             </IconButton>
           </Tooltip>
         ) : null}
-        <Tooltip title="עריכה">
-          <IconButton size="small" aria-label="עריכה" onClick={onEdit}>
-            <EditIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <Box sx={{ flex: 1 }} />
-        <Tooltip title={isDeleting ? "מוחק..." : "מחיקה"}>
-          <span>
-            <IconButton
-              size="small"
-              aria-label="מחיקה"
-              color="error"
-              disabled={isDeleting}
-              onClick={onDelete}
-            >
-              <DeleteIcon fontSize="small" />
+        {canEdit ? (
+          <Tooltip title="עריכה">
+            <IconButton size="small" aria-label="עריכה" onClick={onEdit}>
+              <EditIcon fontSize="small" />
             </IconButton>
-          </span>
-        </Tooltip>
+          </Tooltip>
+        ) : null}
+        <Box sx={{ flex: 1 }} />
+        {canDelete ? (
+          <Tooltip title={isDeleting ? "מוחק..." : "מחיקה"}>
+            <span>
+              <IconButton
+                size="small"
+                aria-label="מחיקה"
+                color="error"
+                disabled={isDeleting}
+                onClick={onDelete}
+              >
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
+        ) : null}
       </Box>
     </Card>
   );

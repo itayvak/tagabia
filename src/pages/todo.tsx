@@ -45,7 +45,6 @@ export default function TodoPage() {
   const [user, setUser] = useState<PublicUser | null>(null);
   const [todos, setTodos] = useState<PersonalTodoItem[]>([]);
   const [newItemText, setNewItemText] = useState("");
-  const [newItemDescription, setNewItemDescription] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -146,12 +145,9 @@ export default function TodoPage() {
       return;
     }
 
-    const description = newItemDescription.trim();
-
     const newItem: PersonalTodoItem = {
       id: crypto.randomUUID(),
       text,
-      ...(description ? { description } : {}),
       completed: false,
       createdAt: new Date().toISOString(),
     };
@@ -160,7 +156,6 @@ export default function TodoPage() {
     const updatedTodos = [...todos, newItem];
     setTodos(updatedTodos);
     setNewItemText("");
-    setNewItemDescription("");
 
     const saved = await persistTodos(updatedTodos);
     if (!saved) {
@@ -251,7 +246,7 @@ export default function TodoPage() {
 
   const handleEditItem = async (
     id: string,
-    updates: { text: string; description?: string },
+    updates: { text: string; description?: string; dueDate?: string },
   ) => {
     if (isSaving) {
       return;
@@ -272,6 +267,12 @@ export default function TodoPage() {
         nextItem.description = updates.description;
       } else {
         delete nextItem.description;
+      }
+
+      if (updates.dueDate) {
+        nextItem.dueDate = updates.dueDate;
+      } else {
+        delete nextItem.dueDate;
       }
 
       return nextItem;
@@ -316,16 +317,10 @@ export default function TodoPage() {
 
   return (
     <>
-      <Head>
-        <title>רשימה אישית | תג&quot;בייה</title>
-      </Head>
       <AppLayout user={user}>
         <Container maxWidth="sm" sx={{ py: 3 }}>
           <Typography variant="h5" component="h1" sx={{ mb: 0.5 }}>
-            רשימה אישית
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            רשימת משימות פרטית — רק שלך
+            משימות אישית
           </Typography>
 
           <PersonalTodoList
@@ -333,9 +328,7 @@ export default function TodoPage() {
             isLoading={isLoading}
             isSaving={isSaving}
             newItemText={newItemText}
-            newItemDescription={newItemDescription}
             onNewItemTextChange={setNewItemText}
-            onNewItemDescriptionChange={setNewItemDescription}
             onAddItem={() => void handleAddItem()}
             onToggleComplete={(id) => void handleToggleComplete(id)}
             onDeleteItem={handleDeleteItem}

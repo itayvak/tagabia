@@ -1,5 +1,7 @@
 import { getAdminFirestore } from "@/lib/firebaseAdmin";
 import { loadTaskFormFields } from "@/lib/taskFormFirestore";
+import { canViewTaskManagement } from "@/lib/taskManagementAuth";
+import type { FirestoreUser } from "@/types/user";
 import type {
   FirestoreTaskSubmission,
   ListTaskSubmissionsErrorResponse,
@@ -24,28 +26,39 @@ export default async function handler(
 
   const taskId =
     typeof req.query.taskId === "string" ? req.query.taskId.trim() : "";
-  const creatorId =
+  const userId =
     typeof req.query.creatorId === "string" ? req.query.creatorId.trim() : "";
 
   if (!taskId) {
     return res.status(400).json({ error: "Task ID is required" });
   }
 
-  if (!creatorId) {
+  if (!userId) {
     return res.status(400).json({ error: "Creator ID is required" });
   }
 
   try {
     const db = getAdminFirestore();
     const taskRef = db.collection("tasks").doc(taskId);
-    const taskDoc = await taskRef.get();
+    const [taskDoc, userDoc] = await Promise.all([
+      taskRef.get(),
+      db.collection("users").doc(userId).get(),
+    ]);
 
     if (!taskDoc.exists) {
       return res.status(404).json({ error: "Task not found" });
     }
 
-    const taskData = taskDoc.data();
-    if (taskData?.creatorId !== creatorId) {
+    if (!userDoc.exists) {
+      return res.status(400).json({ error: "User not found" });
+    }
+
+    const taskData = taskDoc.data()!;
+    const userData = userDoc.data() as FirestoreUser;
+
+    if (
+      !canViewTaskManagement(userId, userData.team, userData.role, taskData)
+    ) {
       return res.status(403).json({ error: "User is not the task creator" });
     }
 

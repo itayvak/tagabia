@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AddIcon from "@mui/icons-material/Add";
 import ChecklistIcon from "@mui/icons-material/Checklist";
 import ClearAllIcon from "@mui/icons-material/ClearAll";
 import DeleteIcon from "@mui/icons-material/Delete";
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import EventOutlinedIcon from "@mui/icons-material/EventOutlined";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import TaskAltIcon from "@mui/icons-material/TaskAlt";
@@ -15,8 +15,11 @@ import {
   Chip,
   CircularProgress,
   Collapse,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   IconButton,
-  LinearProgress,
   Stack,
   TextField,
   ToggleButton,
@@ -24,6 +27,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
+import { formatDateOnly, fromDateInputValue, toDateInputValue } from "@/lib/taskDate";
 import type { PersonalTodoItem } from "@/types/user";
 
 type TodoFilter = "all" | "active" | "completed";
@@ -33,40 +37,125 @@ interface PersonalTodoListProps {
   isLoading: boolean;
   isSaving: boolean;
   newItemText: string;
-  newItemDescription: string;
   onNewItemTextChange: (text: string) => void;
-  onNewItemDescriptionChange: (description: string) => void;
   onAddItem: () => void;
   onToggleComplete: (id: string) => void;
   onDeleteItem: (id: string) => void;
-  onEditItem: (id: string, updates: { text: string; description?: string }) => void;
+  onEditItem: (
+    id: string,
+    updates: { text: string; description?: string; dueDate?: string },
+  ) => void;
   onClearCompleted: () => void;
+}
+
+function PersonalTodoEditDialog({
+  open,
+  item,
+  isSaving,
+  onClose,
+  onSave,
+}: {
+  open: boolean;
+  item: PersonalTodoItem | null;
+  isSaving: boolean;
+  onClose: () => void;
+  onSave: (updates: { text: string; description?: string; dueDate?: string }) => void;
+}) {
+  const [text, setText] = useState("");
+  const [description, setDescription] = useState("");
+  const [dueDate, setDueDate] = useState("");
+
+  useEffect(() => {
+    if (open && item) {
+      setText(item.text);
+      setDescription(item.description ?? "");
+      setDueDate(item.dueDate ? toDateInputValue(item.dueDate) : "");
+    }
+  }, [open, item]);
+
+  const handleSave = () => {
+    const trimmed = text.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    const trimmedDescription = description.trim();
+    onSave({
+      text: trimmed,
+      description: trimmedDescription || undefined,
+      dueDate: dueDate ? fromDateInputValue(dueDate) : undefined,
+    });
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="xs"
+    >
+      <DialogTitle>עריכת משימה</DialogTitle>
+      <DialogContent>
+        <Stack spacing={2} sx={{ pt: 1 }}>
+          <TextField
+            fullWidth
+            label="כותרת"
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+            autoFocus
+            disabled={isSaving}
+            slotProps={{
+              htmlInput: { dir: "rtl", "aria-label": "כותרת" },
+            }}
+          />
+          <TextField
+            fullWidth
+            label="תיאור (אופציונלי)"
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            disabled={isSaving}
+            multiline
+            minRows={3}
+            slotProps={{
+              htmlInput: { dir: "rtl", "aria-label": "תיאור" },
+            }}
+          />
+          <TextField
+            fullWidth
+            label="תאריך יעד (אופציונלי)"
+            type="date"
+            value={dueDate}
+            onChange={(event) => setDueDate(event.target.value)}
+            disabled={isSaving}
+            slotProps={{
+              inputLabel: { shrink: true },
+              htmlInput: { dir: "ltr", "aria-label": "תאריך יעד" },
+            }}
+          />
+        </Stack>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button onClick={onClose} disabled={isSaving}>
+          ביטול
+        </Button>
+        <Button variant="contained" onClick={handleSave} disabled={!text.trim() || isSaving}>
+          שמור
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
 }
 
 function TodoItemCard({
   item,
   isSaving,
-  isEditing,
-  editingText,
-  editingDescription,
-  onEditingTextChange,
-  onEditingDescriptionChange,
-  onStartEdit,
-  onSaveEdit,
-  onCancelEdit,
+  onOpen,
   onToggleComplete,
   onDeleteItem,
 }: {
   item: PersonalTodoItem;
   isSaving: boolean;
-  isEditing: boolean;
-  editingText: string;
-  editingDescription: string;
-  onEditingTextChange: (text: string) => void;
-  onEditingDescriptionChange: (description: string) => void;
-  onStartEdit: () => void;
-  onSaveEdit: () => void;
-  onCancelEdit: () => void;
+  onOpen: () => void;
   onToggleComplete: () => void;
   onDeleteItem: () => void;
 }) {
@@ -75,7 +164,7 @@ function TodoItemCard({
       variant="outlined"
       sx={{
         display: "flex",
-        alignItems: isEditing ? "flex-start" : "stretch",
+        alignItems: "stretch",
         opacity: item.completed ? 0.75 : 1,
         transition: "opacity 0.2s ease, box-shadow 0.2s ease",
         "&:hover": {
@@ -89,11 +178,12 @@ function TodoItemCard({
           alignItems: "center",
           px: 0.5,
         }}
+        onClick={(event) => event.stopPropagation()}
       >
         <Checkbox
           checked={item.completed}
           onChange={onToggleComplete}
-          disabled={isSaving || isEditing}
+          disabled={isSaving}
           icon={<Box sx={{ width: 22, height: 22, borderRadius: "50%", border: 2, borderColor: "divider" }} />}
           checkedIcon={
             <Box
@@ -115,116 +205,77 @@ function TodoItemCard({
         />
       </Box>
 
-      <Box sx={{ flex: 1, py: 1.25, pr: 1, minWidth: 0 }}>
-        {isEditing ? (
-          <Stack spacing={1}>
-            <TextField
-              fullWidth
-              size="small"
-              label="כותרת"
-              value={editingText}
-              onChange={(event) => onEditingTextChange(event.target.value)}
-              autoFocus
-              disabled={isSaving}
-              onKeyDown={(event) => {
-                if (event.key === "Escape") {
-                  event.preventDefault();
-                  onCancelEdit();
-                }
-              }}
-              slotProps={{
-                htmlInput: { dir: "rtl", "aria-label": "עריכת כותרת" },
-              }}
-            />
-            <TextField
-              fullWidth
-              size="small"
-              label="תיאור (אופציונלי)"
-              value={editingDescription}
-              onChange={(event) => onEditingDescriptionChange(event.target.value)}
-              disabled={isSaving}
-              multiline
-              minRows={2}
-              onKeyDown={(event) => {
-                if (event.key === "Escape") {
-                  event.preventDefault();
-                  onCancelEdit();
-                }
-              }}
-              slotProps={{
-                htmlInput: { dir: "rtl", "aria-label": "עריכת תיאור" },
-              }}
-            />
-          </Stack>
-        ) : (
-          <>
-            <Typography
-              variant="body1"
-              sx={{
-                wordBreak: "break-word",
-                textDecoration: item.completed ? "line-through" : "none",
-                color: item.completed ? "text.secondary" : "text.primary",
-              }}
-            >
-              {item.text}
+      <Box
+        sx={{
+          flex: 1,
+          py: 1.25,
+          pr: 1,
+          minWidth: 0,
+          cursor: "pointer",
+        }}
+        onClick={onOpen}
+        role="button"
+        tabIndex={0}
+        aria-label={`ערוך: ${item.text}`}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onOpen();
+          }
+        }}
+      >
+        <Typography
+          variant="body1"
+          sx={{
+            wordBreak: "break-word",
+            textDecoration: item.completed ? "line-through" : "none",
+            color: item.completed ? "text.secondary" : "text.primary",
+          }}
+        >
+          {item.text}
+        </Typography>
+        {item.description && (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{
+              mt: 0.25,
+              display: "block",
+              wordBreak: "break-word",
+              textDecoration: item.completed ? "line-through" : "none",
+            }}
+          >
+            {item.description}
+          </Typography>
+        )}
+        {item.dueDate && (
+          <Stack direction="row" spacing={0.5} sx={{ mt: 0.5, alignItems: "center" }}>
+            <EventOutlinedIcon sx={{ fontSize: 14, color: "text.secondary" }} />
+            <Typography variant="caption" color="text.secondary">
+              {formatDateOnly(item.dueDate)}
             </Typography>
-            {item.description && (
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{
-                  mt: 0.25,
-                  display: "block",
-                  wordBreak: "break-word",
-                  textDecoration: item.completed ? "line-through" : "none",
-                }}
-              >
-                {item.description}
-              </Typography>
-            )}
-          </>
+          </Stack>
         )}
       </Box>
 
-      <Stack direction="row" sx={{ pr: 0.5, pt: isEditing ? 1 : 0, alignItems: "center" }}>
-        {isEditing ? (
-          <Stack spacing={0.5}>
-            <Button size="small" onClick={onSaveEdit} disabled={!editingText.trim() || isSaving}>
-              שמור
-            </Button>
-            <Button size="small" color="inherit" onClick={onCancelEdit} disabled={isSaving}>
-              ביטול
-            </Button>
-          </Stack>
-        ) : (
-          <>
-            <Tooltip title="עריכה">
-              <span>
-                <IconButton
-                  size="small"
-                  aria-label="ערוך פריט"
-                  onClick={onStartEdit}
-                  disabled={isSaving}
-                >
-                  <EditOutlinedIcon fontSize="small" />
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip title="מחק">
-              <span>
-                <IconButton
-                  size="small"
-                  aria-label="מחק פריט"
-                  onClick={onDeleteItem}
-                  disabled={isSaving}
-                  color="error"
-                >
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
-              </span>
-            </Tooltip>
-          </>
-        )}
+      <Stack
+        direction="row"
+        sx={{ pr: 0.5, alignItems: "center" }}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <Tooltip title="מחק">
+          <span>
+            <IconButton
+              size="small"
+              aria-label="מחק פריט"
+              onClick={onDeleteItem}
+              disabled={isSaving}
+              color="error"
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </span>
+        </Tooltip>
       </Stack>
     </Card>
   );
@@ -236,7 +287,7 @@ function EmptyState({ filter }: { filter: TodoFilter }) {
       ? "אין פריטים שהושלמו"
       : filter === "active"
         ? "אין פריטים פתוחים — הכל מסודר!"
-        : "הרשימה ריקה. הוסיפו את הפריט הראשון.";
+        : "סיימתי הכל אין עליי!";
 
   return (
     <Box
@@ -262,9 +313,7 @@ export default function PersonalTodoList({
   isLoading,
   isSaving,
   newItemText,
-  newItemDescription,
   onNewItemTextChange,
-  onNewItemDescriptionChange,
   onAddItem,
   onToggleComplete,
   onDeleteItem,
@@ -273,15 +322,12 @@ export default function PersonalTodoList({
 }: PersonalTodoListProps) {
   const [filter, setFilter] = useState<TodoFilter>("all");
   const [completedExpanded, setCompletedExpanded] = useState(true);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingText, setEditingText] = useState("");
-  const [editingDescription, setEditingDescription] = useState("");
+  const [editingItem, setEditingItem] = useState<PersonalTodoItem | null>(null);
 
   const activeTodos = useMemo(() => todos.filter((item) => !item.completed), [todos]);
   const completedTodos = useMemo(() => todos.filter((item) => item.completed), [todos]);
   const completedCount = completedTodos.length;
   const totalCount = todos.length;
-  const progress = totalCount === 0 ? 0 : Math.round((completedCount / totalCount) * 100);
 
   const filteredActive = filter === "completed" ? [] : activeTodos;
   const filteredCompleted = filter === "active" ? [] : completedTodos;
@@ -293,34 +339,13 @@ export default function PersonalTodoList({
         ? completedTodos
         : [];
 
-  const startEdit = (item: PersonalTodoItem) => {
-    setEditingId(item.id);
-    setEditingText(item.text);
-    setEditingDescription(item.description ?? "");
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditingText("");
-    setEditingDescription("");
-  };
-
-  const saveEdit = () => {
-    if (!editingId) {
+  const handleSaveEdit = (updates: { text: string; description?: string; dueDate?: string }) => {
+    if (!editingItem) {
       return;
     }
 
-    const trimmed = editingText.trim();
-    if (!trimmed) {
-      return;
-    }
-
-    const trimmedDescription = editingDescription.trim();
-    onEditItem(editingId, {
-      text: trimmed,
-      description: trimmedDescription || undefined,
-    });
-    cancelEdit();
+    onEditItem(editingItem.id, updates);
+    setEditingItem(null);
   };
 
   const renderItem = (item: PersonalTodoItem) => (
@@ -328,14 +353,7 @@ export default function PersonalTodoList({
       key={item.id}
       item={item}
       isSaving={isSaving}
-      isEditing={editingId === item.id}
-      editingText={editingText}
-      editingDescription={editingDescription}
-      onEditingTextChange={setEditingText}
-      onEditingDescriptionChange={setEditingDescription}
-      onStartEdit={() => startEdit(item)}
-      onSaveEdit={saveEdit}
-      onCancelEdit={cancelEdit}
+      onOpen={() => setEditingItem(item)}
       onToggleComplete={() => onToggleComplete(item.id)}
       onDeleteItem={() => onDeleteItem(item.id)}
     />
@@ -343,93 +361,39 @@ export default function PersonalTodoList({
 
   return (
     <Stack spacing={2.5}>
-      {totalCount > 0 && (
-        <Box>
-          <Stack direction="row" sx={{ mb: 1, justifyContent: "space-between", alignItems: "center" }}>
-            <Typography variant="body2" color="text.secondary">
-              {completedCount} מתוך {totalCount} הושלמו
-            </Typography>
-            {isSaving && (
-              <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
-                <CircularProgress size={14} />
-                <Typography variant="caption" color="text.secondary">
-                  שומר...
-                </Typography>
-              </Stack>
-            )}
-          </Stack>
-          <LinearProgress
-            variant="determinate"
-            value={progress}
-            sx={{
-              height: 6,
-              borderRadius: 3,
-              bgcolor: "action.hover",
-              "& .MuiLinearProgress-bar": { borderRadius: 3 },
-            }}
-          />
-        </Box>
-      )}
-
-      <Card variant="outlined" sx={{ p: 2 }}>
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          spacing={1}
+      <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ alignItems: { sm: "flex-start" } }}>
+        <TextField
+          fullWidth
+          size="small"
+          label="משימה חדשה..."
+          value={newItemText}
+          onChange={(event) => onNewItemTextChange(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+              onAddItem();
+            }
+          }}
+          disabled={isSaving}
+          sx={{ flex: 1 }}
+          slotProps={{
+            htmlInput: { dir: "rtl", "aria-label": "פריט חדש" },
+          }}
+        />
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={onAddItem}
+          disabled={!newItemText.trim() || isSaving}
           sx={{
-            flexWrap: { sm: "wrap" },
-            alignItems: { sm: "flex-start" },
+            flexShrink: 0,
+            whiteSpace: "nowrap",
+            alignSelf: { xs: "stretch", sm: "flex-start" },
           }}
         >
-          <TextField
-            fullWidth
-            size="small"
-            label="כותרת"
-            placeholder="מה צריך לעשות?"
-            value={newItemText}
-            onChange={(event) => onNewItemTextChange(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                onAddItem();
-              }
-            }}
-            disabled={isSaving}
-            sx={{ order: 1, flex: { sm: 1 }, minWidth: { sm: 200 } }}
-            slotProps={{
-              htmlInput: { dir: "rtl", "aria-label": "פריט חדש" },
-            }}
-          />
-          <TextField
-            fullWidth
-            size="small"
-            label="תיאור (אופציונלי)"
-            placeholder="פרטים נוספים..."
-            value={newItemDescription}
-            onChange={(event) => onNewItemDescriptionChange(event.target.value)}
-            disabled={isSaving}
-            multiline
-            minRows={2}
-            sx={{ order: { xs: 2, sm: 3 }, width: "100%" }}
-            slotProps={{
-              htmlInput: { dir: "rtl", "aria-label": "תיאור פריט חדש" },
-            }}
-          />
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={onAddItem}
-            disabled={!newItemText.trim() || isSaving}
-            sx={{
-              order: { xs: 3, sm: 2 },
-              flexShrink: 0,
-              whiteSpace: "nowrap",
-              alignSelf: { xs: "stretch", sm: "flex-start" },
-            }}
-          >
-            הוסף
-          </Button>
-        </Stack>
-      </Card>
+          הוסף
+        </Button>
+      </Stack>
 
       {totalCount > 0 && (
         <Stack
@@ -526,6 +490,14 @@ export default function PersonalTodoList({
       ) : (
         <Stack spacing={1}>{visibleItems.map(renderItem)}</Stack>
       )}
+
+      <PersonalTodoEditDialog
+        open={editingItem !== null}
+        item={editingItem}
+        isSaving={isSaving}
+        onClose={() => setEditingItem(null)}
+        onSave={handleSaveEdit}
+      />
     </Stack>
   );
 }

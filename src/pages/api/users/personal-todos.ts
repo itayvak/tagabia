@@ -50,7 +50,8 @@ function validatePersonalTodos(value: unknown): PersonalTodoItem[] | { error: st
       return { error: "Invalid todo item" };
     }
 
-    const { id, text, description, completed, createdAt } = item as Partial<PersonalTodoItem>;
+    const { id, text, description, dueDate, completed, createdAt } =
+      item as Partial<PersonalTodoItem>;
 
     if (!isNonEmptyString(id)) {
       return { error: "Todo id is required" };
@@ -67,6 +68,12 @@ function validatePersonalTodos(value: unknown): PersonalTodoItem[] | { error: st
 
       if (description.trim().length > MAX_DESCRIPTION_LENGTH) {
         return { error: `Todo description is too long (max ${MAX_DESCRIPTION_LENGTH})` };
+      }
+    }
+
+    if (dueDate !== undefined && dueDate !== null) {
+      if (typeof dueDate !== "string" || !isValidIsoDate(dueDate)) {
+        return { error: "Todo dueDate must be a valid ISO date" };
       }
     }
 
@@ -87,6 +94,7 @@ function validatePersonalTodos(value: unknown): PersonalTodoItem[] | { error: st
       id: id.trim(),
       text: text.trim(),
       ...(normalizedDescription ? { description: normalizedDescription } : {}),
+      ...(typeof dueDate === "string" && dueDate.trim().length > 0 ? { dueDate } : {}),
       completed,
       createdAt,
     });

@@ -22,6 +22,7 @@ import {
   DEFAULT_TASK_CATEGORY,
   type TaskCategory,
 } from "@/lib/taskCategory";
+import { fromDatetimeLocalValue } from "@/lib/taskDate";
 import type { TaskMedia } from "@/types/task";
 import type { TaskFormFieldInput } from "@/types/taskForm";
 
@@ -135,7 +136,7 @@ export default function TaskForm({
       title: title.trim(),
       content: content.trim(),
       category,
-      dueDate,
+      dueDate: fromDatetimeLocalValue(dueDate),
       assignedTeams,
       assignedUsers,
       formFields: toFormFieldInputs(formFields),

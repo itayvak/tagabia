@@ -16,6 +16,8 @@ import {
   InputAdornment,
   Snackbar,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from "@mui/material";
 import ImageIcon from "@mui/icons-material/Image";
@@ -29,6 +31,7 @@ import TaskSubmissionsDialog from "@/components/TaskSubmissionsDialog";
 import { getSession } from "@/lib/authStorage";
 import { deleteTask } from "@/lib/deleteTask";
 import { canManageTasks } from "@/lib/roles";
+import { fetchAssignedTasks } from "@/lib/fetchAssignedTasks";
 import { fetchCreatedTasks } from "@/lib/fetchCreatedTasks";
 import { fetchTaskCompletions } from "@/lib/fetchTaskCompletions";
 import { fetchTaskSubmissions } from "@/lib/fetchTaskSubmissions";
@@ -37,6 +40,7 @@ import type {
   DeleteTaskErrorResponse,
   ListTaskCompletionsErrorResponse,
   ListTaskCompletionsSuccessResponse,
+  ListAssignedTasksSuccessResponse,
   ListTasksErrorResponse,
   ListTasksSuccessResponse,
   PublicTask,
@@ -50,10 +54,14 @@ import type {
   TaskSubmissionEntry,
 } from "@/types/taskForm";
 
+type MyTasksTab = "created" | "assigned";
+
 export default function MyTasksPage() {
   const router = useRouter();
   const [user, setUser] = useState<PublicUser | null>(null);
-  const [tasks, setTasks] = useState<PublicTask[]>([]);
+  const [activeTab, setActiveTab] = useState<MyTasksTab>("created");
+  const [createdTasks, setCreatedTasks] = useState<PublicTask[]>([]);
+  const [assignedTasks, setAssignedTasks] = useState<PublicTask[]>([]);
   const [isLoadingTasks, setIsLoadingTasks] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [completionsTask, setCompletionsTask] = useState<PublicTask | null>(
@@ -104,15 +112,29 @@ export default function MyTasksPage() {
     setErrorMessage(null);
 
     try {
-      const { response, data } = await fetchCreatedTasks(user.id);
+      const [createdResult, assignedResult] = await Promise.all([
+        fetchCreatedTasks(user.id),
+        fetchAssignedTasks(user.id, "all"),
+      ]);
 
-      if (!response.ok) {
-        const { error } = data as ListTasksErrorResponse;
+      if (!createdResult.response.ok) {
+        const { error } = createdResult.data as ListTasksErrorResponse;
         setErrorMessage(getTaskErrorMessage(error ?? "טעינת המטלות נכשלה"));
         return;
       }
 
-      setTasks((data as ListTasksSuccessResponse).tasks);
+      if (!assignedResult.response.ok) {
+        const { error } = assignedResult.data as ListTasksErrorResponse;
+        setErrorMessage(getTaskErrorMessage(error ?? "טעינת המטלות נכשלה"));
+        return;
+      }
+
+      setCreatedTasks((createdResult.data as ListTasksSuccessResponse).tasks);
+      setAssignedTasks(
+        (assignedResult.data as ListAssignedTasksSuccessResponse).tasks.filter(
+          (task) => task.creatorId !== user.id,
+        ),
+      );
     } catch {
       setErrorMessage("שגיאה בטעינת המטלות. נסה שוב.");
     } finally {
@@ -124,9 +146,16 @@ export default function MyTasksPage() {
     void loadTasks();
   }, [loadTasks]);
 
+  const activeTasks = activeTab === "created" ? createdTasks : assignedTasks;
+
+  const reportTasks = useMemo(
+    () => [...createdTasks, ...assignedTasks],
+    [createdTasks, assignedTasks],
+  );
+
   const filteredTasks = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
-    const sorted = [...tasks].sort(
+    const sorted = [...activeTasks].sort(
       (a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime(),
     );
 
@@ -139,7 +168,7 @@ export default function MyTasksPage() {
         task.title.toLowerCase().includes(query) ||
         task.content.toLowerCase().includes(query),
     );
-  }, [tasks, searchQuery]);
+  }, [activeTasks, searchQuery]);
 
   const submittedUserIds = useMemo(
     () => submissions.map((submission) => submission.userId),
@@ -335,7 +364,7 @@ export default function MyTasksPage() {
       }
 
       setDeletingTask(null);
-      setTasks((currentTasks) =>
+      setCreatedTasks((currentTasks) =>
         currentTasks.filter((task) => task.id !== deletingTask.id),
       );
     } catch {
@@ -367,13 +396,31 @@ export default function MyTasksPage() {
       </Head>
       <AppLayout user={user}>
         <Container maxWidth="sm" sx={{ py: 3 }}>
+        <ToggleButtonGroup
+          exclusive
+          value={activeTab}
+          onChange={(_, value: MyTasksTab | null) => {
+            if (value) {
+              setActiveTab(value);
+            }
+          }}
+          fullWidth
+          size="small"
+          color="primary"
+          sx={{ mb: 2 }}
+        >
+          <ToggleButton value="created">מטלות שיצרתי</ToggleButton>
+          <ToggleButton value="assigned">מטלות שהוטלו עלי</ToggleButton>
+        </ToggleButtonGroup>
         {isLoadingTasks ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
             <CircularProgress />
           </Box>
-        ) : tasks.length === 0 ? (
+        ) : activeTasks.length === 0 ? (
           <Typography color="text.secondary" align="center" sx={{ py: 6 }}>
-            אין מטלות שיצרת
+            {activeTab === "created"
+              ? "אין מטלות שיצרת"
+              : "אין מטלות שהוטלו עליך"}
           </Typography>
         ) : (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -414,6 +461,9 @@ export default function MyTasksPage() {
                   key={task.id}
                   task={task}
                   isDeleting={deletingTaskId === task.id}
+                  canEdit={activeTab === "created"}
+                  canDelete={activeTab === "created"}
+                  showCreator={activeTab === "assigned"}
                   onOpen={(taskId) => void router.push(`/tasks/${taskId}`)}
                   onEdit={() => void router.push(`/mytasks/${task.id}/edit`)}
                   onViewCompletions={() => void handleOpenCompletions(task)}
@@ -496,7 +546,7 @@ export default function MyTasksPage() {
       />
       <TaskReportShareDialog
         open={isReportDialogOpen}
-        tasks={tasks}
+        tasks={reportTasks}
         userId={user.id}
         onClose={() => setIsReportDialogOpen(false)}
         onError={setErrorMessage}
