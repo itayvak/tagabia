@@ -190,7 +190,13 @@ export default function TaskReportShareDialog({
     setIsSharing(true);
 
     try {
-      const result = await shareImageFile(imageBlob, "tagabia-report.png");
+      const appUrl = `${window.location.origin}/allTasks`;
+      const result = await shareImageFile(
+        imageBlob,
+        "tagabia-report.png",
+        "דוח מטלות",
+        appUrl,
+      );
       if (result === "shared") {
         onSuccess("הדוח שותף בהצלחה");
         onClose();

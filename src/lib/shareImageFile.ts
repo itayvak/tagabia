@@ -11,7 +11,7 @@ export async function shareImageFile(
   if (typeof navigator.share === "function") {
     const shareCandidates: ShareData[] = link
       ? [
-          { title, text: link, url: link, files: [file] },
+          { title, url: link, files: [file] },
           { title, text: link, files: [file] },
           { title, files: [file] },
         ]
