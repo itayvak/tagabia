@@ -79,6 +79,71 @@ export interface ImportUsersErrorResponse {
   error: string;
 }
 
+export interface AdminUserListItem extends PublicUser {
+  needsPasswordSetup: boolean;
+}
+
+export interface ListAdminUsersSuccessResponse {
+  users: AdminUserListItem[];
+}
+
+export interface ListAdminUsersErrorResponse {
+  error: string;
+}
+
+export interface CreateAdminUserInput {
+  id: string;
+  fullname: string;
+  password?: string;
+  rank: string;
+  role: Role;
+  platoon: Platoon;
+  team: number;
+}
+
+export interface CreateAdminUserRequestBody {
+  userId: string;
+  user: CreateAdminUserInput;
+}
+
+export interface CreateAdminUserSuccessResponse {
+  user: AdminUserListItem;
+}
+
+export interface CreateAdminUserErrorResponse {
+  error: string;
+}
+
+export interface UpdateAdminUserInput {
+  fullname: string;
+  password?: string;
+  rank: string;
+  role: Role;
+  platoon: Platoon;
+  team: number;
+}
+
+export interface UpdateAdminUserRequestBody {
+  userId: string;
+  user: UpdateAdminUserInput;
+}
+
+export interface UpdateAdminUserSuccessResponse {
+  user: AdminUserListItem;
+}
+
+export interface UpdateAdminUserErrorResponse {
+  error: string;
+}
+
+export interface DeleteAdminUserSuccessResponse {
+  deleted: true;
+}
+
+export interface DeleteAdminUserErrorResponse {
+  error: string;
+}
+
 export interface GetPersonalTodosSuccessResponse {
   todos: PersonalTodoItem[];
 }

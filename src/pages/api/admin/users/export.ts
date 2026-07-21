@@ -1,34 +1,13 @@
 import { canAccessAdminByUserId } from "@/lib/adminAccess";
 import { rowsToCsv } from "@/lib/csv";
 import { getAdminFirestore } from "@/lib/firebaseAdmin";
+import { sortUserEntries } from "@/lib/sortUsers";
 import { USER_CSV_HEADERS } from "@/lib/userCsv";
 import type { FirestoreUser } from "@/types/user";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
-}
-
-function compareUsers(
-  [idA, userA]: readonly [string, FirestoreUser],
-  [idB, userB]: readonly [string, FirestoreUser],
-): number {
-  const platoonCompare = userA.platoon.localeCompare(userB.platoon);
-  if (platoonCompare !== 0) {
-    return platoonCompare;
-  }
-
-  const teamCompare = userA.team - userB.team;
-  if (teamCompare !== 0) {
-    return teamCompare;
-  }
-
-  const nameCompare = userA.fullname.localeCompare(userB.fullname, "he");
-  if (nameCompare !== 0) {
-    return nameCompare;
-  }
-
-  return idA.localeCompare(idB);
 }
 
 export default async function handler(
@@ -54,10 +33,9 @@ export default async function handler(
   try {
     const snapshot = await getAdminFirestore().collection("users").get();
 
-    const rows = snapshot.docs
-      .map((doc) => [doc.id, doc.data() as FirestoreUser] as const)
-      .sort(compareUsers)
-      .map(([id, user]) => [
+    const rows = sortUserEntries(
+      snapshot.docs.map((doc) => [doc.id, doc.data() as FirestoreUser] as const),
+    ).map(([id, user]) => [
         id,
         user.fullname,
         user.password,

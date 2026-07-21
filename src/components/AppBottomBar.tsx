@@ -65,7 +65,8 @@ export default function AppBottomBar({ user }: AppBottomBarProps) {
             label: "מפתחים",
             href: "/admin",
             icon: <AdminPanelSettingsIcon />,
-            match: (pathname: string) => pathname === "/admin",
+            match: (pathname: string) =>
+              pathname === "/admin" || pathname.startsWith("/admin/"),
           },
         ]
       : []),

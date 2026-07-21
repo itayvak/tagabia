@@ -1,15 +1,24 @@
 import Head from "next/head";
+import Link from "next/link";
 import { useRouter } from "next/router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import DownloadIcon from "@mui/icons-material/Download";
+import PeopleIcon from "@mui/icons-material/People";
+import UploadIcon from "@mui/icons-material/Upload";
 import {
   Alert,
   Box,
   Button,
   CircularProgress,
   Container,
+  Divider,
+  Paper,
   Snackbar,
+  Typography,
 } from "@mui/material";
 import AppLayout from "@/components/AppLayout";
+import { APP_BOTTOM_BAR_HEIGHT } from "@/components/AppBottomBar";
 import CourseWeeksDialog from "@/components/CourseWeeksDialog";
 import { canAccessAdmin } from "@/lib/admin";
 import { getSession } from "@/lib/authStorage";
@@ -72,6 +81,36 @@ function getSuccessMessage(result: ImportUsersSuccessResponse): string {
   }
 
   return parts.length > 0 ? `סנכרון הושלם: ${parts.join(", ")}` : "לא נמצאו שינויים";
+}
+
+function AdminSection({
+  icon,
+  title,
+  children,
+}: {
+  icon: ReactNode;
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <Paper
+      variant="outlined"
+      sx={{
+        p: 2.5,
+        display: "flex",
+        flexDirection: "column",
+        gap: 2,
+      }}
+    >
+      <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
+        <Box sx={{ color: "primary.main", display: "flex" }}>{icon}</Box>
+        <Typography variant="subtitle1" fontWeight={600}>
+          {title}
+        </Typography>
+      </Box>
+      {children}
+    </Paper>
+  );
 }
 
 export default function AdminPage() {
@@ -180,45 +219,90 @@ export default function AdminPage() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
       <AppLayout user={user}>
-        <Container maxWidth="md" sx={{ py: 3 }}>
-        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-          <Button
-            variant="outlined"
-            onClick={() => setIsCourseWeeksDialogOpen(true)}
-            disabled={isDownloading || isUploading}
-          >
-            עריכת שבועות הקורס
-          </Button>
-          <Button
-            variant="contained"
-            onClick={() => void handleDownloadUsers()}
-            disabled={isDownloading || isUploading}
-          >
-            {isDownloading ? "מוריד..." : "הורד רשימת משתמשים"}
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={handleUploadClick}
-            disabled={isDownloading || isUploading}
-          >
-            {isUploading ? "מעלה..." : "העלה רשימת משתמשים"}
-          </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".csv,text/csv"
-            hidden
-            onChange={(event) => void handleFileSelected(event)}
-          />
-        </Box>
-      </Container>
-      <CourseWeeksDialog
-        open={isCourseWeeksDialogOpen}
-        userId={user.id}
-        onClose={() => setIsCourseWeeksDialogOpen(false)}
-        onSaved={() => setSuccessMessage("הגדרות הקורס נשמרו")}
-        onError={(message) => setErrorMessage(message)}
-      />
+        <Container
+          maxWidth="md"
+          sx={{
+            py: 3,
+            pb: `${APP_BOTTOM_BAR_HEIGHT + 24}px`,
+            display: "flex",
+            flexDirection: "column",
+            gap: 3,
+          }}
+        >
+          <Box>
+            <Typography variant="h5" component="h1" sx={{ mb: 0.5 }}>
+              מפתחים
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              הגדרות מערכת, ניהול משתמשים וקורס
+            </Typography>
+          </Box>
+
+          <AdminSection icon={<PeopleIcon />} title="משתמשים">
+            <Button
+              variant="contained"
+              component={Link}
+              href="/admin/users"
+              disabled={isDownloading || isUploading}
+              fullWidth
+            >
+              ניהול משתמשים
+            </Button>
+
+            <Divider />
+
+            <Box>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                ייבוא וייצוא מרוכז
+              </Typography>
+              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                <Button
+                  variant="contained"
+                  startIcon={<DownloadIcon />}
+                  onClick={() => void handleDownloadUsers()}
+                  disabled={isDownloading || isUploading}
+                  sx={{ flex: { xs: "1 1 100%", sm: "1 1 auto" } }}
+                >
+                  {isDownloading ? "מוריד..." : "הורד CSV"}
+                </Button>
+                <Button
+                  variant="contained"
+                  startIcon={<UploadIcon />}
+                  onClick={handleUploadClick}
+                  disabled={isDownloading || isUploading}
+                  sx={{ flex: { xs: "1 1 100%", sm: "1 1 auto" } }}
+                >
+                  {isUploading ? "מעלה..." : "העלה CSV"}
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv,text/csv"
+                  hidden
+                  onChange={(event) => void handleFileSelected(event)}
+                />
+              </Box>
+            </Box>
+          </AdminSection>
+
+          <AdminSection icon={<CalendarMonthIcon />} title="הגדרות קורס">
+            <Button
+              variant="contained"
+              onClick={() => setIsCourseWeeksDialogOpen(true)}
+              disabled={isDownloading || isUploading}
+              fullWidth
+            >
+              עריכת שבועות הקורס
+            </Button>
+          </AdminSection>
+        </Container>
+        <CourseWeeksDialog
+          open={isCourseWeeksDialogOpen}
+          userId={user.id}
+          onClose={() => setIsCourseWeeksDialogOpen(false)}
+          onSaved={() => setSuccessMessage("הגדרות הקורס נשמרו")}
+          onError={(message) => setErrorMessage(message)}
+        />
       </AppLayout>
       <Snackbar
         open={Boolean(errorMessage)}

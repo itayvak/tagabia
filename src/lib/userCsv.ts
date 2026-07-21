@@ -1,7 +1,7 @@
 import { hashPassword } from "@/lib/password";
 import { PLATOONS, TOTAL_TEAMS } from "@/lib/platoons";
 import { isRole } from "@/lib/roles";
-import type { FirestoreUser, Platoon } from "@/types/user";
+import type { FirestoreUser, Platoon, Role } from "@/types/user";
 
 export const USER_CSV_HEADERS = [
   "id",
@@ -14,6 +14,15 @@ export const USER_CSV_HEADERS = [
 ] as const;
 
 const PASSWORD_HASH_PATTERN = /^[a-fA-F0-9]{64}$/;
+
+export interface UserFieldsInput {
+  fullname: string;
+  password?: string;
+  rank: string;
+  role: string;
+  platoon: string;
+  team: number | string;
+}
 
 export function normalizeStoredPassword(password: string): string {
   const trimmed = password.trim();
@@ -29,6 +38,52 @@ export function normalizeStoredPassword(password: string): string {
 
 function isPlatoon(value: string): value is Platoon {
   return PLATOONS.includes(value as Platoon);
+}
+
+export function validateUserFields(
+  input: UserFieldsInput,
+  context?: string,
+): { data: Omit<FirestoreUser, "personalTodos"> } | { error: string } {
+  const prefix = context ? `${context}: ` : "";
+
+  const fullname = input.fullname.trim();
+  if (!fullname) {
+    return { error: `${prefix}fullname is required` };
+  }
+
+  const rank = input.rank.trim();
+  if (!rank) {
+    return { error: `${prefix}rank is required` };
+  }
+
+  const role = input.role.trim();
+  if (!isRole(role)) {
+    return { error: `${prefix}invalid role` };
+  }
+
+  const platoon = input.platoon.trim();
+  if (!isPlatoon(platoon)) {
+    return { error: `${prefix}invalid platoon` };
+  }
+
+  const team =
+    typeof input.team === "number" ? input.team : Number(String(input.team).trim());
+  if (!Number.isInteger(team) || team < 1 || team > TOTAL_TEAMS) {
+    return { error: `${prefix}invalid team` };
+  }
+
+  const passwordInput = input.password?.trim() ?? "";
+
+  return {
+    data: {
+      fullname,
+      password: passwordInput ? normalizeStoredPassword(passwordInput) : "",
+      rank,
+      role: role as Role,
+      platoon,
+      team,
+    },
+  };
 }
 
 export function parseUserCsvRow(
@@ -49,38 +104,19 @@ export function parseUserCsvRow(
     return { error: `Row ${rowNumber}: id is required` };
   }
 
-  if (!fullname) {
-    return { error: `Row ${rowNumber}: fullname is required` };
-  }
+  const validated = validateUserFields(
+    { fullname, password, rank, role, platoon, team: teamValue },
+    `Row ${rowNumber}`,
+  );
 
-  if (!rank) {
-    return { error: `Row ${rowNumber}: rank is required` };
-  }
-
-  if (!isRole(role)) {
-    return { error: `Row ${rowNumber}: invalid role` };
-  }
-
-  if (!isPlatoon(platoon)) {
-    return { error: `Row ${rowNumber}: invalid platoon` };
-  }
-
-  const team = Number(teamValue);
-  if (!Number.isInteger(team) || team < 1 || team > TOTAL_TEAMS) {
-    return { error: `Row ${rowNumber}: invalid team` };
+  if ("error" in validated) {
+    return { error: validated.error };
   }
 
   return {
     user: {
       id,
-      data: {
-        fullname,
-        password: password ? normalizeStoredPassword(password) : "",
-        rank,
-        role,
-        platoon,
-        team,
-      },
+      data: validated.data,
     },
   };
 }
