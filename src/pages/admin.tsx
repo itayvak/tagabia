@@ -104,7 +104,7 @@ function AdminSection({
     >
       <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
         <Box sx={{ color: "primary.main", display: "flex" }}>{icon}</Box>
-        <Typography variant="subtitle1" fontWeight={600}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
           {title}
         </Typography>
       </Box>
