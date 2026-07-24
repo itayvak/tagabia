@@ -232,7 +232,7 @@ export default function LoginPage() {
               align="center"
               sx={{ mb: 0.5 }}
             >
-              תג&quot;ביה
+              All In One
             </Typography>
             <Typography
               variant="body2"
