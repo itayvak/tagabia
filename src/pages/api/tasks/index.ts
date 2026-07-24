@@ -117,6 +117,7 @@ export default async function handler(
       creatorName: creatorData.fullname,
       creatorRank: creatorData.rank,
       creatorRole: creatorData.role,
+      creatorPlatoon: creatorData.platoon,
       dueDate: Timestamp.fromDate(parsedDueDate),
       assignedTeams: normalizedTeams,
       assignedUsers: normalizedUsers,

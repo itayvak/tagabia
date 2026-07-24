@@ -52,6 +52,7 @@ export function toPublicTask(
     creatorName: task.creatorName,
     creatorRank: task.creatorRank,
     creatorRole: task.creatorRole,
+    creatorPlatoon: task.creatorPlatoon,
     dueDate: dueDate.toDate().toISOString(),
     assignedTeams: Array.isArray(task.assignedTeams)
       ? task.assignedTeams.filter(

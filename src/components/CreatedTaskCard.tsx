@@ -18,6 +18,7 @@ import {
   formatDueDate,
   getDaysLeftChipUrgency,
 } from "@/lib/taskDate";
+import { formatAssigneeSummaryCompact } from "@/lib/platoons";
 import type { PublicTask } from "@/types/task";
 
 interface CreatedTaskCardProps {
@@ -98,9 +99,18 @@ export default function CreatedTaskCard({
             </Typography>
           </Box>
           {showCreator ? (
-            <Typography variant="caption" color="text.secondary">
-              הוטלה על ידי: {task.creatorRank} {task.creatorName}
-            </Typography>
+            <>
+              <Typography variant="caption" color="text.secondary">
+                הוטלה על ידי: {task.creatorRank} {task.creatorName}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                משויך ל:{" "}
+                {formatAssigneeSummaryCompact(
+                  task.assignedTeams,
+                  task.assignedUsers,
+                )}
+              </Typography>
+            </>
           ) : null}
         </CardContent>
       </CardActionArea>
