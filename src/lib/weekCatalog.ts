@@ -47,13 +47,13 @@ export const WEEK_CATALOG: readonly WeekDefinition[] = [
   },
   {
     id: "identity",
-    name: "שבוע זהות",
-    image: "/weekBanners/weekIdentity.jpeg",
+    name: "שבוע מסכם",
+    image: "/weekBanners/weekSummary.jpeg",
   },
   {
     id: "summary",
-    name: "שבוע מסכם",
-    image: "/weekBanners/weekSummary.jpeg",
+    name: "שבוע זהות",
+    image: "/weekBanners/weekIdentity.jpeg",
   },
   {
     id: "completion",

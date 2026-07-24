@@ -247,7 +247,11 @@ export default function MonthCalendar({
         }}
       >
         {weeks.map((week) => {
-          const weekName = getCurrentWeekName(courseConfig, week[0]?.date);
+          const firstDay = week[0]?.date;
+          const weekName =
+            firstDay && firstDay.getMonth() === visibleMonth.getMonth()
+              ? getCurrentWeekName(courseConfig, firstDay)
+              : null;
 
           return (
             <Box
@@ -260,7 +264,7 @@ export default function MonthCalendar({
                 minHeight: 0,
               }}
             >
-              {weekName ? <CourseWeekLabel name={weekName} /> : null}
+              <CourseWeekLabel name={weekName ?? ""} />
 
               <Box
                 sx={{
@@ -268,7 +272,6 @@ export default function MonthCalendar({
                   flex: 1,
                   gap: 0.5,
                   gridTemplateColumns: "repeat(7, 1fr)",
-                  minHeight: 72,
                 }}
               >
                 {week.map((day) => {
