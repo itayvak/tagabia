@@ -117,6 +117,7 @@ export interface CreateAdminUserErrorResponse {
 export interface UpdateAdminUserInput {
   fullname: string;
   password?: string;
+  resetPassword?: boolean;
   rank: string;
   role: Role;
   platoon: Platoon;

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Button,
+  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -9,6 +10,7 @@ import {
   DialogTitle,
   MenuItem,
   TextField,
+  Typography,
 } from "@mui/material";
 import { isAdminUser } from "@/lib/admin";
 import { createAdminUser } from "@/lib/createAdminUser";
@@ -115,7 +117,9 @@ export default function UserEditDialog({
   const [team, setTeam] = useState(1);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isResetPasswordConfirmOpen, setIsResetPasswordConfirmOpen] = useState(false);
 
   const availableTeams = useMemo(
     () => getTeamsForPlatoon(platoon),
@@ -219,6 +223,36 @@ export default function UserEditDialog({
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!user) return;
+
+    setIsResettingPassword(true);
+    setIsResetPasswordConfirmOpen(false);
+
+    try {
+      const { response, data } = await updateAdminUser(adminUserId, user.id, {
+        fullname: user.fullname,
+        rank: user.rank,
+        role: user.role,
+        platoon: user.platoon,
+        team: user.team,
+        resetPassword: true,
+      });
+
+      if (!response.ok) {
+        const { error } = data as UpdateAdminUserErrorResponse;
+        onError(getErrorMessage(error ?? "Update user failed"));
+        return;
+      }
+
+      onSaved((data as UpdateAdminUserSuccessResponse).user);
+    } catch {
+      onError(getErrorMessage("Update user failed"));
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!user) {
       return;
@@ -270,22 +304,45 @@ export default function UserEditDialog({
               fullWidth
               disabled={isSaving}
             />
-            <TextField
-              label="סיסמה"
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              fullWidth
-              disabled={isSaving}
-              helperText={
-                mode === "create"
-                  ? "ריק = הגדרה בכניסה ראשונה"
-                  : "ריק = ללא שינוי"
-              }
-              slotProps={{
-                htmlInput: { dir: "ltr", autoComplete: "new-password" },
-              }}
-            />
+            {mode === "edit" && user ? (
+              <Box sx={{ display: "flex", alignItems: "flex-end", gap: 2 }}>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: "block" }}>
+                    סיסמה
+                  </Typography>
+                  <Chip
+                    label={user.needsPasswordSetup ? "טרם הגדיר/ה סיסמה" : "הגדיר/ה סיסמה"}
+                    color={user.needsPasswordSetup ? "warning" : "success"}
+                    size="small"
+                    variant="outlined"
+                  />
+                </Box>
+                {!user.needsPasswordSetup && (
+                  <Chip
+                    label="איפוס סיסמה"
+                    color="warning"
+                    size="small"
+                    variant="outlined"
+                    onClick={() => setIsResetPasswordConfirmOpen(true)}
+                    disabled={isSaving || isDeleting || isResettingPassword}
+                    sx={{ cursor: "pointer" }}
+                  />
+                )}
+              </Box>
+            ) : (
+              <TextField
+                label="סיסמה"
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                fullWidth
+                disabled={isSaving}
+                helperText="ריק = הגדרה בכניסה ראשונה"
+                slotProps={{
+                  htmlInput: { dir: "ltr", autoComplete: "new-password" },
+                }}
+              />
+            )}
             <TextField
               label="דרגה"
               value={rank}
@@ -363,6 +420,36 @@ export default function UserEditDialog({
               {isSaving ? "שומר..." : "שמור"}
             </Button>
           </Box>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={isResetPasswordConfirmOpen}
+        onClose={() => setIsResetPasswordConfirmOpen(false)}
+      >
+        <DialogTitle>איפוס סיסמה</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            האם אתה בטוח שאתה רוצה לאפס סיסמה?
+            <br />
+            המשתמש יצטרך להגדיר סיסמה חדשה בכניסה הבאה.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setIsResetPasswordConfirmOpen(false)}
+            disabled={isResettingPassword}
+          >
+            ביטול
+          </Button>
+          <Button
+            color="warning"
+            variant="contained"
+            onClick={() => void handleResetPassword()}
+            disabled={isResettingPassword}
+          >
+            {isResettingPassword ? "מאפס..." : "אפס סיסמה"}
+          </Button>
         </DialogActions>
       </Dialog>
 
