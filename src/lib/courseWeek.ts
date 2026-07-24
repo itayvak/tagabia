@@ -23,9 +23,7 @@ export function getCurrentWeekIndex(
     getStartOfDay(startDate),
     getStartOfDay(today),
   );
-  const weekIndex = Math.floor(Math.max(daysSinceStart, 0) / 7);
-
-  return Math.min(weekIndex, config.weeks.length - 1);
+  return Math.floor(Math.max(daysSinceStart, 0) / 7);
 }
 
 export function getCurrentWeek(
@@ -33,6 +31,12 @@ export function getCurrentWeek(
   today: Date = new Date(),
 ): PublicCourseWeek | null {
   if (!config || config.weeks.length === 0) {
+    return null;
+  }
+
+  const startDate = parseDateKey(config.startDate);
+  const daysSinceStart = getDaysBetween(getStartOfDay(startDate), getStartOfDay(today));
+  if (daysSinceStart < 0) {
     return null;
   }
 
