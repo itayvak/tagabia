@@ -230,9 +230,9 @@ export default function LoginPage() {
               component="h1"
               gutterBottom
               align="center"
-              sx={{ mb: 0.5 }}
+              sx={{ mb: 0.5, fontSize: "calc(1.5rem + 10px)", fontWeight: "bold" }}
             >
-              תג&quot;ביה
+              All In One
             </Typography>
             <Typography
               variant="body2"

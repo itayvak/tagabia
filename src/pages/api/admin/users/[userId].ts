@@ -77,9 +77,11 @@ async function handlePut(
 
     const existing = existingDoc.data() as FirestoreUser;
     const password =
-      typeof user.password === "string" && user.password.trim()
-        ? validated.data.password
-        : existing.password;
+      user.resetPassword === true
+        ? ""
+        : typeof user.password === "string" && user.password.trim()
+          ? validated.data.password
+          : existing.password;
 
     const updated: FirestoreUser = {
       ...existing,
