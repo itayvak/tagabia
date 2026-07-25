@@ -54,7 +54,7 @@ function formatAssigneeListText(
       const name = assignee.assigneeName.trim();
 
       if (filter === "all") {
-        return `${name} - ${assignee.completed ? "בוצע" : "טרם בוצע"}`;
+        return `${name} - ${assignee.completed ? "בוצע ✅" : "טרם בוצע ❌"}`;
       }
 
       return name;
