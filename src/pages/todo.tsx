@@ -10,6 +10,10 @@ import {
   Typography,
 } from "@mui/material";
 import AppLayout from "@/components/AppLayout";
+import {
+  APP_BOTTOM_BAR_HEIGHT,
+  APP_BOTTOM_BAR_SAFE_AREA,
+} from "@/components/AppBottomBar";
 import PersonalTodoList from "@/components/PersonalTodoList";
 import { getSession } from "@/lib/authStorage";
 import { fetchPersonalTodos } from "@/lib/fetchPersonalTodos";
@@ -317,24 +321,32 @@ export default function TodoPage() {
   return (
     <>
       <AppLayout user={user}>
-        <Container maxWidth="sm" sx={{ py: 3 }}>
-          <Typography variant="h5" component="h1" sx={{ mb: 0.5 }}>
-            משימות אישית
-          </Typography>
+        <Box
+          sx={{
+            height: `calc(100dvh - ${APP_BOTTOM_BAR_HEIGHT + 16}px - ${APP_BOTTOM_BAR_SAFE_AREA})`,
+            overflowY: "auto",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
+          <Container maxWidth="sm" sx={{ py: 3 }}>
+            <Typography variant="h5" component="h1" sx={{ mb: 0.5 }}>
+              משימות אישית
+            </Typography>
 
-          <PersonalTodoList
-            todos={todos}
-            isLoading={isLoading}
-            isSaving={isSaving}
-            newItemText={newItemText}
-            onNewItemTextChange={setNewItemText}
-            onAddItem={() => void handleAddItem()}
-            onToggleComplete={(id) => void handleToggleComplete(id)}
-            onDeleteItem={handleDeleteItem}
-            onEditItem={(id, updates) => void handleEditItem(id, updates)}
-            onClearCompleted={() => void handleClearCompleted()}
-          />
-        </Container>
+            <PersonalTodoList
+              todos={todos}
+              isLoading={isLoading}
+              isSaving={isSaving}
+              newItemText={newItemText}
+              onNewItemTextChange={setNewItemText}
+              onAddItem={() => void handleAddItem()}
+              onToggleComplete={(id) => void handleToggleComplete(id)}
+              onDeleteItem={handleDeleteItem}
+              onEditItem={(id, updates) => void handleEditItem(id, updates)}
+              onClearCompleted={() => void handleClearCompleted()}
+            />
+          </Container>
+        </Box>
       </AppLayout>
 
       <Snackbar
