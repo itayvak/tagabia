@@ -12,5 +12,26 @@ export const theme = createTheme({
         disableElevation: true,
       },
     },
+    MuiSnackbar: {
+      styleOverrides: {
+        root: {
+          pointerEvents: "none",
+        },
+      },
+    },
+    MuiSnackbarContent: {
+      styleOverrides: {
+        root: {
+          pointerEvents: "auto",
+        },
+      },
+    },
+    MuiAlert: {
+      styleOverrides: {
+        root: {
+          pointerEvents: "auto",
+        },
+      },
+    },
   },
 });

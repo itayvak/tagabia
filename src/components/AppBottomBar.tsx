@@ -11,6 +11,7 @@ import { canManageTasks } from "@/lib/roles";
 import type { PublicUser } from "@/types/user";
 
 export const APP_BOTTOM_BAR_HEIGHT = 56;
+export const APP_BOTTOM_BAR_SAFE_AREA = "env(safe-area-inset-bottom, 0px)";
 
 interface AppBottomBarProps {
   user: PublicUser;
@@ -82,6 +83,7 @@ export default function AppBottomBar({ user }: AppBottomBarProps) {
         bottom: 0,
         left: 0,
         right: 0,
+        paddingBottom: APP_BOTTOM_BAR_SAFE_AREA,
         zIndex: (theme) => theme.zIndex.appBar,
       }}
     >
