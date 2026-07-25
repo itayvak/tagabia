@@ -56,6 +56,8 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [setupUserId, setSetupUserId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
@@ -253,7 +255,7 @@ export default function LoginPage() {
                 </Typography>
                 <TextField
                   label="סיסמה חדשה"
-                  type="password"
+                  type={showNewPassword ? "text" : "password"}
                   value={newPassword}
                   onChange={(event) => setNewPassword(event.target.value)}
                   required
@@ -262,12 +264,31 @@ export default function LoginPage() {
                   autoFocus
                   disabled={isSubmitting}
                   slotProps={{
+                    input: {
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            aria-label={
+                              showNewPassword ? "הסתר סיסמה" : "הצג סיסמה"
+                            }
+                            onClick={() =>
+                              setShowNewPassword((prev) => !prev)
+                            }
+                            onMouseDown={(event) => event.preventDefault()}
+                            edge="end"
+                            disabled={isSubmitting}
+                          >
+                            {showNewPassword ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    },
                     htmlInput: { dir: "rtl" },
                   }}
                 />
                 <TextField
                   label="אישור סיסמה"
-                  type="password"
+                  type={showConfirmPassword ? "text" : "password"}
                   value={confirmPassword}
                   onChange={(event) => setConfirmPassword(event.target.value)}
                   required
@@ -275,6 +296,29 @@ export default function LoginPage() {
                   autoComplete="new-password"
                   disabled={isSubmitting}
                   slotProps={{
+                    input: {
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            aria-label={
+                              showConfirmPassword ? "הסתר סיסמה" : "הצג סיסמה"
+                            }
+                            onClick={() =>
+                              setShowConfirmPassword((prev) => !prev)
+                            }
+                            onMouseDown={(event) => event.preventDefault()}
+                            edge="end"
+                            disabled={isSubmitting}
+                          >
+                            {showConfirmPassword ? (
+                              <VisibilityOff />
+                            ) : (
+                              <Visibility />
+                            )}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    },
                     htmlInput: { dir: "rtl" },
                   }}
                 />
