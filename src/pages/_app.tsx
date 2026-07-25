@@ -31,7 +31,6 @@ export default function App({
     <AppCacheProvider emotionCache={emotionCache}>
       <Head>
         <title>{APP_TITLE}</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </Head>
       <ThemeProvider theme={theme}>
         <CssBaseline />
