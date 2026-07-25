@@ -21,6 +21,8 @@ const CARD_LINE_HEIGHT = 18;
 const CARD_TITLE_FONT_SIZE = 16;
 const CARD_TITLE_LINE_HEIGHT = 20;
 const CARD_LINE_GAP = 2;
+const FOOTER_FONT_SIZE = 11;
+const FOOTER_HEIGHT = 30;
 
 const COLORS = {
   background: "#f5f5f5",
@@ -354,9 +356,10 @@ function drawColumn(
 
 export async function renderTaskReportImage(
   entries: TaskReportEntry[],
-  options: { subtitle?: string } = {},
+  options: { subtitle?: string; appUrl?: string } = {},
 ): Promise<Blob> {
   const subtitle = options.subtitle ?? "דוח מטלות";
+  const { appUrl } = options;
   const fontFamily = getFontFamily();
   await ensureFontsLoaded(fontFamily);
 
@@ -369,11 +372,12 @@ export async function renderTaskReportImage(
   }
 
   measureContext.font = getCardTextFont(fontFamily);
-  const { width: reportWidth, height: reportHeight } = measureReportSize(
+  const { width: reportWidth, height: baseHeight } = measureReportSize(
     measureContext,
     columns,
     fontFamily,
   );
+  const reportHeight = baseHeight + (appUrl ? FOOTER_HEIGHT : 0);
 
   const canvas = document.createElement("canvas");
   canvas.width = reportWidth * SCALE;
@@ -423,6 +427,22 @@ export async function renderTaskReportImage(
   for (let columnIndex = 0; columnIndex < columnCount; columnIndex += 1) {
     const columnX = getColumnX(reportWidth, columnIndex, columnCount);
     drawColumn(context, columns[columnIndex], columnX, cardsStartY, fontFamily);
+  }
+
+  if (appUrl) {
+    const footerY = reportHeight - FOOTER_HEIGHT;
+    context.strokeStyle = COLORS.border;
+    context.lineWidth = 1;
+    context.beginPath();
+    context.moveTo(PADDING, footerY + 6);
+    context.lineTo(reportWidth - PADDING, footerY + 6);
+    context.stroke();
+
+    context.fillStyle = COLORS.textSecondary;
+    context.font = `400 ${FOOTER_FONT_SIZE}px ${fontFamily}`;
+    context.direction = "ltr";
+    context.textAlign = "center";
+    context.fillText(appUrl, reportWidth / 2, footerY + 20);
   }
 
   return new Promise((resolve, reject) => {
