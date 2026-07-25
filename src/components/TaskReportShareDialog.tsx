@@ -19,7 +19,6 @@ import {
 import { fetchTaskCompletions } from "@/lib/fetchTaskCompletions";
 import {
   formatDueDate,
-  isDueThisWeek,
   sortTasksByDueDateWithPastLast,
 } from "@/lib/taskDate";
 import { renderTaskReportImage } from "@/lib/renderTaskReportImage";
@@ -74,13 +73,7 @@ export default function TaskReportShareDialog({
 
     void Promise.resolve().then(() => {
       setStep("select");
-      setSelectedTaskIds(
-        new Set(
-          tasks
-            .filter((task) => isDueThisWeek(task.dueDate))
-            .map((task) => task.id),
-        ),
-      );
+      setSelectedTaskIds(new Set());
       setImageUrl(null);
       setImageBlob(null);
       setIsGenerating(false);
@@ -170,7 +163,8 @@ export default function TaskReportShareDialog({
         return;
       }
 
-      const blob = await renderTaskReportImage(entries);
+      const appUrl = `${window.location.origin}/allTasks`;
+      const blob = await renderTaskReportImage(entries, { appUrl });
       const url = URL.createObjectURL(blob);
       setImageBlob(blob);
       setImageUrl(url);

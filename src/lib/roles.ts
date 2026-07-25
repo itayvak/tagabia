@@ -72,3 +72,19 @@ const BATTALION_ROLES: Role[] = [
 export function isBattalionRole(role: Role): boolean {
   return BATTALION_ROLES.includes(role);
 }
+
+const PLATOON_ROLES: Role[] = [
+  "medicalPlatoon",
+  "safetyPlatoon",
+  "educationPlatoon",
+  "tuitionPlatoon",
+  "logisticsPlatoon",
+  "sportsPlatoon",
+  "missionsPlatoon",
+  "simulationPlatoon",
+  "trainingPlatoon",
+];
+
+export function isPlatoonRole(role: Role): boolean {
+  return PLATOON_ROLES.includes(role);
+}

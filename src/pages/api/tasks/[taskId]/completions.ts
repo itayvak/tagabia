@@ -1,6 +1,8 @@
 import { getTaskAssignees } from "@/lib/assigneeTeams";
 import { getAdminFirestore } from "@/lib/firebaseAdmin";
 import { canViewTaskManagement } from "@/lib/taskManagementAuth";
+import { isBattalionRole, isPlatoonRole } from "@/lib/roles";
+import { getPlatoonForTeam, getTeamsForPlatoon } from "@/lib/platoons";
 import type { FirestoreUser } from "@/types/user";
 import type {
   FirestoreTaskCompletion,
@@ -62,6 +64,23 @@ export default async function handler(
       return res.status(403).json({ error: "User is not the task creator" });
     }
 
+    const creatorId =
+      typeof taskData.creatorId === "string" ? taskData.creatorId.trim() : "";
+    const isCreator = creatorId === userId;
+
+    let jurisdictionTeams: number[] | null = null;
+
+    if (!isCreator) {
+      if (isBattalionRole(userData.role)) {
+        jurisdictionTeams = null;
+      } else if (isPlatoonRole(userData.role)) {
+        const viewerPlatoon = getPlatoonForTeam(userData.team);
+        jurisdictionTeams = viewerPlatoon ? getTeamsForPlatoon(viewerPlatoon) : [userData.team];
+      } else {
+        jurisdictionTeams = [userData.team];
+      }
+    }
+
     const assignedTeams = Array.isArray(taskData?.assignedTeams)
       ? (taskData.assignedTeams as number[])
       : [];
@@ -95,7 +114,12 @@ export default async function handler(
         ),
     );
 
-    const assignees: TaskAssigneeStatus[] = taskAssignees.map(({ id, data }) => {
+    const filteredAssignees =
+      jurisdictionTeams === null
+        ? taskAssignees
+        : taskAssignees.filter((u) => jurisdictionTeams!.includes(u.data.team));
+
+    const assignees: TaskAssigneeStatus[] = filteredAssignees.map(({ id, data }) => {
       const completedAt = completionsByUserId.get(id) ?? null;
 
       return {

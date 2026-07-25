@@ -1,6 +1,7 @@
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
+import SearchIcon from "@mui/icons-material/Search";
 import { useEffect, useMemo, useState } from "react";
 import {
   Box,
@@ -11,11 +12,13 @@ import {
   DialogContent,
   DialogTitle,
   Button,
+  InputAdornment,
   List,
   ListItem,
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  TextField,
   ToggleButton,
   ToggleButtonGroup,
   Typography,
@@ -86,6 +89,7 @@ export default function TaskCompletionsDialog({
   onViewAllSubmissions,
 }: TaskCompletionsDialogProps) {
   const [filter, setFilter] = useState<CompletionFilter>("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [didCopy, setDidCopy] = useState(false);
 
   const submittedUserIdSet = useMemo(
@@ -105,20 +109,31 @@ export default function TaskCompletionsDialog({
   useEffect(() => {
     if (open) {
       setFilter("all");
+      setSearchQuery("");
       setDidCopy(false);
     }
   }, [open]);
 
   const filteredAssignees = useMemo(() => {
+    let result;
     switch (filter) {
       case "completed":
-        return assignees.filter((assignee) => assignee.completed);
+        result = assignees.filter((assignee) => assignee.completed);
+        break;
       case "pending":
-        return assignees.filter((assignee) => !assignee.completed);
+        result = assignees.filter((assignee) => !assignee.completed);
+        break;
       default:
-        return assignees;
+        result = assignees;
     }
-  }, [assignees, filter]);
+
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return result;
+
+    return result.filter((assignee) =>
+      assignee.assigneeName.toLowerCase().includes(query),
+    );
+  }, [assignees, filter, searchQuery]);
 
   const handleCopyList = async () => {
     if (filteredAssignees.length === 0) {
@@ -167,6 +182,25 @@ export default function TaskCompletionsDialog({
             <ToggleButton value="completed">ביצעו</ToggleButton>
             <ToggleButton value="pending">טרם ביצעו</ToggleButton>
           </ToggleButtonGroup>
+        )}
+        {!isLoading && assignees.length > 0 && (
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="חיפוש לפי שם..."
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            sx={{ mb: 2 }}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" color="action" />
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
         )}
         {isLoading ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
