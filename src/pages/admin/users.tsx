@@ -260,14 +260,24 @@ export default function AdminUsersPage() {
                     primary={`${entry.rank} ${entry.fullname}`}
                     secondary={`${formatPlatoonLabel(entry.platoon)} · צוות ${entry.team} · ${getRoleLabel(entry.role)} · ${entry.id}`}
                   />
-                  {entry.needsPasswordSetup && (
-                    <Chip
-                      label="ממתין לסיסמה"
-                      size="small"
-                      color="warning"
-                      variant="outlined"
-                    />
-                  )}
+                  <Box sx={{ display: "flex", gap: 0.5, flexShrink: 0 }}>
+                    {entry.needsPasswordSetup && (
+                      <Chip
+                        label="ממתין לסיסמה"
+                        size="small"
+                        color="warning"
+                        variant="outlined"
+                      />
+                    )}
+                    {entry.requestedPasswordReset && (
+                      <Chip
+                        label="ביקש/ה איפוס סיסמה"
+                        size="small"
+                        color="error"
+                        variant="outlined"
+                      />
+                    )}
+                  </Box>
                 </ListItemButton>
               ))}
             </List>

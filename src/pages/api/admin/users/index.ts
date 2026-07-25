@@ -31,6 +31,7 @@ function toAdminUserListItem(id: string, data: FirestoreUser): AdminUserListItem
   return {
     ...toPublicUser(id, data),
     needsPasswordSetup: userNeedsPasswordSetup(data),
+    requestedPasswordReset: data.requestedPasswordReset === true,
   };
 }
 

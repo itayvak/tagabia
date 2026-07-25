@@ -31,6 +31,7 @@ function toAdminUserListItem(id: string, data: FirestoreUser): AdminUserListItem
   return {
     ...toPublicUser(id, data),
     needsPasswordSetup: userNeedsPasswordSetup(data),
+    requestedPasswordReset: data.requestedPasswordReset === true,
   };
 }
 
@@ -87,6 +88,9 @@ async function handlePut(
       ...existing,
       ...validated.data,
       password,
+      ...(user.resetPassword === true
+        ? { requestedPasswordReset: false }
+        : {}),
     };
 
     await docRef.set(updated);

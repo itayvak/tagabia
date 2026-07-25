@@ -305,7 +305,7 @@ export default function UserEditDialog({
               disabled={isSaving}
             />
             {mode === "edit" && user ? (
-              <Box sx={{ display: "flex", alignItems: "flex-end", gap: 2 }}>
+              <Box sx={{ display: "flex", alignItems: "flex-end", gap: 2, flexWrap: "wrap" }}>
                 <Box>
                   <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: "block" }}>
                     סיסמה
@@ -326,6 +326,14 @@ export default function UserEditDialog({
                     onClick={() => setIsResetPasswordConfirmOpen(true)}
                     disabled={isSaving || isDeleting || isResettingPassword}
                     sx={{ cursor: "pointer" }}
+                  />
+                )}
+                {user.requestedPasswordReset && (
+                  <Chip
+                    label="ביקש/ה איפוס סיסמה"
+                    color="error"
+                    size="small"
+                    variant="outlined"
                   />
                 )}
               </Box>

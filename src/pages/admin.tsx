@@ -1,18 +1,23 @@
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import DownloadIcon from "@mui/icons-material/Download";
+import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
 import PeopleIcon from "@mui/icons-material/People";
 import UploadIcon from "@mui/icons-material/Upload";
 import {
   Alert,
   Box,
   Button,
+  Chip,
   CircularProgress,
   Container,
   Divider,
+  List,
+  ListItemButton,
+  ListItemText,
   Paper,
   Snackbar,
   Typography,
@@ -20,13 +25,20 @@ import {
 import AppLayout from "@/components/AppLayout";
 import { APP_BOTTOM_BAR_HEIGHT } from "@/components/AppBottomBar";
 import CourseWeeksDialog from "@/components/CourseWeeksDialog";
+import UserEditDialog from "@/components/UserEditDialog";
 import { canAccessAdmin } from "@/lib/admin";
 import { getSession } from "@/lib/authStorage";
 import { downloadUsersCsv } from "@/lib/downloadUsersCsv";
+import { fetchAdminUsers } from "@/lib/fetchAdminUsers";
+import { formatPlatoonLabel } from "@/lib/platoons";
+import { getRoleLabel } from "@/lib/roles";
 import { uploadUsersCsv } from "@/lib/uploadUsersCsv";
 import type {
+  AdminUserListItem,
   ImportUsersErrorResponse,
   ImportUsersSuccessResponse,
+  ListAdminUsersErrorResponse,
+  ListAdminUsersSuccessResponse,
   PublicUser,
 } from "@/types/user";
 
@@ -54,6 +66,8 @@ function getErrorMessage(error: string): string {
       return "יש לבחור תאריך התחלה";
     case "At least one week is required":
       return "יש להוסיף לפחות שבוע אחד";
+    case "List users failed":
+      return "טעינת רשימת המשתמשים נכשלה";
     default:
       return error.startsWith("Row ")
         ? `שגיאה בקובץ: ${error}`
@@ -122,6 +136,32 @@ export default function AdminPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isCourseWeeksDialogOpen, setIsCourseWeeksDialogOpen] = useState(false);
+  const [users, setUsers] = useState<AdminUserListItem[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<AdminUserListItem | null>(
+    null,
+  );
+
+  const loadUsers = useCallback(async (adminUserId: string) => {
+    setIsLoadingUsers(true);
+
+    try {
+      const { response, data } = await fetchAdminUsers(adminUserId);
+
+      if (!response.ok) {
+        const { error } = data as ListAdminUsersErrorResponse;
+        setErrorMessage(getErrorMessage(error ?? "List users failed"));
+        return;
+      }
+
+      setUsers((data as ListAdminUsersSuccessResponse).users);
+    } catch {
+      setErrorMessage(getErrorMessage("List users failed"));
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  }, []);
 
   useEffect(() => {
     const session = getSession();
@@ -136,7 +176,36 @@ export default function AdminPage() {
     }
 
     setUser(session.user);
-  }, [router]);
+    void loadUsers(session.user.id);
+  }, [router, loadUsers]);
+
+  const pendingPasswordResetUsers = useMemo(
+    () => users.filter((entry) => entry.requestedPasswordReset),
+    [users],
+  );
+
+  const handleOpenUserEdit = (entry: AdminUserListItem) => {
+    setSelectedUser(entry);
+    setEditDialogOpen(true);
+  };
+
+  const handleUserSaved = async () => {
+    if (!user) {
+      return;
+    }
+
+    await loadUsers(user.id);
+    setSuccessMessage("המשתמש עודכן בהצלחה");
+  };
+
+  const handleUserDeleted = async () => {
+    if (!user) {
+      return;
+    }
+
+    await loadUsers(user.id);
+    setSuccessMessage("המשתמש נמחק");
+  };
 
   const handleDownloadUsers = async () => {
     if (!user) {
@@ -238,6 +307,57 @@ export default function AdminPage() {
             </Typography>
           </Box>
 
+          <AdminSection
+            icon={<NotificationsActiveIcon />}
+            title="התראות מפתחים"
+          >
+            {isLoadingUsers ? (
+              <Box sx={{ display: "flex", justifyContent: "center", py: 2 }}>
+                <CircularProgress size={24} />
+              </Box>
+            ) : pendingPasswordResetUsers.length === 0 ? (
+              <Typography color="text.secondary" sx={{ py: 1 }}>
+                אין התראות
+              </Typography>
+            ) : (
+              <List disablePadding>
+                {pendingPasswordResetUsers.map((entry) => (
+                  <ListItemButton
+                    key={entry.id}
+                    onClick={() => handleOpenUserEdit(entry)}
+                    sx={{
+                      border: 1,
+                      borderColor: "divider",
+                      borderRadius: 1,
+                      mb: 1,
+                    }}
+                  >
+                    <ListItemText
+                      primary={`${entry.rank} ${entry.fullname}`}
+                      secondary={`${formatPlatoonLabel(entry.platoon)} · צוות ${entry.team} · ${getRoleLabel(entry.role)} · ${entry.id}`}
+                    />
+                    <Box sx={{ display: "flex", gap: 0.5, flexShrink: 0 }}>
+                      {entry.needsPasswordSetup && (
+                        <Chip
+                          label="ממתין לסיסמה"
+                          size="small"
+                          color="warning"
+                          variant="outlined"
+                        />
+                      )}
+                      <Chip
+                        label="ביקש/ה איפוס סיסמה"
+                        size="small"
+                        color="error"
+                        variant="outlined"
+                      />
+                    </Box>
+                  </ListItemButton>
+                ))}
+              </List>
+            )}
+          </AdminSection>
+
           <AdminSection icon={<PeopleIcon />} title="משתמשים">
             <Button
               variant="contained"
@@ -301,6 +421,16 @@ export default function AdminPage() {
           userId={user.id}
           onClose={() => setIsCourseWeeksDialogOpen(false)}
           onSaved={() => setSuccessMessage("הגדרות הקורס נשמרו")}
+          onError={(message) => setErrorMessage(message)}
+        />
+        <UserEditDialog
+          open={editDialogOpen}
+          mode="edit"
+          adminUserId={user.id}
+          user={selectedUser}
+          onClose={() => setEditDialogOpen(false)}
+          onSaved={handleUserSaved}
+          onDeleted={handleUserDeleted}
           onError={(message) => setErrorMessage(message)}
         />
       </AppLayout>
