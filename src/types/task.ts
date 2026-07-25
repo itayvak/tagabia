@@ -19,6 +19,7 @@ export interface FirestoreTask {
   creatorName: string;
   creatorRank: string;
   creatorRole: Role;
+  creatorPlatoon?: Platoon;
   dueDate: Timestamp;
   assignedTeams: number[];
   assignedUsers: string[];
@@ -36,6 +37,7 @@ export interface PublicTask {
   creatorName: string;
   creatorRank: string;
   creatorRole: Role;
+  creatorPlatoon?: Platoon;
   dueDate: string;
   assignedTeams: number[];
   assignedUsers: string[];

@@ -33,6 +33,7 @@ import { deleteTask } from "@/lib/deleteTask";
 import { canManageTasks } from "@/lib/roles";
 import { fetchAssignedTasks } from "@/lib/fetchAssignedTasks";
 import { fetchCreatedTasks } from "@/lib/fetchCreatedTasks";
+import { fetchSubordinateTasks } from "@/lib/fetchSubordinateTasks";
 import { fetchTaskCompletions } from "@/lib/fetchTaskCompletions";
 import { fetchTaskSubmissions } from "@/lib/fetchTaskSubmissions";
 import { getTaskErrorMessage } from "@/lib/taskErrorMessages";
@@ -112,9 +113,10 @@ export default function MyTasksPage() {
     setErrorMessage(null);
 
     try {
-      const [createdResult, assignedResult] = await Promise.all([
+      const [createdResult, assignedResult, subordinateResult] = await Promise.all([
         fetchCreatedTasks(user.id),
         fetchAssignedTasks(user.id, "all"),
+        fetchSubordinateTasks(user.id),
       ]);
 
       if (!createdResult.response.ok) {
@@ -129,12 +131,28 @@ export default function MyTasksPage() {
         return;
       }
 
-      setCreatedTasks((createdResult.data as ListTasksSuccessResponse).tasks);
-      setAssignedTasks(
-        (assignedResult.data as ListAssignedTasksSuccessResponse).tasks.filter(
-          (task) => task.creatorId !== user.id,
-        ),
+      if (!subordinateResult.response.ok) {
+        const { error } = subordinateResult.data as ListTasksErrorResponse;
+        setErrorMessage(getTaskErrorMessage(error ?? "טעינת המטלות נכשלה"));
+        return;
+      }
+
+      const assignedTasks = (
+        assignedResult.data as ListAssignedTasksSuccessResponse
+      ).tasks.filter((task) => task.creatorId !== user.id);
+
+      const subordinateTasks = (
+        subordinateResult.data as ListTasksSuccessResponse
+      ).tasks;
+
+      // Merge subordinate tasks, avoiding duplicates already in assignedTasks
+      const assignedTaskIds = new Set(assignedTasks.map((t) => t.id));
+      const newSubordinateTasks = subordinateTasks.filter(
+        (t) => !assignedTaskIds.has(t.id),
       );
+
+      setCreatedTasks((createdResult.data as ListTasksSuccessResponse).tasks);
+      setAssignedTasks([...assignedTasks, ...newSubordinateTasks]);
     } catch {
       setErrorMessage("שגיאה בטעינת המטלות. נסה שוב.");
     } finally {

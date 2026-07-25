@@ -1,7 +1,8 @@
 export const ROLES = {
   peasant: "צוער",
   commander: "סגל ההכשרה",
-  developer: "מפתח תגבייה",
+  developer: "מפתח All In One",
+  innovationBatallion: "ק. פיתוח וחדשנות גדודי",
   digitalBatallion: "ק. דיגיטל גדודי",
   AIBatallion: "ק. AI גדודי",
   administrationsBatallion: "ק. מנהות גדודי",
@@ -42,5 +43,32 @@ export function canManageTasks(role: Role): boolean {
 }
 
 export function hasDeveloperAccess(role: Role): boolean {
-  return role === "developer" || role === "AIBatallion";
+  return role === "developer" || role === "AIBatallion" || role === "innovationBatallion";
+}
+
+// Maps each supervisor role to its directly subordinate role in the same domain
+export const ROLE_SUBORDINATE_MAP: Partial<Record<Role, Role>> = {
+  tuitionBatallion: "tuitionPlatoon",
+  sportsBatallion: "sportsPlatoon",
+  logisticsBatallion: "logisticsPlatoon",
+  tuitionPlatoon: "tuitionTeam",
+  simulationPlatoon: "simulationTeam",
+};
+
+export function getSubordinateRole(role: Role): Role | null {
+  return ROLE_SUBORDINATE_MAP[role] ?? null;
+}
+
+const BATTALION_ROLES: Role[] = [
+  "digitalBatallion",
+  "AIBatallion",
+  "administrationsBatallion",
+  "logisticsBatallion",
+  "sportsBatallion",
+  "tuitionBatallion",
+  "innovationBatallion"
+];
+
+export function isBattalionRole(role: Role): boolean {
+  return BATTALION_ROLES.includes(role);
 }

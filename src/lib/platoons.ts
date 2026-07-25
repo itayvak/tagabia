@@ -91,3 +91,48 @@ export function hasAssigneeSelection(selection: AssigneeSelection): boolean {
       selection[platoon].entirePlatoon || selection[platoon].teams.length > 0,
   );
 }
+
+export function formatAssigneeSummaryCompact(
+  assignedTeams: number[],
+  assignedUsers: string[],
+): string {
+  const parts: string[] = [];
+
+  if (assignedTeams.length > 0) {
+    if (assignedTeams.length === TOTAL_TEAMS) {
+      return "כל הגדוד";
+    }
+
+    const byPlatoon = new Map<Platoon, number[]>();
+    for (const team of assignedTeams) {
+      const platoon = getPlatoonForTeam(team);
+      if (platoon) {
+        if (!byPlatoon.has(platoon)) byPlatoon.set(platoon, []);
+        byPlatoon.get(platoon)!.push(team);
+      }
+    }
+
+    for (const platoon of PLATOONS) {
+      const teams = byPlatoon.get(platoon);
+      if (!teams) continue;
+      if (teams.length === TEAMS_PER_PLATOON) {
+        parts.push(`פלוגת ${PLATOON_LABELS[platoon]}`);
+      } else {
+        const sorted = [...teams].sort((a, b) => a - b);
+        parts.push(
+          sorted.length === 1
+            ? `צוות ${sorted[0]}`
+            : `צוותים ${sorted.join(", ")}`,
+        );
+      }
+    }
+  }
+
+  if (assignedUsers.length > 0) {
+    parts.push(
+      assignedUsers.length === 1 ? "צוער ספציפי" : `${assignedUsers.length} צוערים ספציפיים`,
+    );
+  }
+
+  return parts.join(", ");
+}
