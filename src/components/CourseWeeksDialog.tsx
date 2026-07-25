@@ -194,7 +194,7 @@ export default function CourseWeeksDialog({
                       color="text.secondary"
                       sx={{ minWidth: 56 }}
                     >
-                      שבוע {index + 1}
+                      שבוע {index}
                     </Typography>
                     <TextField
                       select
