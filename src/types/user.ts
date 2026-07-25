@@ -21,6 +21,7 @@ export interface FirestoreUser {
   platoon: Platoon;
   team: number;
   personalTodos?: PersonalTodoItem[];
+  requestedPasswordReset?: boolean;
 }
 
 export interface PublicUser {
@@ -63,6 +64,18 @@ export interface SetPasswordErrorResponse {
   error: string;
 }
 
+export interface RequestPasswordResetRequestBody {
+  id: string;
+}
+
+export interface RequestPasswordResetSuccessResponse {
+  requested: true;
+}
+
+export interface RequestPasswordResetErrorResponse {
+  error: string;
+}
+
 export interface ImportUsersRequestBody {
   userId: string;
   csv: string;
@@ -81,6 +94,7 @@ export interface ImportUsersErrorResponse {
 
 export interface AdminUserListItem extends PublicUser {
   needsPasswordSetup: boolean;
+  requestedPasswordReset: boolean;
 }
 
 export interface ListAdminUsersSuccessResponse {

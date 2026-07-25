@@ -18,10 +18,12 @@ import {
 } from "@mui/material";
 import { clearSession, getSession, saveSession } from "@/lib/authStorage";
 import { isLoginNeedsPasswordSetup, loginWithCredentials } from "@/lib/login";
+import { requestPasswordReset } from "@/lib/requestPasswordReset";
 import { setPassword as setUserPassword } from "@/lib/setPassword";
 import type {
   LoginErrorResponse,
   LoginSuccessResponse,
+  RequestPasswordResetErrorResponse,
   SetPasswordErrorResponse,
   SetPasswordSuccessResponse,
 } from "@/types/user";
@@ -44,6 +46,8 @@ function getErrorMessage(error: string): string {
       return "המשתמש לא נמצא";
     case "Set password failed":
       return "שמירת הסיסמה נכשלה";
+    case "Request password reset failed":
+      return "שליחת הבקשה נכשלה";
     default:
       return error;
   }
@@ -60,8 +64,10 @@ export default function LoginPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [setupUserId, setSetupUserId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRequestingReset, setIsRequestingReset] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const session = getSession();
@@ -167,6 +173,32 @@ export default function LoginPage() {
       setErrorMessage("שגיאה בשמירת הסיסמה. נסה שוב.");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!id.trim()) {
+      setErrorMessage(getErrorMessage("ID is required"));
+      return;
+    }
+
+    setIsRequestingReset(true);
+    setErrorMessage(null);
+
+    try {
+      const { response, data } = await requestPasswordReset(id.trim());
+
+      if (!response.ok) {
+        const { error } = data as RequestPasswordResetErrorResponse;
+        setErrorMessage(getErrorMessage(error ?? "Request password reset failed"));
+        return;
+      }
+
+      setSuccessMessage("הבקשה נשלחה. פנה/י למפקד/ת לאיפוס הסיסמה.");
+    } catch {
+      setErrorMessage(getErrorMessage("Request password reset failed"));
+    } finally {
+      setIsRequestingReset(false);
     }
   };
 
@@ -407,6 +439,14 @@ export default function LoginPage() {
                 >
                   {isSubmitting ? "מתחבר..." : "התחבר"}
                 </Button>
+                <Button
+                  type="button"
+                  variant="text"
+                  onClick={() => void handleForgotPassword()}
+                  disabled={isSubmitting || isRequestingReset}
+                >
+                  {isRequestingReset ? "שולח בקשה..." : "שכחתי סיסמה"}
+                </Button>
               </Box>
             )}
           </Paper>
@@ -425,6 +465,21 @@ export default function LoginPage() {
           sx={{ width: "100%" }}
         >
           {errorMessage}
+        </Alert>
+      </Snackbar>
+      <Snackbar
+        open={successMessage !== null}
+        autoHideDuration={5000}
+        onClose={() => setSuccessMessage(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSuccessMessage(null)}
+          severity="success"
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          {successMessage}
         </Alert>
       </Snackbar>
     </>
