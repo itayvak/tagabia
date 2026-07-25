@@ -30,10 +30,8 @@ import {
 } from "@/lib/platoons";
 import type { Platoon, PublicUser } from "@/types/user";
 
-function formatTeamHierarchyLabel(platoon: Platoon, team: number): string {
-  const platoonTeams = getTeamsForPlatoon(platoon);
-  const localIndex = platoonTeams.indexOf(team) + 1;
-  return `צוות ${localIndex}`;
+function formatTeamHierarchyLabel(_platoon: Platoon, team: number): string {
+  return `צוות ${team}`;
 }
 
 function formatUserSearchLabel(user: PublicUser): string {
