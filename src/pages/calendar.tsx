@@ -1,11 +1,9 @@
+import Head from "next/head";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { Alert, Box, CircularProgress, Snackbar } from "@mui/material";
 import AppLayout from "@/components/AppLayout";
-import {
-  APP_BOTTOM_BAR_HEIGHT,
-  APP_BOTTOM_BAR_SAFE_AREA,
-} from "@/components/AppBottomBar";
+import { APP_BOTTOM_BAR_HEIGHT } from "@/components/AppBottomBar";
 import MonthCalendar from "@/components/MonthCalendar";
 import { getSession } from "@/lib/authStorage";
 import { fetchCalendarTasks } from "@/lib/fetchCalendarTasks";
@@ -165,12 +163,15 @@ export default function CalendarPage() {
 
   return (
     <>
+      <Head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </Head>
       <AppLayout user={user}>
         <Box
           sx={{
             display: "flex",
             flexDirection: "column",
-            height: `calc(100dvh - ${APP_BOTTOM_BAR_HEIGHT + 88}px - ${APP_BOTTOM_BAR_SAFE_AREA})`,
+            height: `calc(100dvh - ${APP_BOTTOM_BAR_HEIGHT + 88}px)`,
             position: "relative",
           }}
         >
