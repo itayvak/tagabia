@@ -1,9 +1,13 @@
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 import SearchIcon from "@mui/icons-material/Search";
 import { useEffect, useMemo, useState } from "react";
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Box,
   Chip,
   CircularProgress,
@@ -23,7 +27,7 @@ import {
   ToggleButtonGroup,
   Typography,
 } from "@mui/material";
-import { formatPlatoonLabel } from "@/lib/platoons";
+import { formatPlatoonLabel, getPlatoonForTeam } from "@/lib/platoons";
 import { formatDueDate, isCompletedLate } from "@/lib/taskDate";
 import type { TaskAssigneeStatus } from "@/types/task";
 
@@ -37,6 +41,7 @@ interface TaskCompletionsDialogProps {
   assignees: TaskAssigneeStatus[];
   hasFormFields?: boolean;
   submittedUserIds?: string[];
+  groupByTeam?: boolean;
   onClose: () => void;
   onViewSubmission?: (userId: string) => void;
   onViewAllSubmissions?: () => void;
@@ -76,6 +81,26 @@ function getEmptyFilterMessage(filter: CompletionFilter): string {
   }
 }
 
+interface TeamGroup {
+  team: number;
+  assignees: TaskAssigneeStatus[];
+}
+
+function groupAssigneesByTeam(assignees: TaskAssigneeStatus[]): TeamGroup[] {
+  const byTeam = new Map<number, TaskAssigneeStatus[]>();
+
+  for (const assignee of assignees) {
+    if (!byTeam.has(assignee.team)) {
+      byTeam.set(assignee.team, []);
+    }
+    byTeam.get(assignee.team)!.push(assignee);
+  }
+
+  return [...byTeam.entries()]
+    .sort(([teamA], [teamB]) => teamA - teamB)
+    .map(([team, teamAssignees]) => ({ team, assignees: teamAssignees }));
+}
+
 export default function TaskCompletionsDialog({
   open,
   taskTitle,
@@ -84,6 +109,7 @@ export default function TaskCompletionsDialog({
   assignees,
   hasFormFields = false,
   submittedUserIds = [],
+  groupByTeam = false,
   onClose,
   onViewSubmission,
   onViewAllSubmissions,
@@ -91,6 +117,7 @@ export default function TaskCompletionsDialog({
   const [filter, setFilter] = useState<CompletionFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [didCopy, setDidCopy] = useState(false);
+  const [expandedTeams, setExpandedTeams] = useState<Set<number>>(new Set());
 
   const submittedUserIdSet = useMemo(
     () => new Set(submittedUserIds),
@@ -111,6 +138,7 @@ export default function TaskCompletionsDialog({
       setFilter("all");
       setSearchQuery("");
       setDidCopy(false);
+      setExpandedTeams(new Set());
     }
   }, [open]);
 
@@ -135,6 +163,11 @@ export default function TaskCompletionsDialog({
     );
   }, [assignees, filter, searchQuery]);
 
+  const teamGroups = useMemo(
+    () => (groupByTeam ? groupAssigneesByTeam(filteredAssignees) : []),
+    [groupByTeam, filteredAssignees],
+  );
+
   const handleCopyList = async () => {
     if (filteredAssignees.length === 0) {
       return;
@@ -149,6 +182,103 @@ export default function TaskCompletionsDialog({
     } catch {
       setDidCopy(false);
     }
+  };
+
+  const toggleTeamExpanded = (team: number) => {
+    setExpandedTeams((current) => {
+      const next = new Set(current);
+      if (next.has(team)) {
+        next.delete(team);
+      } else {
+        next.add(team);
+      }
+      return next;
+    });
+  };
+
+  const renderAssigneeItem = (assignee: TaskAssigneeStatus) => {
+    const hasSubmission =
+      hasFormFields &&
+      assignee.completed &&
+      submittedUserIdSet.has(assignee.userId);
+    const canViewSubmission = hasSubmission && onViewSubmission !== undefined;
+    const completedLate =
+      dueDate !== "" &&
+      assignee.completed &&
+      assignee.completedAt !== null &&
+      isCompletedLate(dueDate, assignee.completedAt);
+
+    const listContent = (
+      <>
+        <ListItemIcon sx={{ minWidth: 36 }}>
+          {assignee.completed ? (
+            <CheckCircleIcon color="success" fontSize="small" />
+          ) : (
+            <RadioButtonUncheckedIcon color="disabled" fontSize="small" />
+          )}
+        </ListItemIcon>
+        <ListItemText
+          primary={
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                flexWrap: "wrap",
+              }}
+            >
+              <Typography component="span">
+                {`${assignee.assigneeName}`.trim()}
+              </Typography>
+              {completedLate ? (
+                <Chip
+                  label="באיחור"
+                  size="small"
+                  variant="outlined"
+                  sx={{
+                    bgcolor: "#fde8e8",
+                    color: "#b42318",
+                    borderColor: "#f5c2c2",
+                    height: 22,
+                  }}
+                />
+              ) : null}
+            </Box>
+          }
+          secondary={
+            <>
+              {`פלוגת ${formatPlatoonLabel(assignee.platoon)}, צוות ${assignee.team}`}
+              <br />
+              {formatAssigneeStatus(assignee)}
+              {canViewSubmission ? (
+                <>
+                  <br />
+                  <Typography component="span" variant="caption" color="primary">
+                    לחץ לצפייה בתשובה
+                  </Typography>
+                </>
+              ) : null}
+            </>
+          }
+        />
+      </>
+    );
+
+    if (canViewSubmission) {
+      return (
+        <ListItem key={assignee.userId} disablePadding divider>
+          <ListItemButton onClick={() => onViewSubmission(assignee.userId)}>
+            {listContent}
+          </ListItemButton>
+        </ListItem>
+      );
+    }
+
+    return (
+      <ListItem key={assignee.userId} disableGutters divider>
+        {listContent}
+      </ListItem>
+    );
   };
 
   return (
@@ -214,99 +344,58 @@ export default function TaskCompletionsDialog({
           <Typography color="text.secondary" align="center" sx={{ py: 2 }}>
             {getEmptyFilterMessage(filter)}
           </Typography>
-        ) : (
-          <List disablePadding>
-            {filteredAssignees.map((assignee) => {
-              const hasSubmission =
-                hasFormFields &&
-                assignee.completed &&
-                submittedUserIdSet.has(assignee.userId);
-              const canViewSubmission =
-                hasSubmission && onViewSubmission !== undefined;
-              const completedLate =
-                dueDate !== "" &&
-                assignee.completed &&
-                assignee.completedAt !== null &&
-                isCompletedLate(dueDate, assignee.completedAt);
-
-              const listContent = (
-                <>
-                  <ListItemIcon sx={{ minWidth: 36 }}>
-                    {assignee.completed ? (
-                      <CheckCircleIcon color="success" fontSize="small" />
-                    ) : (
-                      <RadioButtonUncheckedIcon color="disabled" fontSize="small" />
-                    )}
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1,
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        <Typography component="span">
-                          {`${assignee.assigneeName}`.trim()}
-                        </Typography>
-                        {completedLate ? (
-                          <Chip
-                            label="באיחור"
-                            size="small"
-                            variant="outlined"
-                            sx={{
-                              bgcolor: "#fde8e8",
-                              color: "#b42318",
-                              borderColor: "#f5c2c2",
-                              height: 22,
-                            }}
-                          />
-                        ) : null}
-                      </Box>
-                    }
-                    secondary={
-                      <>
-                        {`פלוגת ${formatPlatoonLabel(assignee.platoon)}, צוות ${assignee.team}`}
-                        <br />
-                        {formatAssigneeStatus(assignee)}
-                        {canViewSubmission ? (
-                          <>
-                            <br />
-                            <Typography
-                              component="span"
-                              variant="caption"
-                              color="primary"
-                            >
-                              לחץ לצפייה בתשובה
-                            </Typography>
-                          </>
-                        ) : null}
-                      </>
-                    }
-                  />
-                </>
-              );
-
-              if (canViewSubmission) {
-                return (
-                  <ListItem key={assignee.userId} disablePadding divider>
-                    <ListItemButton
-                      onClick={() => onViewSubmission(assignee.userId)}
-                    >
-                      {listContent}
-                    </ListItemButton>
-                  </ListItem>
-                );
-              }
+        ) : groupByTeam ? (
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            {teamGroups.map(({ team, assignees: teamAssignees }) => {
+              const teamCompletedCount = teamAssignees.filter(
+                (assignee) => assignee.completed,
+              ).length;
+              const platoon = getPlatoonForTeam(team);
+              const isExpanded = expandedTeams.has(team);
 
               return (
-                <ListItem key={assignee.userId} disableGutters divider>
-                  {listContent}
-                </ListItem>
+                <Accordion
+                  key={team}
+                  disableGutters
+                  variant="outlined"
+                  expanded={isExpanded}
+                  onChange={() => toggleTeamExpanded(team)}
+                  sx={{ "&:before": { display: "none" }, borderRadius: 1, overflow: "hidden" }}
+                >
+                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        width: "100%",
+                        pr: 1,
+                      }}
+                    >
+                      <Typography variant="body2">
+                        {platoon
+                          ? `פלוגת ${formatPlatoonLabel(platoon)}, צוות ${team}`
+                          : `צוות ${team}`}
+                      </Typography>
+                      <Chip
+                        label={`${teamCompletedCount}/${teamAssignees.length} בוצעו`}
+                        size="small"
+                        variant="outlined"
+                      />
+                    </Box>
+                  </AccordionSummary>
+                  <AccordionDetails sx={{ pt: 0 }}>
+                    <List disablePadding>
+                      {teamAssignees.map((assignee) => renderAssigneeItem(assignee))}
+                    </List>
+                  </AccordionDetails>
+                </Accordion>
               );
             })}
+          </Box>
+        ) : (
+          <List disablePadding>
+            {filteredAssignees.map((assignee) => renderAssigneeItem(assignee))}
           </List>
         )}
       </DialogContent>

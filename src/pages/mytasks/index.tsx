@@ -29,7 +29,7 @@ import TaskReportShareDialog from "@/components/TaskReportShareDialog";
 import TaskSubmissionsDialog from "@/components/TaskSubmissionsDialog";
 import { getSession } from "@/lib/authStorage";
 import { deleteTask } from "@/lib/deleteTask";
-import { canManageTasks } from "@/lib/roles";
+import { canManageTasks, isBattalionRole } from "@/lib/roles";
 import { fetchAssignedTasks } from "@/lib/fetchAssignedTasks";
 import { fetchCreatedTasks } from "@/lib/fetchCreatedTasks";
 import { fetchSubordinateTasks } from "@/lib/fetchSubordinateTasks";
@@ -536,6 +536,7 @@ export default function MyTasksPage() {
         assignees={assigneeStatuses}
         hasFormFields={completionsTask?.hasFormFields ?? false}
         submittedUserIds={submittedUserIds}
+        groupByTeam={isBattalionRole(user.role)}
         onClose={handleCloseCompletions}
         onViewSubmission={
           completionsTask?.hasFormFields
