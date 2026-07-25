@@ -317,9 +317,6 @@ export default function TodoPage() {
 
   return (
     <>
-      <Head>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-      </Head>
       <AppLayout user={user}>
         <Container maxWidth="sm" sx={{ py: 3 }}>
           <Typography variant="h5" component="h1" sx={{ mb: 0.5 }}>
