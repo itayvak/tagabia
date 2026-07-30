@@ -23,7 +23,7 @@ import {
 import ImageIcon from "@mui/icons-material/Image";
 import SearchIcon from "@mui/icons-material/Search";
 import AppLayout from "@/components/AppLayout";
-import { APP_BOTTOM_BAR_HEIGHT } from "@/components/AppBottomBar";
+import { appBottomOffset } from "@/components/AppBottomBar";
 import CreatedTaskCard from "@/components/CreatedTaskCard";
 import TaskCompletionsDialog from "@/components/TaskCompletionsDialog";
 import TaskReportShareDialog from "@/components/TaskReportShareDialog";
@@ -499,7 +499,7 @@ export default function MyTasksPage() {
         onClick={() => void router.push("/mytasks/new")}
         sx={{
           position: "fixed",
-          bottom: APP_BOTTOM_BAR_HEIGHT + 16,
+          bottom: appBottomOffset(16),
           insetInlineEnd: 24,
         }}
       >

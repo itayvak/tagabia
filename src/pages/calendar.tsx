@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { Alert, Box, CircularProgress, Snackbar } from "@mui/material";
 import AppLayout from "@/components/AppLayout";
-import { APP_BOTTOM_BAR_HEIGHT } from "@/components/AppBottomBar";
+import { appBottomOffset, appBottomViewportOffset } from "@/components/AppBottomBar";
 import MonthCalendar from "@/components/MonthCalendar";
 import { getSession } from "@/lib/authStorage";
 import { fetchCalendarTasks } from "@/lib/fetchCalendarTasks";
@@ -171,7 +171,7 @@ export default function CalendarPage() {
           sx={{
             display: "flex",
             flexDirection: "column",
-            height: `calc(100dvh - ${APP_BOTTOM_BAR_HEIGHT + 88}px)`,
+            height: appBottomViewportOffset(88),
             position: "relative",
           }}
         >
