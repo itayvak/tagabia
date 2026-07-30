@@ -37,7 +37,6 @@ import { getTeamsForPlatoon } from "@/lib/platoons";
 import {
   canManageTasks,
   getRoleLabel,
-  isBattalionRole,
   ROLE_LIST,
   type Role,
 } from "@/lib/roles";
@@ -65,6 +64,19 @@ import type {
 } from "@/types/taskForm";
 
 type MyTasksTab = "created" | "assigned";
+
+const BATTALION_ROLES: Role[] = [
+  "digitalBatallion",
+  "AIBatallion",
+  "administrationsBatallion",
+  "logisticsBatallion",
+  "sportsBatallion",
+  "tuitionBatallion",
+];
+
+function isBattalionRole(role: Role): boolean {
+  return BATTALION_ROLES.includes(role);
+}
 
 export default function MyTasksPage() {
   const router = useRouter();
@@ -273,7 +285,8 @@ export default function MyTasksPage() {
 
     try {
       const completionsPromise = fetchTaskCompletions(task.id, user.id);
-      const submissionsPromise = task.hasFormFields
+      const submissionsPromise =
+        task.hasFormFields || task.allowCompletionFileUpload
         ? fetchTaskSubmissions(task.id, user.id)
         : null;
 
@@ -665,17 +678,21 @@ export default function MyTasksPage() {
         isLoading={isLoadingCompletions}
         assignees={assigneeStatuses}
         hasFormFields={completionsTask?.hasFormFields ?? false}
+        hasSubmissionDetails={
+          (completionsTask?.hasFormFields ?? false) ||
+          (completionsTask?.allowCompletionFileUpload ?? false)
+        }
         submittedUserIds={submittedUserIds}
         assignedTeams={completionsTask?.assignedTeams ?? []}
         groupByTeam={isBattalionRole(user.role)}
         onClose={handleCloseCompletions}
         onViewSubmission={
-          completionsTask?.hasFormFields
+          completionsTask?.hasFormFields || completionsTask?.allowCompletionFileUpload
             ? handleViewSubmissionFromCompletions
             : undefined
         }
         onViewAllSubmissions={
-          completionsTask?.hasFormFields
+          completionsTask?.hasFormFields || completionsTask?.allowCompletionFileUpload
             ? handleViewAllSubmissionsFromCompletions
             : undefined
         }

@@ -1,4 +1,5 @@
 import type { TaskFormField, TaskFormFieldInput, TaskSubmission } from "@/types/taskForm";
+import { MAX_TASK_COMPLETION_MEDIA_FILES } from "@/lib/taskCompletionMedia";
 import type { TaskCategory } from "@/lib/taskCategory";
 import type { Platoon, Role } from "@/types/user";
 import type { Timestamp } from "firebase-admin/firestore";
@@ -24,6 +25,9 @@ export interface FirestoreTask {
   assignedTeams: number[];
   assignedUsers: string[];
   hasFormFields?: boolean;
+  allowCompletionFileUpload?: boolean;
+  requireCompletionFileUpload?: boolean;
+  completionFileUploadMax?: number;
   requiresCampusSubmission?: boolean;
   media?: TaskMedia[];
 }
@@ -42,6 +46,9 @@ export interface PublicTask {
   assignedTeams: number[];
   assignedUsers: string[];
   hasFormFields: boolean;
+  allowCompletionFileUpload: boolean;
+  requireCompletionFileUpload: boolean;
+  completionFileUploadMax: number;
   requiresCampusSubmission: boolean;
   formFields?: TaskFormField[];
   submissionCount?: number;
@@ -87,6 +94,9 @@ export interface CreateTaskRequestBody {
   assignedTeams: number[];
   assignedUsers?: string[];
   formFields?: TaskFormFieldInput[];
+  allowCompletionFileUpload?: boolean;
+  requireCompletionFileUpload?: boolean;
+  completionFileUploadMax?: number;
   requiresCampusSubmission?: boolean;
 }
 
@@ -107,6 +117,9 @@ export interface UpdateTaskRequestBody {
   assignedTeams: number[];
   assignedUsers?: string[];
   formFields?: TaskFormFieldInput[];
+  allowCompletionFileUpload?: boolean;
+  requireCompletionFileUpload?: boolean;
+  completionFileUploadMax?: number;
   requiresCampusSubmission?: boolean;
 }
 
@@ -147,6 +160,16 @@ export interface FirestoreTaskCompletion {
 export interface CompleteTaskRequestBody {
   userId: string;
   answers?: Record<string, string>;
+  files?: File[];
+}
+
+export function normalizeCompletionFileUploadMax(value: unknown): number {
+  return typeof value === "number" &&
+    Number.isInteger(value) &&
+    value >= 1 &&
+    value <= MAX_TASK_COMPLETION_MEDIA_FILES
+    ? value
+    : MAX_TASK_COMPLETION_MEDIA_FILES;
 }
 
 export interface CompleteTaskSuccessResponse {

@@ -65,6 +65,9 @@ export default function NewTaskPage() {
         assignedTeams: task.assignedTeams,
         assignedUsers: task.assignedUsers,
         formFields: task.formFields,
+        allowCompletionFileUpload: task.allowCompletionFileUpload,
+        requireCompletionFileUpload: task.requireCompletionFileUpload,
+        completionFileUploadMax: task.completionFileUploadMax,
         requiresCampusSubmission: task.requiresCampusSubmission,
       });
 

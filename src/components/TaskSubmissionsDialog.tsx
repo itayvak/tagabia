@@ -13,6 +13,7 @@ import {
   Divider,
   Typography,
 } from "@mui/material";
+import TaskMediaAttachments from "@/components/TaskMediaAttachments";
 import { downloadTaskSubmissionsCsv } from "@/lib/taskSubmissionsCsv";
 import { formatSubmissionAnswer } from "@/lib/formatSubmissionAnswer";
 import { formatDueDate } from "@/lib/taskDate";
@@ -68,17 +69,19 @@ export default function TaskSubmissionsDialog({
   const hasPrevious = currentIndex > 0;
   const hasNext = currentIndex < submissions.length - 1;
   const assigneeTotal = totalAssignees ?? submissions.length;
+  const hasFormFields = formFields.length > 0;
+  const hasAnyMedia = submissions.some((submission) => submission.media.length > 0);
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>תשובות לטופס</DialogTitle>
+      <DialogTitle>הגשות מטלה</DialogTitle>
       <DialogContent>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
           {taskTitle}
         </Typography>
         {!isLoading && assigneeTotal > 0 ? (
           <Typography variant="body2" sx={{ mb: 2 }}>
-            {submissions.length} מתוך {assigneeTotal} ממונים הגישו טופס
+            {submissions.length} מתוך {assigneeTotal} ממונים הגישו
           </Typography>
         ) : null}
 
@@ -88,7 +91,7 @@ export default function TaskSubmissionsDialog({
           </Box>
         ) : submissions.length === 0 ? (
           <Typography color="text.secondary" align="center" sx={{ py: 2 }}>
-            אין עדיין תשובות לטופס זה
+            אין עדיין הגשות למטלה זו
           </Typography>
         ) : currentSubmission ? (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -138,22 +141,31 @@ export default function TaskSubmissionsDialog({
             <Divider />
 
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {formFields.map((field) => (
-                <Box key={field.id}>
-                  <Typography variant="subtitle2" gutterBottom>
-                    {field.label}
-                  </Typography>
-                  <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
-                    {formatSubmissionAnswer(field, currentSubmission.answers)}
-                  </Typography>
-                </Box>
-              ))}
+              {hasFormFields
+                ? formFields.map((field) => (
+                    <Box key={field.id}>
+                      <Typography variant="subtitle2" gutterBottom>
+                        {field.label}
+                      </Typography>
+                      <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
+                        {formatSubmissionAnswer(field, currentSubmission.answers)}
+                      </Typography>
+                    </Box>
+                  ))
+                : null}
+              {currentSubmission.media.length > 0 ? (
+                <TaskMediaAttachments media={currentSubmission.media} />
+              ) : hasAnyMedia ? (
+                <Typography variant="body2" color="text.secondary">
+                  לא צורפו קבצים בהגשה זו.
+                </Typography>
+              ) : null}
             </Box>
           </Box>
         ) : null}
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        {!isLoading && submissions.length > 0 ? (
+        {!isLoading && submissions.length > 0 && hasFormFields ? (
           <Button
             startIcon={<DownloadIcon />}
             onClick={() =>

@@ -64,6 +64,9 @@ export default function EditTaskPage() {
       assignedUsers: task.assignedUsers,
       formFields: task.formFields ?? [],
       pendingMedia: [],
+      allowCompletionFileUpload: task.allowCompletionFileUpload,
+      requireCompletionFileUpload: task.requireCompletionFileUpload,
+      completionFileUploadMax: task.completionFileUploadMax,
       requiresCampusSubmission: task.requiresCampusSubmission,
     };
   }, [task]);
@@ -151,6 +154,9 @@ export default function EditTaskPage() {
         assignedTeams: formData.assignedTeams,
         assignedUsers: formData.assignedUsers,
         formFields: formData.formFields,
+        allowCompletionFileUpload: formData.allowCompletionFileUpload,
+        requireCompletionFileUpload: formData.requireCompletionFileUpload,
+        completionFileUploadMax: formData.completionFileUploadMax,
         requiresCampusSubmission: formData.requiresCampusSubmission,
       });
 

@@ -71,10 +71,16 @@ export function getTaskErrorMessage(error: string): string {
       return `הקובץ גדול מדי (מקסימום ${MAX_TASK_MEDIA_FILE_SIZE_MB}MB)`;
     case "Maximum number of media files reached":
       return "הגעת למספר הקבצים המקסימלי למטלה";
+    case "Maximum number of completion files reached":
+      return "הגעת למספר הקבצים המקסימלי להגשת המטלה";
     case "Media not found":
       return "הקובץ לא נמצא";
     case "Upload task media failed":
       return "העלאת הקובץ נכשלה";
+    case "Completion file uploads are not allowed":
+      return "לא ניתן להעלות קבצים עבור מטלה זו";
+    case "Completion file is required":
+      return "יש לצרף לפחות קובץ אחד כדי להשלים את המטלה";
     case "Delete task media failed":
       return "מחיקת הקובץ נכשלה";
     case "Media ID is required":

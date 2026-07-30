@@ -42,6 +42,7 @@ interface TaskCompletionsDialogProps {
   isLoading: boolean;
   assignees: TaskAssigneeStatus[];
   hasFormFields?: boolean;
+  hasSubmissionDetails?: boolean;
   submittedUserIds?: string[];
   assignedTeams?: number[];
   groupByTeam?: boolean;
@@ -111,6 +112,7 @@ export default function TaskCompletionsDialog({
   isLoading,
   assignees,
   hasFormFields = false,
+  hasSubmissionDetails = false,
   submittedUserIds = [],
   assignedTeams = [],
   groupByTeam = false,
@@ -160,7 +162,7 @@ export default function TaskCompletionsDialog({
     [assignees],
   );
 
-  const submissionCount = hasFormFields
+  const submissionCount = hasSubmissionDetails
     ? submittedUserIds.length
     : completedCount;
 
@@ -241,7 +243,7 @@ export default function TaskCompletionsDialog({
 
   const renderAssigneeItem = (assignee: TaskAssigneeStatus) => {
     const hasSubmission =
-      hasFormFields &&
+      hasSubmissionDetails &&
       assignee.completed &&
       submittedUserIdSet.has(assignee.userId);
     const canViewSubmission = hasSubmission && onViewSubmission !== undefined;
@@ -297,7 +299,7 @@ export default function TaskCompletionsDialog({
                 <>
                   <br />
                   <Typography component="span" variant="caption" color="primary">
-                    לחץ לצפייה בתשובה
+                    לחץ לצפייה בהגשה
                   </Typography>
                 </>
               ) : null}
@@ -333,8 +335,8 @@ export default function TaskCompletionsDialog({
         </Typography>
         {!isLoading && assignees.length > 0 && (
           <Typography variant="body2" sx={{ mb: 2 }}>
-            {hasFormFields
-              ? `${submissionCount} מתוך ${assignees.length} הגישו טופס`
+            {hasSubmissionDetails
+              ? `${submissionCount} מתוך ${assignees.length} הגישו`
               : `${completedCount} מתוך ${assignees.length} ביצעו את המטלה`}
           </Typography>
         )}
@@ -497,11 +499,11 @@ export default function TaskCompletionsDialog({
           >
             {didCopy ? "הועתק!" : "העתק רשימה"}
           </Button>
-          {hasFormFields &&
+          {hasSubmissionDetails &&
           onViewAllSubmissions &&
           submissionCount > 0 ? (
             <Button variant="outlined" onClick={onViewAllSubmissions}>
-              צפה בכל התשובות
+              {hasFormFields ? "צפה בכל ההגשות" : "צפה בכל הקבצים"}
             </Button>
           ) : null}
         </Box>

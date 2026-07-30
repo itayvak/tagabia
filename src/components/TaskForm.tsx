@@ -6,6 +6,7 @@ import {
   Checkbox,
   CircularProgress,
   FormControlLabel,
+  MenuItem,
   TextField,
 } from "@mui/material";
 import TaskAssigneePicker from "@/components/TaskAssigneePicker";
@@ -22,6 +23,10 @@ import {
   type TaskCategory,
 } from "@/lib/taskCategory";
 import { fromDatetimeLocalValue } from "@/lib/taskDate";
+import {
+  MAX_TASK_COMPLETION_MEDIA_FILES,
+  TASK_COMPLETION_MEDIA_FILE_OPTIONS,
+} from "@/lib/taskCompletionMedia";
 import { getTaskErrorMessage } from "@/lib/taskErrorMessages";
 import { validateTaskFormData } from "@/lib/validateTaskForm";
 import type { TaskMedia } from "@/types/task";
@@ -36,6 +41,9 @@ export interface TaskFormData {
   assignedUsers: string[];
   formFields: TaskFormFieldInput[];
   pendingMedia: File[];
+  allowCompletionFileUpload: boolean;
+  requireCompletionFileUpload: boolean;
+  completionFileUploadMax: number;
   requiresCampusSubmission: boolean;
 }
 
@@ -52,18 +60,6 @@ interface TaskFormProps {
   onSubmit: (task: TaskFormData) => void;
   onError?: (message: string) => void;
 }
-
-const emptyForm: TaskFormData = {
-  title: "",
-  content: "",
-  category: DEFAULT_TASK_CATEGORY,
-  dueDate: "",
-  assignedTeams: [],
-  assignedUsers: [],
-  formFields: [],
-  pendingMedia: [],
-  requiresCampusSubmission: false,
-};
 
 export default function TaskForm({
   mode,
@@ -88,6 +84,11 @@ export default function TaskForm({
   const [assignedUsers, setAssignedUsers] = useState<string[]>([]);
   const [formFields, setFormFields] = useState<BuilderFormField[]>([]);
   const [pendingMedia, setPendingMedia] = useState<File[]>([]);
+  const [allowCompletionFileUpload, setAllowCompletionFileUpload] = useState(false);
+  const [requireCompletionFileUpload, setRequireCompletionFileUpload] = useState(false);
+  const [completionFileUploadMax, setCompletionFileUploadMax] = useState(
+    MAX_TASK_COMPLETION_MEDIA_FILES,
+  );
   const [requiresCampusSubmission, setRequiresCampusSubmission] = useState(false);
 
   useEffect(() => {
@@ -103,6 +104,9 @@ export default function TaskForm({
     setAssignedUsers(initialValues.assignedUsers);
     setFormFields(toBuilderFormFields(initialValues.formFields));
     setPendingMedia(initialValues.pendingMedia);
+    setAllowCompletionFileUpload(initialValues.allowCompletionFileUpload);
+    setRequireCompletionFileUpload(initialValues.requireCompletionFileUpload);
+    setCompletionFileUploadMax(initialValues.completionFileUploadMax);
     setRequiresCampusSubmission(initialValues.requiresCampusSubmission);
   }, [initialValues]);
 
@@ -145,6 +149,9 @@ export default function TaskForm({
       assignedUsers,
       formFields: toFormFieldInputs(formFields),
       pendingMedia,
+      allowCompletionFileUpload,
+      requireCompletionFileUpload: allowCompletionFileUpload && requireCompletionFileUpload,
+      completionFileUploadMax,
       requiresCampusSubmission,
     });
   };
@@ -236,6 +243,55 @@ export default function TaskForm({
     />
   );
 
+  const completionUploadOptions = (
+    <>
+      <FormControlLabel
+        control={
+          <Checkbox
+            checked={allowCompletionFileUpload}
+            onChange={(event) => {
+              const checked = event.target.checked;
+              setAllowCompletionFileUpload(checked);
+              if (!checked) {
+                setRequireCompletionFileUpload(false);
+              }
+            }}
+            disabled={isFormBusy}
+          />
+        }
+        label="לאפשר העלאת קבצים בהגשת המטלה"
+      />
+      <FormControlLabel
+        control={
+          <Checkbox
+            checked={requireCompletionFileUpload}
+            onChange={(event) => setRequireCompletionFileUpload(event.target.checked)}
+            disabled={isFormBusy || !allowCompletionFileUpload}
+          />
+        }
+        label="לחייב העלאת קובץ כדי להשלים את המטלה"
+      />
+      <TextField
+        select
+        fullWidth
+        size="small"
+        label="כמות קבצים מקסימלית"
+        value={completionFileUploadMax}
+        onChange={(event) =>
+          setCompletionFileUploadMax(Number(event.target.value))
+        }
+        disabled={isFormBusy || !allowCompletionFileUpload}
+        helperText={`ניתן לבחור עד ${MAX_TASK_COMPLETION_MEDIA_FILES} קבצים`}
+      >
+        {TASK_COMPLETION_MEDIA_FILE_OPTIONS.map((count) => (
+          <MenuItem key={count} value={count}>
+            {count}
+          </MenuItem>
+        ))}
+      </TextField>
+    </>
+  );
+
   const formFieldBuilder = (
     <>
       {formFieldsWarningMessage ? (
@@ -290,6 +346,9 @@ export default function TaskForm({
         {generalFields}
       </TaskFormSection>
       <TaskFormSection title="סקרים">{formFieldBuilder}</TaskFormSection>
+      <TaskFormSection title="הגשת קבצים">
+        {completionUploadOptions}
+      </TaskFormSection>
       <TaskFormSection title="קבצים מצורפים">{mediaUpload}</TaskFormSection>
       <TaskFormSection title="שיוך לצוערים">{assigneePicker}</TaskFormSection>
       {submitActions}

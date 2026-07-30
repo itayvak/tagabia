@@ -47,16 +47,16 @@ export default function AppBottomBar({ user }: AppBottomBarProps) {
         pathname === "/allTasks" || pathname.startsWith("/tasks/"),
     },
     {
-      label: "לוח שנה",
-      href: "/calendar",
-      icon: <CalendarMonthIcon />,
-      match: (pathname) => pathname === "/calendar",
-    },
-    {
       label: "רשימה אישית",
       href: "/todo",
       icon: <ChecklistIcon />,
       match: (pathname) => pathname === "/todo",
+    },
+    {
+      label: "לוח שנה",
+      href: "/calendar",
+      icon: <CalendarMonthIcon />,
+      match: (pathname) => pathname === "/calendar",
     },
     ...(showMyTasks
       ? [

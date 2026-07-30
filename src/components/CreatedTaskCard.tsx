@@ -90,7 +90,7 @@ export default function CreatedTaskCard({
             />
           </Box>
           <Typography variant="body2" color="text.secondary">
-            תג"ב: {formatDueDate(task.dueDate)}
+            תג&quot;ב: {formatDueDate(task.dueDate)}
           </Typography>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
             <TaskCategoryIcon category={task.category} />
@@ -135,7 +135,7 @@ export default function CreatedTaskCard({
             <GroupIcon fontSize="small" />
           </IconButton>
         </Tooltip>
-        {task.hasFormFields && onViewSubmissions ? (
+        {(task.hasFormFields || task.allowCompletionFileUpload) && onViewSubmissions ? (
           <Tooltip title="תשובות">
             <IconButton
               size="small"
