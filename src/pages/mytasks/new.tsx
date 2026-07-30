@@ -9,7 +9,6 @@ import {
   Typography,
 } from "@mui/material";
 import AppLayout from "@/components/AppLayout";
-import { appBottomViewportOffset } from "@/components/AppBottomBar";
 import TaskForm, { type TaskFormData } from "@/components/TaskForm";
 import { getSession } from "@/lib/authStorage";
 import { createTask } from "@/lib/createTask";
@@ -123,29 +122,20 @@ export default function NewTaskPage() {
 
   return (
     <>
-      <AppLayout user={user}>
-        <Box
-          sx={{
-            bgcolor: "grey.200",
-            py: 3,
-            flex: 1,
-            minHeight: appBottomViewportOffset(88),
-          }}
-        >
-          <Container maxWidth="sm">
-            <Typography variant="h5" component="h1" gutterBottom>
-              מטלה חדשה
-            </Typography>
-            <TaskForm
-              mode="create"
-              isSubmitting={isSubmitting}
-              isUploadingMedia={isUploadingMedia}
-              onCancel={handleCancel}
-              onError={(message) => setErrorMessage(message)}
-              onSubmit={(task) => void handleCreateTask(task)}
-            />
-          </Container>
-        </Box>
+      <AppLayout user={user} contentBgColor="grey.200">
+        <Container maxWidth="sm" sx={{ py: 3, flex: 1 }}>
+          <Typography variant="h5" component="h1" gutterBottom>
+            מטלה חדשה
+          </Typography>
+          <TaskForm
+            mode="create"
+            isSubmitting={isSubmitting}
+            isUploadingMedia={isUploadingMedia}
+            onCancel={handleCancel}
+            onError={(message) => setErrorMessage(message)}
+            onSubmit={(task) => void handleCreateTask(task)}
+          />
+        </Container>
       </AppLayout>
       <Snackbar
         open={errorMessage !== null}
