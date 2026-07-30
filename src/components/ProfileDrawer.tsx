@@ -25,7 +25,7 @@ export default function ProfileDrawer({
 
   return (
     <Drawer
-      anchor="right"
+      anchor="left"
       open={open}
       onClose={onClose}
       slotProps={{
