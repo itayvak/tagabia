@@ -2,12 +2,10 @@ import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
-  Avatar,
   Box,
   Chip,
   CircularProgress,
   Container,
-  IconButton,
   InputAdornment,
   Snackbar,
   TextField,
@@ -17,14 +15,12 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import AppLayout from "@/components/AppLayout";
+import AppTopBar from "@/components/AppTopBar";
 import ProfileDrawer from "@/components/ProfileDrawer";
 import TaskCard from "@/components/TaskCard";
 import { getSession } from "@/lib/authStorage";
 import { completeTask } from "@/lib/completeTask";
 import { fetchAssignedTasks } from "@/lib/fetchAssignedTasks";
-import { fetchCourseConfig } from "@/lib/fetchCourseConfig";
-import { getCurrentWeek } from "@/lib/courseWeek";
-import { getDailySplashQuote } from "@/lib/splashQuotes";
 import {
   getPinnedTaskIds,
   prunePinnedTaskIds,
@@ -32,8 +28,6 @@ import {
 } from "@/lib/pinnedTasksStorage";
 import { triggerTaskConfetti } from "@/lib/taskConfetti";
 import { uncompleteTask } from "@/lib/uncompleteTask";
-import { getUserInitials } from "@/lib/userInitials";
-import { delaGothicOne } from "@/lib/fonts";
 import { TASK_CATEGORIES, type TaskCategory } from "@/lib/taskCategory";
 import type {
   AssignedTask,
@@ -43,33 +37,9 @@ import type {
   ListTasksErrorResponse,
   UncompleteTaskErrorResponse,
 } from "@/types/task";
-import type {
-  GetCourseConfigSuccessResponse,
-  PublicCourseConfig,
-} from "@/types/courseConfig";
 import type { PublicUser } from "@/types/user";
 
 type AllTasksTaskFilter = "pending" | "completed";
-
-const APP_TITLE = "All In One";
-
-function AppTitle() {
-  return (
-    <Typography
-      variant="h5"
-      component="h1"
-      dir="ltr"
-      sx={{
-        color: "common.white",
-        fontFamily: delaGothicOne.style.fontFamily,
-        textAlign: "center",
-        width: "100%",
-      }}
-    >
-      {APP_TITLE}
-    </Typography>
-  );
-}
 
 function toggleCategorySelection(
   selected: TaskCategory[],
@@ -117,9 +87,6 @@ export default function AllTasksPage() {
   const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
   const [uncompletingTaskId, setUncompletingTaskId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [courseConfig, setCourseConfig] = useState<PublicCourseConfig | null>(
-    null,
-  );
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   useEffect(() => {
@@ -191,29 +158,6 @@ export default function AllTasksPage() {
       );
     }
   }, [router]);
-
-  useEffect(() => {
-    const loadCourseConfig = async () => {
-      try {
-        const { response, data } = await fetchCourseConfig();
-
-        if (!response.ok) {
-          return;
-        }
-
-        setCourseConfig((data as GetCourseConfigSuccessResponse).config);
-      } catch {
-        // Keep the week subtitle hidden when config cannot be loaded.
-      }
-    };
-
-    void loadCourseConfig();
-  }, []);
-
-  const currentWeek = useMemo(
-    () => getCurrentWeek(courseConfig),
-    [courseConfig],
-  );
 
   const visibleTasks = useMemo(() => {
     const filtered =
@@ -348,103 +292,13 @@ export default function AllTasksPage() {
     );
   }
 
-  const dailyQuote = getDailySplashQuote();
-
   return (
     <>
       <AppLayout user={user}>
-        <Box
-          sx={{
-            ...(currentWeek
-              ? {
-                  backgroundImage: `
-                    linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
-                    url(${currentWeek.image})
-                  `,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }
-              : {}),
-            mb: 2,
-          }}
-        >
-          <Container maxWidth="sm" sx={{ py: 3, position: "relative" }}>
-            <IconButton
-              onClick={() => setIsProfileOpen(true)}
-              aria-label="פתח פרופיל"
-              sx={{
-                position: "absolute",
-                top: 24,
-                insetInlineStart: 16,
-                p: 0,
-              }}
-            >
-              <Avatar
-                sx={{
-                  width: 40,
-                  height: 40,
-                  bgcolor: "primary.main",
-                  fontSize: 16,
-                  fontWeight: 600,
-                  border: "2px solid",
-                  borderColor: "common.white",
-                }}
-              >
-                {getUserInitials(user.fullname)}
-              </Avatar>
-            </IconButton>
-            <Box
-              component="img"
-              src="/bahad1.png"
-              alt="בה״ד 1"
-              sx={{
-                position: "absolute",
-                top: 24,
-                insetInlineEnd: 16,
-                width: 40,
-                height: 40,
-              }}
-            />
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 1,
-                textAlign: "center",
-                width: "100%",
-              }}
-            >
-              <AppTitle />
-              {currentWeek ? (
-                <Typography
-                  variant="body2"
-                  sx={{ color: "grey.100", textAlign: "center" }}
-                >
-                  {currentWeek.name}
-                </Typography>
-              ) : null}
-              <Box
-                sx={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  justifyContent: "center",
-                  alignItems: "baseline",
-                  gap: 0.75,
-                }}
-              >
-                <Typography variant="body2" sx={{ color: "grey.100" }}>
-                  &ldquo;{dailyQuote.text}&rdquo;
-                </Typography>
-                {dailyQuote.author ? (
-                  <Typography variant="caption" sx={{ color: "grey.300" }}>
-                    - {dailyQuote.author}
-                  </Typography>
-                ) : null}
-              </Box>
-            </Box>
-          </Container>
-        </Box>
+        <AppTopBar
+          user={user}
+          onProfileOpen={() => setIsProfileOpen(true)}
+        />
         <Container maxWidth="sm" sx={{ pb: 3 }}>
         <Box
           sx={{
