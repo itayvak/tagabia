@@ -6,6 +6,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import EventOutlinedIcon from "@mui/icons-material/EventOutlined";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import NotesOutlinedIcon from "@mui/icons-material/NotesOutlined";
 import TaskAltIcon from "@mui/icons-material/TaskAlt";
 import {
   Box,
@@ -19,7 +20,10 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Drawer,
+  Fab,
   IconButton,
+  LinearProgress,
   Stack,
   TextField,
   ToggleButton,
@@ -27,24 +31,26 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
+import { APP_BOTTOM_BAR_HEIGHT } from "@/components/AppBottomBar";
 import { formatDateOnly, fromDateInputValue, toDateInputValue } from "@/lib/taskDate";
 import type { PersonalTodoItem } from "@/types/user";
 
 type TodoFilter = "all" | "active" | "completed";
 
+type TodoCreatePayload = {
+  text: string;
+  description?: string;
+  dueDate?: string;
+};
+
 interface PersonalTodoListProps {
   todos: PersonalTodoItem[];
   isLoading: boolean;
   isSaving: boolean;
-  newItemText: string;
-  onNewItemTextChange: (text: string) => void;
-  onAddItem: () => void;
+  onAddItem: (payload: TodoCreatePayload) => Promise<boolean>;
   onToggleComplete: (id: string) => void;
   onDeleteItem: (id: string) => void;
-  onEditItem: (
-    id: string,
-    updates: { text: string; description?: string; dueDate?: string },
-  ) => void;
+  onEditItem: (id: string, updates: TodoCreatePayload) => void;
   onClearCompleted: () => void;
 }
 
@@ -143,6 +149,166 @@ function PersonalTodoEditDialog({
         </Button>
       </DialogActions>
     </Dialog>
+  );
+}
+
+function PersonalTodoCreateSheet({
+  open,
+  isSaving,
+  onClose,
+  onCreate,
+}: {
+  open: boolean;
+  isSaving: boolean;
+  onClose: () => void;
+  onCreate: (payload: TodoCreatePayload) => void | Promise<void>;
+}) {
+  const [text, setText] = useState("");
+  const [description, setDescription] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [showDescription, setShowDescription] = useState(false);
+  const [showDate, setShowDate] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      setText("");
+      setDescription("");
+      setDueDate("");
+      setShowDescription(false);
+      setShowDate(false);
+    }
+  }, [open]);
+
+  const handleCreate = () => {
+    const trimmed = text.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    const trimmedDescription = description.trim();
+    void onCreate({
+      text: trimmed,
+      description: trimmedDescription || undefined,
+      dueDate: dueDate ? fromDateInputValue(dueDate) : undefined,
+    });
+  };
+
+  const descriptionActive = showDescription || Boolean(description.trim());
+  const dateActive = showDate || Boolean(dueDate);
+
+  return (
+    <Drawer
+      anchor="bottom"
+      open={open}
+      onClose={onClose}
+      slotProps={{
+        paper: {
+          sx: {
+            borderTopLeftRadius: 16,
+            borderTopRightRadius: 16,
+            maxHeight: "85dvh",
+            maxWidth: "sm",
+            width: "100%",
+            mx: "auto",
+            left: 0,
+            right: 0,
+            pb: "env(safe-area-inset-bottom, 0px)",
+          },
+        },
+      }}
+    >
+      <Box sx={{ px: 2.5, pt: 2.5, pb: 2 }}>
+        <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
+          משימה חדשה
+        </Typography>
+
+        <Stack spacing={2}>
+          <TextField
+            fullWidth
+            placeholder="משימה חדשה..."
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                handleCreate();
+              }
+            }}
+            autoFocus
+            disabled={isSaving}
+            slotProps={{
+              htmlInput: { dir: "rtl", "aria-label": "משימה חדשה" },
+            }}
+          />
+
+          <Stack direction="row" spacing={0.5}>
+            <Tooltip title="תיאור">
+              <IconButton
+                aria-label="הוסף תיאור"
+                onClick={() => setShowDescription((prev) => !prev)}
+                disabled={isSaving}
+                color={descriptionActive ? "primary" : "default"}
+              >
+                <NotesOutlinedIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="תאריך יעד">
+              <IconButton
+                aria-label="הוסף תאריך יעד"
+                onClick={() => setShowDate((prev) => !prev)}
+                disabled={isSaving}
+                color={dateActive ? "primary" : "default"}
+              >
+                <EventOutlinedIcon />
+              </IconButton>
+            </Tooltip>
+          </Stack>
+
+          {showDescription && (
+            <TextField
+              fullWidth
+              label="תיאור (אופציונלי)"
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              disabled={isSaving}
+              multiline
+              minRows={3}
+              slotProps={{
+                htmlInput: { dir: "rtl", "aria-label": "תיאור" },
+              }}
+            />
+          )}
+
+          {showDate && (
+            <TextField
+              fullWidth
+              label="תאריך יעד (אופציונלי)"
+              type="date"
+              value={dueDate}
+              onChange={(event) => setDueDate(event.target.value)}
+              disabled={isSaving}
+              slotProps={{
+                inputLabel: { shrink: true },
+                htmlInput: { dir: "ltr", "aria-label": "תאריך יעד" },
+              }}
+            />
+          )}
+
+          <Stack direction="row" spacing={1} sx={{ justifyContent: "flex-end", pt: 0.5 }}>
+            <Button onClick={onClose} disabled={isSaving}>
+              ביטול
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleCreate}
+              disabled={!text.trim() || isSaving}
+            >
+              הוסף
+            </Button>
+          </Stack>
+        </Stack>
+      </Box>
+    </Drawer>
   );
 }
 
@@ -285,9 +451,7 @@ function EmptyState({ filter }: { filter: TodoFilter }) {
   const message =
     filter === "completed"
       ? "אין פריטים שהושלמו"
-      : filter === "active"
-        ? "אין פריטים פתוחים — הכל מסודר!"
-        : "סיימתי הכל אין עליי!";
+      : "סיימתי הכל אין עליי!"
 
   return (
     <Box
@@ -312,8 +476,6 @@ export default function PersonalTodoList({
   todos,
   isLoading,
   isSaving,
-  newItemText,
-  onNewItemTextChange,
   onAddItem,
   onToggleComplete,
   onDeleteItem,
@@ -323,11 +485,13 @@ export default function PersonalTodoList({
   const [filter, setFilter] = useState<TodoFilter>("all");
   const [completedExpanded, setCompletedExpanded] = useState(true);
   const [editingItem, setEditingItem] = useState<PersonalTodoItem | null>(null);
+  const [createSheetOpen, setCreateSheetOpen] = useState(false);
 
   const activeTodos = useMemo(() => todos.filter((item) => !item.completed), [todos]);
   const completedTodos = useMemo(() => todos.filter((item) => item.completed), [todos]);
   const completedCount = completedTodos.length;
   const totalCount = todos.length;
+  const progressPercent = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
   const filteredActive = filter === "completed" ? [] : activeTodos;
   const filteredCompleted = filter === "active" ? [] : completedTodos;
@@ -339,13 +503,20 @@ export default function PersonalTodoList({
         ? completedTodos
         : [];
 
-  const handleSaveEdit = (updates: { text: string; description?: string; dueDate?: string }) => {
+  const handleSaveEdit = (updates: TodoCreatePayload) => {
     if (!editingItem) {
       return;
     }
 
     onEditItem(editingItem.id, updates);
     setEditingItem(null);
+  };
+
+  const handleCreate = async (payload: TodoCreatePayload) => {
+    const saved = await onAddItem(payload);
+    if (saved) {
+      setCreateSheetOpen(false);
+    }
   };
 
   const renderItem = (item: PersonalTodoItem) => (
@@ -360,40 +531,27 @@ export default function PersonalTodoList({
   );
 
   return (
+    <>
     <Stack spacing={2.5}>
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ alignItems: { sm: "flex-start" } }}>
-        <TextField
-          fullWidth
-          size="small"
-          label="משימה חדשה..."
-          value={newItemText}
-          onChange={(event) => onNewItemTextChange(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey) {
-              event.preventDefault();
-              onAddItem();
-            }
-          }}
-          disabled={isSaving}
-          sx={{ flex: 1 }}
-          slotProps={{
-            htmlInput: { dir: "rtl", "aria-label": "פריט חדש" },
-          }}
-        />
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={onAddItem}
-          disabled={!newItemText.trim() || isSaving}
-          sx={{
-            flexShrink: 0,
-            whiteSpace: "nowrap",
-            alignSelf: { xs: "stretch", sm: "flex-start" },
-          }}
-        >
-          הוסף
-        </Button>
-      </Stack>
+      {!isLoading && totalCount > 0 && (
+        <Box sx={{ mb: -1 }}>
+          <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: "block" }}>
+            {completedCount} מתוך {totalCount} הושלמו ({Math.round(progressPercent)}%)
+          </Typography>
+          <LinearProgress
+            variant="determinate"
+            value={progressPercent}
+            color="success"
+            aria-label={`${Math.round(progressPercent)}% מהמשימות הושלמו`}
+            sx={{
+              height: 4,
+              borderRadius: 2,
+              bgcolor: "action.hover",
+              "& .MuiLinearProgress-bar": { borderRadius: 2 },
+            }}
+          />
+        </Box>
+      )}
 
       {totalCount > 0 && (
         <Stack
@@ -499,5 +657,26 @@ export default function PersonalTodoList({
         onSave={handleSaveEdit}
       />
     </Stack>
+
+    <Fab
+      color="primary"
+      aria-label="משימה חדשה"
+      onClick={() => setCreateSheetOpen(true)}
+      sx={{
+        position: "fixed",
+        bottom: APP_BOTTOM_BAR_HEIGHT + 16,
+        insetInlineStart: 24,
+      }}
+    >
+      <AddIcon />
+    </Fab>
+
+    <PersonalTodoCreateSheet
+      open={createSheetOpen}
+      isSaving={isSaving}
+      onClose={() => setCreateSheetOpen(false)}
+      onCreate={handleCreate}
+    />
+    </>
   );
 }

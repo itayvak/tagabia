@@ -54,34 +54,20 @@ type AllTasksTaskFilter = "pending" | "completed";
 
 const APP_TITLE = "All In One";
 
-function StretchedAppTitle({ stretched }: { stretched: boolean }) {
+function AppTitle() {
   return (
     <Typography
       variant="h5"
       component="h1"
       dir="ltr"
-      style={
-        stretched
-          ? {
-              display: "flex",
-              flexDirection: "row",
-              justifyContent: "space-between",
-              width: "100%",
-            }
-          : undefined
-      }
       sx={{
         color: "common.white",
         fontFamily: delaGothicOne.style.fontFamily,
+        textAlign: "center",
+        width: "100%",
       }}
     >
-      {stretched
-        ? APP_TITLE.split("").map((char, index) => (
-            <Box component="span" key={index}>
-              {char === " " ? "\u00A0" : char}
-            </Box>
-          ))
-        : APP_TITLE}
+      {APP_TITLE}
     </Typography>
   );
 }
@@ -428,26 +414,20 @@ export default function AllTasksPage() {
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                gap: 3,
+                gap: 1,
+                textAlign: "center",
+                width: "100%",
               }}
             >
-              <Box
-                sx={{
-                  display: "inline-flex",
-                  flexDirection: "column",
-                  alignItems: "stretch",
-                }}
-              >
-                <StretchedAppTitle stretched={Boolean(currentWeek)} />
-                {currentWeek ? (
-                  <Typography
-                    variant="body2"
-                    sx={{ color: "grey.100", textAlign: "end" }}
-                  >
-                    {currentWeek.name}
-                  </Typography>
-                ) : null}
-              </Box>
+              <AppTitle />
+              {currentWeek ? (
+                <Typography
+                  variant="body2"
+                  sx={{ color: "grey.100", textAlign: "center" }}
+                >
+                  {currentWeek.name}
+                </Typography>
+              ) : null}
               <Box
                 sx={{
                   display: "flex",
@@ -455,7 +435,6 @@ export default function AllTasksPage() {
                   justifyContent: "center",
                   alignItems: "baseline",
                   gap: 0.75,
-                  textAlign: "center",
                 }}
               >
                 <Typography variant="body2" sx={{ color: "grey.100" }}>

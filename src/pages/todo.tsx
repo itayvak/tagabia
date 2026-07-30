@@ -44,7 +44,6 @@ export default function TodoPage() {
   const router = useRouter();
   const [user, setUser] = useState<PublicUser | null>(null);
   const [todos, setTodos] = useState<PersonalTodoItem[]>([]);
-  const [newItemText, setNewItemText] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -139,10 +138,14 @@ export default function TodoPage() {
     [user],
   );
 
-  const handleAddItem = async () => {
-    const text = newItemText.trim();
+  const handleAddItem = async (payload: {
+    text: string;
+    description?: string;
+    dueDate?: string;
+  }) => {
+    const text = payload.text.trim();
     if (!text || isSaving) {
-      return;
+      return false;
     }
 
     const newItem: PersonalTodoItem = {
@@ -152,15 +155,24 @@ export default function TodoPage() {
       createdAt: new Date().toISOString(),
     };
 
+    if (payload.description) {
+      newItem.description = payload.description;
+    }
+
+    if (payload.dueDate) {
+      newItem.dueDate = payload.dueDate;
+    }
+
     const previousTodos = todos;
     const updatedTodos = [...todos, newItem];
     setTodos(updatedTodos);
-    setNewItemText("");
 
     const saved = await persistTodos(updatedTodos);
     if (!saved) {
       setTodos(previousTodos);
     }
+
+    return saved;
   };
 
   const handleToggleComplete = async (id: string) => {
@@ -327,9 +339,7 @@ export default function TodoPage() {
             todos={todos}
             isLoading={isLoading}
             isSaving={isSaving}
-            newItemText={newItemText}
-            onNewItemTextChange={setNewItemText}
-            onAddItem={() => void handleAddItem()}
+            onAddItem={(payload) => handleAddItem(payload)}
             onToggleComplete={(id) => void handleToggleComplete(id)}
             onDeleteItem={handleDeleteItem}
             onEditItem={(id, updates) => void handleEditItem(id, updates)}
