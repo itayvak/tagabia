@@ -57,9 +57,7 @@ function normalizeCompletionUploadOptions(
   return {
     allowCompletionFileUpload: allowUploads,
     requireCompletionFileUpload: allowUploads && requireCompletionFileUpload === true,
-    completionFileUploadMax: allowUploads
-      ? normalizeCompletionFileUploadMax(completionFileUploadMax)
-      : undefined,
+    completionFileUploadMax: normalizeCompletionFileUploadMax(completionFileUploadMax),
   };
 }
 
