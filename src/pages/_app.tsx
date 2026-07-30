@@ -1,5 +1,4 @@
 import "@/styles/globals.css";
-import { googleSans } from "@/lib/fonts";
 import { rtlCache } from "@/lib/rtlCache";
 import { theme } from "@/theme";
 import { AppCacheProvider } from "@mui/material-nextjs/v16-pagesRouter";
@@ -84,13 +83,6 @@ export default function App({
   pageProps,
   emotionCache = rtlCache,
 }: AppPropsWithCache) {
-  useEffect(() => {
-    document.documentElement.classList.add(googleSans.variable);
-    return () => {
-      document.documentElement.classList.remove(googleSans.variable);
-    };
-  }, []);
-
   return (
     <AppCacheProvider emotionCache={emotionCache}>
       <Head>

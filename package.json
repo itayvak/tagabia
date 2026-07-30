@@ -6,6 +6,7 @@
     "dev": "next dev --webpack",
     "build": "next build --webpack",
     "generate:pwa-icons": "node scripts/generate-pwa-icons.mjs",
+    "download:fonts": "node scripts/download-fonts.mjs",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run"
