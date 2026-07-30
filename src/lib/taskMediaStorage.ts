@@ -11,6 +11,15 @@ function getTaskMediaStoragePath(
   return `tasks/${taskId}/media/${mediaId}/${filename}`;
 }
 
+function getTaskCompletionMediaStoragePath(
+  taskId: string,
+  userId: string,
+  mediaId: string,
+  filename: string,
+): string {
+  return `tasks/${taskId}/completion-media/${userId}/${mediaId}/${filename}`;
+}
+
 function buildFirebaseDownloadUrl(
   bucketName: string,
   storagePath: string,
@@ -32,6 +41,46 @@ export async function uploadTaskMedia(
   const mediaId = randomUUID();
   const filename = sanitizeTaskMediaFilename(file.originalFilename);
   const storagePath = getTaskMediaStoragePath(taskId, mediaId, filename);
+  const downloadToken = randomUUID();
+  const bucket = getAdminStorage().bucket();
+  const storageFile = bucket.file(storagePath);
+
+  await storageFile.save(file.buffer, {
+    metadata: {
+      contentType: file.contentType,
+      metadata: {
+        firebaseStorageDownloadTokens: downloadToken,
+      },
+    },
+  });
+
+  return {
+    id: mediaId,
+    name: filename,
+    url: buildFirebaseDownloadUrl(bucket.name, storagePath, downloadToken),
+    contentType: file.contentType,
+    size: file.size,
+  };
+}
+
+export async function uploadTaskCompletionMedia(
+  taskId: string,
+  userId: string,
+  file: {
+    buffer: Buffer;
+    originalFilename: string;
+    contentType: string;
+    size: number;
+  },
+): Promise<TaskMedia> {
+  const mediaId = randomUUID();
+  const filename = sanitizeTaskMediaFilename(file.originalFilename);
+  const storagePath = getTaskCompletionMediaStoragePath(
+    taskId,
+    userId,
+    mediaId,
+    filename,
+  );
   const downloadToken = randomUUID();
   const bucket = getAdminStorage().bucket();
   const storageFile = bucket.file(storagePath);
@@ -77,6 +126,40 @@ export async function deleteAllTaskMedia(
   await Promise.all(
     mediaItems.map((media) =>
       deleteTaskMediaFile(taskId, media.id, media.name),
+    ),
+  );
+}
+
+export async function deleteTaskCompletionMediaFile(
+  taskId: string,
+  userId: string,
+  mediaId: string,
+  filename: string,
+): Promise<void> {
+  const storagePath = getTaskCompletionMediaStoragePath(
+    taskId,
+    userId,
+    mediaId,
+    filename,
+  );
+  const bucket = getAdminStorage().bucket();
+  const storageFile = bucket.file(storagePath);
+
+  try {
+    await storageFile.delete({ ignoreNotFound: true });
+  } catch (error) {
+    console.error(`Failed to delete task completion media file ${storagePath}:`, error);
+  }
+}
+
+export async function deleteAllTaskCompletionMedia(
+  taskId: string,
+  userId: string,
+  mediaItems: TaskMedia[],
+): Promise<void> {
+  await Promise.all(
+    mediaItems.map((media) =>
+      deleteTaskCompletionMediaFile(taskId, userId, media.id, media.name),
     ),
   );
 }

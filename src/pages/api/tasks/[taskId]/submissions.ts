@@ -1,6 +1,7 @@
 import { getAdminFirestore } from "@/lib/firebaseAdmin";
 import { loadTaskFormFields } from "@/lib/taskFormFirestore";
 import { canViewTaskManagement } from "@/lib/taskManagementAuth";
+import type { TaskMedia } from "@/types/task";
 import type { FirestoreUser } from "@/types/user";
 import type {
   FirestoreTaskSubmission,
@@ -57,7 +58,13 @@ export default async function handler(
     const userData = userDoc.data() as FirestoreUser;
 
     if (
-      !canViewTaskManagement(userId, userData.team, userData.role, taskData)
+      !canViewTaskManagement(
+        userId,
+        userData.team,
+        userData.role,
+        taskData,
+        userData.platoon,
+      )
     ) {
       return res.status(403).json({ error: "User is not the task creator" });
     }
@@ -67,7 +74,11 @@ export default async function handler(
       taskRef.collection("submissions").get(),
     ]);
 
-    if (formFields.length === 0) {
+    const allowCompletionFileUpload =
+      taskDoc.data()?.allowCompletionFileUpload === true ||
+      taskDoc.data()?.requireCompletionFileUpload === true;
+
+    if (formFields.length === 0 && !allowCompletionFileUpload) {
       return res.status(400).json({ error: "Task has no form fields" });
     }
 
@@ -95,6 +106,7 @@ export default async function handler(
                   ),
                 )
               : {},
+          media: Array.isArray(data.media) ? (data.media as TaskMedia[]) : [],
         };
       })
       .filter((entry): entry is TaskSubmissionEntry => entry !== null)

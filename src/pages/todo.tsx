@@ -7,10 +7,11 @@ import {
   CircularProgress,
   Container,
   Snackbar,
-  Typography,
 } from "@mui/material";
 import AppLayout from "@/components/AppLayout";
+import AppTopBar from "@/components/AppTopBar";
 import PersonalTodoList from "@/components/PersonalTodoList";
+import ProfileDrawer from "@/components/ProfileDrawer";
 import { getSession } from "@/lib/authStorage";
 import { fetchPersonalTodos } from "@/lib/fetchPersonalTodos";
 import { savePersonalTodos } from "@/lib/savePersonalTodos";
@@ -51,6 +52,7 @@ export default function TodoPage() {
     index: number;
     updatedTodos: PersonalTodoItem[];
   } | null>(null);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const deleteTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -61,6 +63,18 @@ export default function TodoPage() {
     }
 
     setUser(session.user);
+  }, [router]);
+
+  useEffect(() => {
+    if (router.query.profile === "open") {
+      setIsProfileOpen(true);
+      const { profile: _profile, ...restQuery } = router.query;
+      void router.replace(
+        { pathname: router.pathname, query: restQuery },
+        undefined,
+        { shallow: true },
+      );
+    }
   }, [router]);
 
   useEffect(() => {
@@ -329,11 +343,11 @@ export default function TodoPage() {
   return (
     <>
       <AppLayout user={user}>
-        <Container maxWidth="sm" sx={{ py: 3 }}>
-          <Typography variant="h5" component="h1" sx={{ mb: 0.5 }}>
-            משימות אישיות
-          </Typography>
-
+        <AppTopBar
+          user={user}
+          onProfileOpen={() => setIsProfileOpen(true)}
+        />
+        <Container maxWidth="sm" sx={{ pb: 3 }}>
           <PersonalTodoList
             todos={todos}
             isLoading={isLoading}
@@ -345,6 +359,11 @@ export default function TodoPage() {
             onClearCompleted={() => void handleClearCompleted()}
           />
         </Container>
+        <ProfileDrawer
+          open={isProfileOpen}
+          onClose={() => setIsProfileOpen(false)}
+          user={user}
+        />
       </AppLayout>
 
       <Snackbar

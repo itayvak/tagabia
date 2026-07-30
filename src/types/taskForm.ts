@@ -1,3 +1,5 @@
+import type { TaskMedia } from "@/types/task";
+
 export type TaskFormFieldType = "text" | "multipleChoice" | "multiSelect";
 
 export interface TaskFormField {
@@ -23,6 +25,7 @@ export interface FirestoreTaskSubmission {
   completerName: string;
   completerRank: string;
   answers: Record<string, string>;
+  media?: TaskMedia[];
 }
 
 export interface TaskSubmission {
@@ -30,6 +33,7 @@ export interface TaskSubmission {
   completerName: string;
   completerRank: string;
   answers: Record<string, string>;
+  media: TaskMedia[];
 }
 
 export interface TaskSubmissionEntry extends TaskSubmission {

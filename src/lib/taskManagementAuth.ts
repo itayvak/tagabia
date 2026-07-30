@@ -1,5 +1,9 @@
 import { isUserAssignedToTask } from "@/lib/assigneeTeams";
-import { getPlatoonForTeam } from "@/lib/platoons";
+import {
+  getPlatoonForTeam,
+  getTeamsForPlatoon,
+  isTaskAssignedToBattalionOrPlatoon,
+} from "@/lib/platoons";
 import { canManageTasks, getSubordinateRole, isBattalionRole } from "@/lib/roles";
 import type { Platoon, Role } from "@/types/user";
 
@@ -16,6 +20,7 @@ export function canViewTaskManagement(
   userTeam: number,
   userRole: Role,
   taskData: TaskAssignmentData,
+  userPlatoon?: Platoon,
 ): boolean {
   const trimmedUserId = userId.trim();
   const creatorId =
@@ -57,8 +62,16 @@ export function canViewTaskManagement(
     if (isBattalionRole(userRole)) {
       return true;
     }
-    const viewerPlatoon = getPlatoonForTeam(userTeam);
+    const viewerPlatoon = userPlatoon ?? getPlatoonForTeam(userTeam);
     if (viewerPlatoon && viewerPlatoon === taskCreatorPlatoon) {
+      return true;
+    }
+  }
+
+  const viewerPlatoon = userPlatoon ?? getPlatoonForTeam(userTeam);
+  if (viewerPlatoon) {
+    const platoonTeams = getTeamsForPlatoon(viewerPlatoon);
+    if (isTaskAssignedToBattalionOrPlatoon(assignedTeams, platoonTeams)) {
       return true;
     }
   }

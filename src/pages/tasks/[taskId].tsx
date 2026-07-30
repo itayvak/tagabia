@@ -22,6 +22,7 @@ import ShareIcon from "@mui/icons-material/Share";
 import UndoIcon from "@mui/icons-material/Undo";
 import AppLayout from "@/components/AppLayout";
 import { appBottomOffset, appBottomViewportOffset } from "@/components/AppBottomBar";
+import TaskCompletionMediaUpload from "@/components/TaskCompletionMediaUpload";
 import LinkifiedText from "@/components/LinkifiedText";
 import TaskFormRenderer from "@/components/TaskFormRenderer";
 import TaskMediaAttachments from "@/components/TaskMediaAttachments";
@@ -67,6 +68,12 @@ function getErrorMessage(error: string): string {
       return "ביטול סימון המטלה נכשל";
     case "Form answers are required":
       return "יש למלא את הטופס לפני סימון המטלה כבוצעה";
+    case "Completion file uploads are not allowed":
+      return "לא ניתן להעלות קבצים עבור מטלה זו";
+    case "Completion file is required":
+      return "יש לצרף לפחות קובץ אחד כדי להשלים את המטלה";
+    case "Maximum number of completion files reached":
+      return "הגעת למספר הקבצים המקסימלי להגשת המטלה";
     default:
       if (error.startsWith("Required form field is missing:")) {
         return "יש למלא את כל שדות החובה בטופס";
@@ -94,11 +101,20 @@ export default function TaskPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [pendingCompletionFiles, setPendingCompletionFiles] = useState<File[]>([]);
 
   const formFields = task?.formFields ?? [];
   const hasFormFields = formFields.length > 0;
+  const allowsCompletionFileUpload = task?.allowCompletionFileUpload ?? false;
+  const requiresCompletionFileUpload = task?.requireCompletionFileUpload ?? false;
+  const completionFileUploadMax = task?.completionFileUploadMax ?? 5;
+  const submittedCompletionMedia = task?.submission?.media ?? [];
   const canCompleteForm =
     !hasFormFields || areRequiredFormAnswersFilled(formFields, answers);
+  const canCompleteFiles =
+    !requiresCompletionFileUpload ||
+    pendingCompletionFiles.length > 0 ||
+    submittedCompletionMedia.length > 0;
 
   const isAssignee =
     !user || !task
@@ -166,6 +182,7 @@ export default function TaskPage() {
         setTask((data as GetTaskSuccessResponse).task);
         const loadedTask = (data as GetTaskSuccessResponse).task;
         setAnswers(loadedTask.submission?.answers ?? {});
+        setPendingCompletionFiles([]);
       } catch {
         setErrorMessage("שגיאה בטעינת המטלה. נסה שוב.");
       } finally {
@@ -189,6 +206,7 @@ export default function TaskPage() {
       const { response, data } = await completeTask(task.id, {
         userId: user.id,
         answers: hasFormFields ? answers : undefined,
+        files: allowsCompletionFileUpload ? pendingCompletionFiles : undefined,
       });
 
       if (!response.ok) {
@@ -365,7 +383,7 @@ export default function TaskPage() {
                     </Box>
                     <Box>
                       <Typography variant="subtitle2">
-                        תג"ב: {formatDueDate(task.dueDate)}
+                        תג&quot;ב: {formatDueDate(task.dueDate)}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
                         {formatDaysLeft(task.dueDate)}
@@ -411,6 +429,23 @@ export default function TaskPage() {
                   </Card>
                 ) : null}
 
+                {allowsCompletionFileUpload ? (
+                  <Card elevation={0} sx={{ borderRadius: 2 }}>
+                    <CardContent sx={{ "&:last-child": { pb: 2 } }}>
+                      <TaskCompletionMediaUpload
+                        maxFiles={completionFileUploadMax}
+                        pendingFiles={pendingCompletionFiles}
+                        onChange={setPendingCompletionFiles}
+                        required={requiresCompletionFileUpload}
+                        disabled={task.completed || !isAssignee || isCompleting}
+                      />
+                      {submittedCompletionMedia.length > 0 ? (
+                        <TaskMediaAttachments media={submittedCompletionMedia} />
+                      ) : null}
+                    </CardContent>
+                  </Card>
+                ) : null}
+
                 <Button
                   variant="contained"
                   fullWidth
@@ -421,7 +456,7 @@ export default function TaskPage() {
                     !isAssignee ||
                     (task.completed
                       ? false
-                      : hasFormFields && !canCompleteForm)
+                      : (hasFormFields && !canCompleteForm) || !canCompleteFiles)
                   }
                   onClick={() => {
                     if (!isAssignee) {

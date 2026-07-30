@@ -6,6 +6,7 @@ import {
   Checkbox,
   CircularProgress,
   FormControlLabel,
+  MenuItem,
   TextField,
 } from "@mui/material";
 import TaskAssigneePicker from "@/components/TaskAssigneePicker";
@@ -13,16 +14,21 @@ import TaskCategoryPicker from "@/components/TaskCategoryPicker";
 import TaskFormFieldBuilder, {
   toBuilderFormFields,
   toFormFieldInputs,
-  validateBuilderFields,
   type BuilderFormField,
 } from "@/components/TaskFormFieldBuilder";
+import TaskFormSection from "@/components/TaskFormSection";
 import TaskMediaUpload from "@/components/TaskMediaUpload";
-import { hasTaskAssignment } from "@/lib/assigneeTeams";
 import {
   DEFAULT_TASK_CATEGORY,
   type TaskCategory,
 } from "@/lib/taskCategory";
 import { fromDatetimeLocalValue } from "@/lib/taskDate";
+import {
+  MAX_TASK_COMPLETION_MEDIA_FILES,
+  TASK_COMPLETION_MEDIA_FILE_OPTIONS,
+} from "@/lib/taskCompletionMedia";
+import { getTaskErrorMessage } from "@/lib/taskErrorMessages";
+import { validateTaskFormData } from "@/lib/validateTaskForm";
 import type { TaskMedia } from "@/types/task";
 import type { TaskFormFieldInput } from "@/types/taskForm";
 
@@ -35,6 +41,9 @@ export interface TaskFormData {
   assignedUsers: string[];
   formFields: TaskFormFieldInput[];
   pendingMedia: File[];
+  allowCompletionFileUpload: boolean;
+  requireCompletionFileUpload: boolean;
+  completionFileUploadMax: number;
   requiresCampusSubmission: boolean;
 }
 
@@ -51,18 +60,6 @@ interface TaskFormProps {
   onSubmit: (task: TaskFormData) => void;
   onError?: (message: string) => void;
 }
-
-const emptyForm: TaskFormData = {
-  title: "",
-  content: "",
-  category: DEFAULT_TASK_CATEGORY,
-  dueDate: "",
-  assignedTeams: [],
-  assignedUsers: [],
-  formFields: [],
-  pendingMedia: [],
-  requiresCampusSubmission: false,
-};
 
 export default function TaskForm({
   mode,
@@ -87,6 +84,11 @@ export default function TaskForm({
   const [assignedUsers, setAssignedUsers] = useState<string[]>([]);
   const [formFields, setFormFields] = useState<BuilderFormField[]>([]);
   const [pendingMedia, setPendingMedia] = useState<File[]>([]);
+  const [allowCompletionFileUpload, setAllowCompletionFileUpload] = useState(false);
+  const [requireCompletionFileUpload, setRequireCompletionFileUpload] = useState(false);
+  const [completionFileUploadMax, setCompletionFileUploadMax] = useState(
+    MAX_TASK_COMPLETION_MEDIA_FILES,
+  );
   const [requiresCampusSubmission, setRequiresCampusSubmission] = useState(false);
 
   useEffect(() => {
@@ -102,6 +104,9 @@ export default function TaskForm({
     setAssignedUsers(initialValues.assignedUsers);
     setFormFields(toBuilderFormFields(initialValues.formFields));
     setPendingMedia(initialValues.pendingMedia);
+    setAllowCompletionFileUpload(initialValues.allowCompletionFileUpload);
+    setRequireCompletionFileUpload(initialValues.requireCompletionFileUpload);
+    setCompletionFileUploadMax(initialValues.completionFileUploadMax);
     setRequiresCampusSubmission(initialValues.requiresCampusSubmission);
   }, [initialValues]);
 
@@ -116,31 +121,37 @@ export default function TaskForm({
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!category) {
-      onError?.("יש לבחור קטגוריה");
+    const validation = validateTaskFormData({
+      title,
+      category,
+      dueDate,
+      assignedTeams,
+      assignedUsers,
+      formFields: toFormFieldInputs(formFields),
+    });
+
+    if (!validation.ok) {
+      onError?.(getTaskErrorMessage(validation.error));
       return;
     }
 
-    if (!hasTaskAssignment(assignedTeams, assignedUsers)) {
-      onError?.("יש לבחור לפחות צוות או צוער אחד");
-      return;
-    }
-
-    const formFieldsError = validateBuilderFields(formFields);
-    if (formFieldsError) {
-      onError?.(formFieldsError);
+    const validatedCategory = category;
+    if (!validatedCategory) {
       return;
     }
 
     onSubmit({
       title: title.trim(),
       content: content.trim(),
-      category,
+      category: validatedCategory,
       dueDate: fromDatetimeLocalValue(dueDate),
       assignedTeams,
       assignedUsers,
       formFields: toFormFieldInputs(formFields),
       pendingMedia,
+      allowCompletionFileUpload,
+      requireCompletionFileUpload: allowCompletionFileUpload && requireCompletionFileUpload,
+      completionFileUploadMax,
       requiresCampusSubmission,
     });
   };
@@ -158,16 +169,12 @@ export default function TaskForm({
         setAssignedUsers(nextUsers);
       }}
       disabled={isFormBusy}
+      hideTitle
     />
   );
 
-  return (
-    <Box
-      component="form"
-      id={formId}
-      onSubmit={handleSubmit}
-      sx={{ display: "flex", flexDirection: "column", gap: 2 }}
-    >
+  const generalFields = (
+    <>
       <TaskCategoryPicker
         value={category}
         onChange={setCategory}
@@ -178,7 +185,6 @@ export default function TaskForm({
         label="כותרת"
         value={title}
         onChange={(event) => setTitle(event.target.value)}
-        required
         fullWidth
         autoFocus={!isCreate || category !== null}
         disabled={isFormBusy}
@@ -203,7 +209,6 @@ export default function TaskForm({
         type="datetime-local"
         value={dueDate}
         onChange={(event) => setDueDate(event.target.value)}
-        required
         fullWidth
         disabled={isFormBusy}
         slotProps={{
@@ -221,17 +226,74 @@ export default function TaskForm({
         }
         label="יש להגיש בקמפוס"
       />
-      <TaskMediaUpload
-        mode={mode}
-        disabled={isFormBusy}
-        taskId={taskId}
-        userId={userId}
-        initialMedia={initialMedia}
-        pendingMedia={pendingMedia}
-        onPendingMediaChange={setPendingMedia}
-        onError={onError}
+    </>
+  );
+
+  const mediaUpload = (
+    <TaskMediaUpload
+      mode={mode}
+      disabled={isFormBusy}
+      hideTitle
+      taskId={taskId}
+      userId={userId}
+      initialMedia={initialMedia}
+      pendingMedia={pendingMedia}
+      onPendingMediaChange={setPendingMedia}
+      onError={onError}
+    />
+  );
+
+  const completionUploadOptions = (
+    <>
+      <FormControlLabel
+        control={
+          <Checkbox
+            checked={allowCompletionFileUpload}
+            onChange={(event) => {
+              const checked = event.target.checked;
+              setAllowCompletionFileUpload(checked);
+              if (!checked) {
+                setRequireCompletionFileUpload(false);
+              }
+            }}
+            disabled={isFormBusy}
+          />
+        }
+        label="לאפשר העלאת קבצים בהגשת המטלה"
       />
-      {!isCreate ? assigneePicker : null}
+      <FormControlLabel
+        control={
+          <Checkbox
+            checked={requireCompletionFileUpload}
+            onChange={(event) => setRequireCompletionFileUpload(event.target.checked)}
+            disabled={isFormBusy || !allowCompletionFileUpload}
+          />
+        }
+        label="לחייב העלאת קובץ כדי להשלים את המטלה"
+      />
+      <TextField
+        select
+        fullWidth
+        size="small"
+        label="כמות קבצים מקסימלית"
+        value={completionFileUploadMax}
+        onChange={(event) =>
+          setCompletionFileUploadMax(Number(event.target.value))
+        }
+        disabled={isFormBusy || !allowCompletionFileUpload}
+        helperText={`ניתן לבחור עד ${MAX_TASK_COMPLETION_MEDIA_FILES} קבצים`}
+      >
+        {TASK_COMPLETION_MEDIA_FILE_OPTIONS.map((count) => (
+          <MenuItem key={count} value={count}>
+            {count}
+          </MenuItem>
+        ))}
+      </TextField>
+    </>
+  );
+
+  const formFieldBuilder = (
+    <>
       {formFieldsWarningMessage ? (
         <Alert severity="warning">{formFieldsWarningMessage}</Alert>
       ) : null}
@@ -239,33 +301,57 @@ export default function TaskForm({
         fields={formFields}
         onChange={setFormFields}
         disabled={isFormBusy}
+        hideTitle
       />
-      {isCreate ? assigneePicker : null}
-      <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, pt: 1 }}>
-        <Button onClick={handleCancel} disabled={isFormBusy}>
-          ביטול
-        </Button>
-        <Button
-          type="submit"
-          variant="contained"
-          disabled={isFormBusy || (isCreate && !category)}
-          startIcon={
-            isFormBusy ? (
-              <CircularProgress size={20} color="inherit" />
-            ) : undefined
-          }
-        >
-          {isUploadingMedia
-            ? "מעלה קבצים..."
-            : isSubmitting
-              ? isCreate
-                ? "יוצר..."
-                : "שומר..."
-              : isCreate
-                ? "שיוך מטלה"
-                : "שמירה"}
-        </Button>
-      </Box>
+    </>
+  );
+
+  const submitActions = (
+    <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, pt: 1 }}>
+      <Button onClick={handleCancel} disabled={isFormBusy}>
+        ביטול
+      </Button>
+      <Button
+        type="submit"
+        variant="contained"
+        disabled={isFormBusy}
+        startIcon={
+          isFormBusy ? (
+            <CircularProgress size={20} color="inherit" />
+          ) : undefined
+        }
+      >
+        {isUploadingMedia
+          ? "מעלה קבצים..."
+          : isSubmitting
+            ? isCreate
+              ? "יוצר..."
+              : "שומר..."
+            : isCreate
+              ? "שיוך מטלה"
+              : "שמירה"}
+      </Button>
+    </Box>
+  );
+
+  return (
+    <Box
+      component="form"
+      id={formId}
+      noValidate
+      onSubmit={handleSubmit}
+      sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}
+    >
+      <TaskFormSection title="כללי" defaultExpanded>
+        {generalFields}
+      </TaskFormSection>
+      <TaskFormSection title="סקרים">{formFieldBuilder}</TaskFormSection>
+      <TaskFormSection title="הגשת קבצים">
+        {completionUploadOptions}
+      </TaskFormSection>
+      <TaskFormSection title="קבצים מצורפים">{mediaUpload}</TaskFormSection>
+      <TaskFormSection title="שיוך לצוערים">{assigneePicker}</TaskFormSection>
+      {submitActions}
     </Box>
   );
 }

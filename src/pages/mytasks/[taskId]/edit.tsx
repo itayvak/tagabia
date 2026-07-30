@@ -64,6 +64,9 @@ export default function EditTaskPage() {
       assignedUsers: task.assignedUsers,
       formFields: task.formFields ?? [],
       pendingMedia: [],
+      allowCompletionFileUpload: task.allowCompletionFileUpload,
+      requireCompletionFileUpload: task.requireCompletionFileUpload,
+      completionFileUploadMax: task.completionFileUploadMax,
       requiresCampusSubmission: task.requiresCampusSubmission,
     };
   }, [task]);
@@ -151,6 +154,9 @@ export default function EditTaskPage() {
         assignedTeams: formData.assignedTeams,
         assignedUsers: formData.assignedUsers,
         formFields: formData.formFields,
+        allowCompletionFileUpload: formData.allowCompletionFileUpload,
+        requireCompletionFileUpload: formData.requireCompletionFileUpload,
+        completionFileUploadMax: formData.completionFileUploadMax,
         requiresCampusSubmission: formData.requiresCampusSubmission,
       });
 
@@ -216,8 +222,8 @@ export default function EditTaskPage() {
 
   return (
     <>
-      <AppLayout user={user}>
-        <Container maxWidth="sm" sx={{ py: 3 }}>
+      <AppLayout user={user} contentBgColor="grey.200">
+        <Container maxWidth="sm" sx={{ py: 3, flex: 1 }}>
           <Typography variant="h5" component="h1" gutterBottom>
             עריכת מטלה
           </Typography>

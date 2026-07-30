@@ -22,14 +22,16 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  MenuItem,
   TextField,
   ToggleButton,
   ToggleButtonGroup,
   Typography,
 } from "@mui/material";
-import { formatPlatoonLabel, getPlatoonForTeam } from "@/lib/platoons";
+import { formatPlatoonLabel, getPlatoonForTeam, PLATOONS } from "@/lib/platoons";
 import { formatDueDate, isCompletedLate } from "@/lib/taskDate";
 import type { TaskAssigneeStatus } from "@/types/task";
+import type { Platoon } from "@/types/user";
 
 type CompletionFilter = "all" | "completed" | "pending";
 
@@ -40,7 +42,9 @@ interface TaskCompletionsDialogProps {
   isLoading: boolean;
   assignees: TaskAssigneeStatus[];
   hasFormFields?: boolean;
+  hasSubmissionDetails?: boolean;
   submittedUserIds?: string[];
+  assignedTeams?: number[];
   groupByTeam?: boolean;
   onClose: () => void;
   onViewSubmission?: (userId: string) => void;
@@ -108,7 +112,9 @@ export default function TaskCompletionsDialog({
   isLoading,
   assignees,
   hasFormFields = false,
+  hasSubmissionDetails = false,
   submittedUserIds = [],
+  assignedTeams = [],
   groupByTeam = false,
   onClose,
   onViewSubmission,
@@ -116,8 +122,35 @@ export default function TaskCompletionsDialog({
 }: TaskCompletionsDialogProps) {
   const [filter, setFilter] = useState<CompletionFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedPlatoon, setSelectedPlatoon] = useState<Platoon | "">("");
+  const [selectedTeam, setSelectedTeam] = useState<number | "">("");
   const [didCopy, setDidCopy] = useState(false);
   const [expandedTeams, setExpandedTeams] = useState<Set<number>>(new Set());
+
+  const effectiveAssignedTeams = useMemo(() => {
+    if (assignedTeams.length > 0) {
+      return [...assignedTeams].sort((a, b) => a - b);
+    }
+
+    const teams = new Set(assignees.map((assignee) => assignee.team));
+    return [...teams].sort((a, b) => a - b);
+  }, [assignedTeams, assignees]);
+
+  const assignedPlatoons = useMemo(() => {
+    const platoons = new Set<Platoon>();
+
+    for (const team of effectiveAssignedTeams) {
+      const platoon = getPlatoonForTeam(team);
+      if (platoon) {
+        platoons.add(platoon);
+      }
+    }
+
+    return PLATOONS.filter((platoon) => platoons.has(platoon));
+  }, [effectiveAssignedTeams]);
+
+  const showPlatoonFilter = assignedPlatoons.length > 1;
+  const showTeamFilter = effectiveAssignedTeams.length > 1;
 
   const submittedUserIdSet = useMemo(
     () => new Set(submittedUserIds),
@@ -129,7 +162,7 @@ export default function TaskCompletionsDialog({
     [assignees],
   );
 
-  const submissionCount = hasFormFields
+  const submissionCount = hasSubmissionDetails
     ? submittedUserIds.length
     : completedCount;
 
@@ -137,6 +170,8 @@ export default function TaskCompletionsDialog({
     if (open) {
       setFilter("all");
       setSearchQuery("");
+      setSelectedPlatoon("");
+      setSelectedTeam("");
       setDidCopy(false);
       setExpandedTeams(new Set());
     }
@@ -156,12 +191,22 @@ export default function TaskCompletionsDialog({
     }
 
     const query = searchQuery.trim().toLowerCase();
-    if (!query) return result;
+    if (query) {
+      result = result.filter((assignee) =>
+        assignee.assigneeName.toLowerCase().includes(query),
+      );
+    }
 
-    return result.filter((assignee) =>
-      assignee.assigneeName.toLowerCase().includes(query),
-    );
-  }, [assignees, filter, searchQuery]);
+    if (selectedPlatoon !== "") {
+      result = result.filter((assignee) => assignee.platoon === selectedPlatoon);
+    }
+
+    if (selectedTeam !== "") {
+      result = result.filter((assignee) => assignee.team === selectedTeam);
+    }
+
+    return result;
+  }, [assignees, filter, searchQuery, selectedPlatoon, selectedTeam]);
 
   const teamGroups = useMemo(
     () => (groupByTeam ? groupAssigneesByTeam(filteredAssignees) : []),
@@ -198,7 +243,7 @@ export default function TaskCompletionsDialog({
 
   const renderAssigneeItem = (assignee: TaskAssigneeStatus) => {
     const hasSubmission =
-      hasFormFields &&
+      hasSubmissionDetails &&
       assignee.completed &&
       submittedUserIdSet.has(assignee.userId);
     const canViewSubmission = hasSubmission && onViewSubmission !== undefined;
@@ -254,7 +299,7 @@ export default function TaskCompletionsDialog({
                 <>
                   <br />
                   <Typography component="span" variant="caption" color="primary">
-                    לחץ לצפייה בתשובה
+                    לחץ לצפייה בהגשה
                   </Typography>
                 </>
               ) : null}
@@ -290,8 +335,8 @@ export default function TaskCompletionsDialog({
         </Typography>
         {!isLoading && assignees.length > 0 && (
           <Typography variant="body2" sx={{ mb: 2 }}>
-            {hasFormFields
-              ? `${submissionCount} מתוך ${assignees.length} הגישו טופס`
+            {hasSubmissionDetails
+              ? `${submissionCount} מתוך ${assignees.length} הגישו`
               : `${completedCount} מתוך ${assignees.length} ביצעו את המטלה`}
           </Typography>
         )}
@@ -332,6 +377,49 @@ export default function TaskCompletionsDialog({
             }}
           />
         )}
+        {!isLoading && assignees.length > 0 && (showPlatoonFilter || showTeamFilter) ? (
+          <Box sx={{ display: "flex", gap: 1, mb: 2 }}>
+            {showPlatoonFilter ? (
+              <TextField
+                select
+                fullWidth
+                size="small"
+                label="פלוגה"
+                value={selectedPlatoon}
+                onChange={(event) =>
+                  setSelectedPlatoon(event.target.value as Platoon | "")
+                }
+              >
+                <MenuItem value="">הכל</MenuItem>
+                {assignedPlatoons.map((platoon) => (
+                  <MenuItem key={platoon} value={platoon}>
+                    {formatPlatoonLabel(platoon)}
+                  </MenuItem>
+                ))}
+              </TextField>
+            ) : null}
+            {showTeamFilter ? (
+              <TextField
+                select
+                fullWidth
+                size="small"
+                label="צוות"
+                value={selectedTeam}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setSelectedTeam(value === "" ? "" : Number(value));
+                }}
+              >
+                <MenuItem value="">הכל</MenuItem>
+                {effectiveAssignedTeams.map((team) => (
+                  <MenuItem key={team} value={team}>
+                    צוות {team}
+                  </MenuItem>
+                ))}
+              </TextField>
+            ) : null}
+          </Box>
+        ) : null}
         {isLoading ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
             <CircularProgress size={28} />
@@ -342,7 +430,9 @@ export default function TaskCompletionsDialog({
           </Typography>
         ) : filteredAssignees.length === 0 ? (
           <Typography color="text.secondary" align="center" sx={{ py: 2 }}>
-            {getEmptyFilterMessage(filter)}
+            {searchQuery.trim() || selectedPlatoon !== "" || selectedTeam !== ""
+              ? "לא נמצאו ממונים"
+              : getEmptyFilterMessage(filter)}
           </Typography>
         ) : groupByTeam ? (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
@@ -409,11 +499,11 @@ export default function TaskCompletionsDialog({
           >
             {didCopy ? "הועתק!" : "העתק רשימה"}
           </Button>
-          {hasFormFields &&
+          {hasSubmissionDetails &&
           onViewAllSubmissions &&
           submissionCount > 0 ? (
             <Button variant="outlined" onClick={onViewAllSubmissions}>
-              צפה בכל התשובות
+              {hasFormFields ? "צפה בכל ההגשות" : "צפה בכל הקבצים"}
             </Button>
           ) : null}
         </Box>

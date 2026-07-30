@@ -155,6 +155,7 @@ interface TaskAssigneePickerProps {
   assignedUsers: string[];
   onChange: (assignment: TaskAssignment) => void;
   disabled?: boolean;
+  hideTitle?: boolean;
 }
 
 function cacheUsersByTeam(
@@ -186,6 +187,7 @@ export default function TaskAssigneePicker({
   assignedUsers,
   onChange,
   disabled = false,
+  hideTitle = false,
 }: TaskAssigneePickerProps) {
   const [usersByTeam, setUsersByTeam] = useState<Map<number, PublicUser[]>>(
     new Map(),
@@ -588,7 +590,9 @@ export default function TaskAssigneePicker({
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-      <Typography variant="subtitle1">שיוך לצוערים</Typography>
+      {hideTitle ? null : (
+        <Typography variant="subtitle1">שיוך לצוערים</Typography>
+      )}
 
       <Autocomplete
         options={selectableSearchResults}

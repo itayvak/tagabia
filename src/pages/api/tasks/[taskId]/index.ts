@@ -13,8 +13,12 @@ import {
   loadTaskFormFields,
   syncTaskFormFields,
 } from "@/lib/taskFormFirestore";
-import { deleteAllTaskMedia } from "@/lib/taskMediaStorage";
+import {
+  deleteAllTaskCompletionMedia,
+  deleteAllTaskMedia,
+} from "@/lib/taskMediaStorage";
 import { validateFormFieldInputs } from "@/lib/taskFormValidation";
+import { normalizeCompletionFileUploadMax } from "@/types/task";
 import type {
   DeleteTaskErrorResponse,
   DeleteTaskRequestBody,
@@ -41,6 +45,21 @@ type TaskResponse =
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
+}
+
+function normalizeCompletionUploadOptions(
+  allowCompletionFileUpload: unknown,
+  requireCompletionFileUpload: unknown,
+  completionFileUploadMax: unknown,
+) {
+  const allowUploads = allowCompletionFileUpload === true;
+  return {
+    allowCompletionFileUpload: allowUploads,
+    requireCompletionFileUpload: allowUploads && requireCompletionFileUpload === true,
+    completionFileUploadMax: allowUploads
+      ? normalizeCompletionFileUploadMax(completionFileUploadMax)
+      : undefined,
+  };
 }
 
 async function handleGet(
@@ -103,8 +122,10 @@ async function handleGet(
 
     const formFields = await loadTaskFormFields(db, taskId);
     const hasFormFields = formFields.length > 0 || task.hasFormFields;
+    const hasCompletionSubmission =
+      hasFormFields || task.allowCompletionFileUpload || task.requireCompletionFileUpload;
     const submissionCount =
-      isCreator && hasFormFields
+      isCreator && hasCompletionSubmission
         ? await getTaskSubmissionCount(db, taskId)
         : undefined;
 
@@ -134,7 +155,7 @@ async function handleGet(
       .get();
 
     let submission = null;
-    if (formFields.length > 0) {
+    if (hasCompletionSubmission) {
       const submissionDoc = await db
         .collection("tasks")
         .doc(taskId)
@@ -151,6 +172,9 @@ async function handleGet(
           completerName: submissionData.completerName,
           completerRank: submissionData.completerRank,
           answers: submissionData.answers ?? {},
+          media: Array.isArray(submissionData.media)
+            ? (submissionData.media as TaskMedia[])
+            : [],
         };
       }
     }
@@ -189,6 +213,9 @@ async function handlePut(
     assignedTeams,
     assignedUsers,
     formFields,
+    allowCompletionFileUpload,
+    requireCompletionFileUpload,
+    completionFileUploadMax,
     requiresCampusSubmission,
   } = req.body as Partial<UpdateTaskRequestBody>;
 
@@ -250,6 +277,12 @@ async function handlePut(
     return res.status(400).json({ error: formFieldsValidation.error });
   }
 
+  const completionUploadOptions = normalizeCompletionUploadOptions(
+    allowCompletionFileUpload,
+    requireCompletionFileUpload,
+    completionFileUploadMax,
+  );
+
   try {
     const db = getAdminFirestore();
     const taskRef = db.collection("tasks").doc(taskId);
@@ -272,6 +305,9 @@ async function handlePut(
       assignedTeams: normalizedTeams,
       assignedUsers: normalizedUsers,
       hasFormFields: formFieldsValidation.fields.length > 0,
+      allowCompletionFileUpload: completionUploadOptions.allowCompletionFileUpload,
+      requireCompletionFileUpload: completionUploadOptions.requireCompletionFileUpload,
+      completionFileUploadMax: completionUploadOptions.completionFileUploadMax,
       requiresCampusSubmission: requiresCampusSubmission === true,
     });
 
@@ -327,6 +363,20 @@ async function handleDelete(
       const batch = db.batch();
       completionsSnapshot.docs.forEach((doc) => batch.delete(doc.ref));
       await batch.commit();
+    }
+
+    const submissionsSnapshot = await taskRef.collection("submissions").get();
+    if (!submissionsSnapshot.empty) {
+      await Promise.all(
+        submissionsSnapshot.docs.map(async (submissionDoc) => {
+          const media = Array.isArray(submissionDoc.data()?.media)
+            ? (submissionDoc.data()!.media as TaskMedia[])
+            : [];
+          if (media.length > 0) {
+            await deleteAllTaskCompletionMedia(taskId, submissionDoc.id, media);
+          }
+        }),
+      );
     }
 
     await deleteTaskSubcollection(db, taskRef, "formFields");

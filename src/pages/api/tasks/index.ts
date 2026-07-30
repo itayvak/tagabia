@@ -7,6 +7,7 @@ import { getAdminFirestore } from "@/lib/firebaseAdmin";
 import { isTaskCategory } from "@/lib/taskCategory";
 import { syncTaskFormFields } from "@/lib/taskFormFirestore";
 import { validateFormFieldInputs } from "@/lib/taskFormValidation";
+import { normalizeCompletionFileUploadMax } from "@/types/task";
 import type {
   CreateTaskErrorResponse,
   CreateTaskRequestBody,
@@ -20,6 +21,21 @@ type CreateTaskResponse = CreateTaskSuccessResponse | CreateTaskErrorResponse;
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
+}
+
+function normalizeCompletionUploadOptions(
+  allowCompletionFileUpload: unknown,
+  requireCompletionFileUpload: unknown,
+  completionFileUploadMax: unknown,
+) {
+  const allowUploads = allowCompletionFileUpload === true;
+  return {
+    allowCompletionFileUpload: allowUploads,
+    requireCompletionFileUpload: allowUploads && requireCompletionFileUpload === true,
+    completionFileUploadMax: allowUploads
+      ? normalizeCompletionFileUploadMax(completionFileUploadMax)
+      : undefined,
+  };
 }
 
 export default async function handler(
@@ -40,6 +56,9 @@ export default async function handler(
     assignedTeams,
     assignedUsers,
     formFields,
+    allowCompletionFileUpload,
+    requireCompletionFileUpload,
+    completionFileUploadMax,
     requiresCampusSubmission,
   } = req.body as Partial<CreateTaskRequestBody>;
 
@@ -97,6 +116,12 @@ export default async function handler(
     return res.status(400).json({ error: formFieldsValidation.error });
   }
 
+  const completionUploadOptions = normalizeCompletionUploadOptions(
+    allowCompletionFileUpload,
+    requireCompletionFileUpload,
+    completionFileUploadMax,
+  );
+
   try {
     const db = getAdminFirestore();
     const trimmedCreatorId = creatorId.trim();
@@ -122,6 +147,9 @@ export default async function handler(
       assignedTeams: normalizedTeams,
       assignedUsers: normalizedUsers,
       hasFormFields: formFieldsValidation.fields.length > 0,
+      allowCompletionFileUpload: completionUploadOptions.allowCompletionFileUpload,
+      requireCompletionFileUpload: completionUploadOptions.requireCompletionFileUpload,
+      completionFileUploadMax: completionUploadOptions.completionFileUploadMax,
       requiresCampusSubmission: requiresCampusSubmission === true,
     });
 

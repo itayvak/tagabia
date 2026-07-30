@@ -52,7 +52,8 @@ export default function TaskCard({
   const [confirmAction, setConfirmAction] = useState<"complete" | "uncomplete" | null>(
     null,
   );
-  const requiresForm = task.hasFormFields && !isCompleted;
+  const requiresTaskDetails =
+    (task.hasFormFields || task.allowCompletionFileUpload) && !isCompleted;
   const canUncomplete = isCompleted && Boolean(onUncomplete);
   const isActionPending = isCompleting || isUncompleting;
 
@@ -66,7 +67,7 @@ export default function TaskCard({
   };
 
   const handleActionClick = () => {
-    if (requiresForm) {
+    if (requiresTaskDetails) {
       onOpen(task.id);
       return;
     }
@@ -82,8 +83,8 @@ export default function TaskCard({
         ? canUncomplete
           ? "ביטול הגשה"
           : "סומן כבוצע"
-        : requiresForm
-          ? "מלא טופס"
+        : requiresTaskDetails
+          ? "פתח להגשה"
           : "בוצע";
 
   const daysLeftUrgency = getDaysLeftChipUrgency(task.dueDate);
@@ -162,7 +163,7 @@ export default function TaskCard({
               />
             </Box>
             <Typography variant="body2">
-              תג"ב: {formatDueDate(task.dueDate)}
+              תג&quot;ב: {formatDueDate(task.dueDate)}
             </Typography>
             <Box
               sx={{
@@ -215,7 +216,7 @@ export default function TaskCard({
           >
             {isActionPending ? (
               <CircularProgress size={20} color="inherit" />
-            ) : requiresForm ? (
+            ) : requiresTaskDetails ? (
               <DescriptionIcon />
             ) : canUncomplete ? (
               <UndoIcon />
@@ -226,7 +227,7 @@ export default function TaskCard({
         </Box>
       </Card>
       <Dialog
-        open={confirmAction !== null && !requiresForm}
+        open={confirmAction !== null && !requiresTaskDetails}
         onClose={() => setConfirmAction(null)}
         fullWidth
         maxWidth="xs"

@@ -1,5 +1,10 @@
 import { normalizeTaskCategory } from "@/lib/taskCategory";
-import type { FirestoreTask, PublicTask, TaskMedia } from "@/types/task";
+import {
+  normalizeCompletionFileUploadMax,
+  type FirestoreTask,
+  type PublicTask,
+  type TaskMedia,
+} from "@/types/task";
 import type { Timestamp } from "firebase-admin/firestore";
 
 function parseTaskMedia(value: unknown): TaskMedia[] {
@@ -67,6 +72,11 @@ export function toPublicTask(
         )
       : [],
     hasFormFields: task.hasFormFields === true,
+    allowCompletionFileUpload: task.allowCompletionFileUpload === true,
+    requireCompletionFileUpload: task.requireCompletionFileUpload === true,
+    completionFileUploadMax: normalizeCompletionFileUploadMax(
+      task.completionFileUploadMax,
+    ),
     requiresCampusSubmission: task.requiresCampusSubmission === true,
     media: parseTaskMedia(task.media),
   };

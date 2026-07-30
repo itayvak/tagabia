@@ -23,6 +23,7 @@ interface TaskFormFieldBuilderProps {
   fields: BuilderFormField[];
   onChange: (fields: BuilderFormField[]) => void;
   disabled?: boolean;
+  hideTitle?: boolean;
 }
 
 function createEmptyField(): BuilderFormField {
@@ -33,26 +34,6 @@ function createEmptyField(): BuilderFormField {
     required: false,
     order: 0,
   };
-}
-
-function validateBuilderFields(fields: BuilderFormField[]): string | null {
-  for (const field of fields) {
-    if (!field.label.trim()) {
-      return "יש להזין תווית לכל שדה בטופס";
-    }
-
-    if (field.type === "multipleChoice" || field.type === "multiSelect") {
-      const options = (field.options ?? [])
-        .map((option) => option.trim())
-        .filter((option) => option.length > 0);
-
-      if (options.length < 2) {
-        return "שדה בחירה חייב לכלול לפחות שתי אפשרויות";
-      }
-    }
-  }
-
-  return null;
 }
 
 export function toBuilderFormFields(
@@ -83,12 +64,12 @@ export function toFormFieldInputs(
   }));
 }
 
-export { validateBuilderFields };
 
 export default function TaskFormFieldBuilder({
   fields,
   onChange,
   disabled = false,
+  hideTitle = false,
 }: TaskFormFieldBuilderProps) {
   const updateField = (
     clientKey: string,
@@ -168,11 +149,13 @@ export default function TaskFormFieldBuilder({
         sx={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
+          justifyContent: hideTitle ? "flex-end" : "space-between",
           gap: 1,
         }}
       >
-        <Typography variant="subtitle1">שדה סקר</Typography>
+        {hideTitle ? null : (
+          <Typography variant="subtitle1">שדה סקר</Typography>
+        )}
         <Button
           size="small"
           startIcon={<AddIcon />}
@@ -235,7 +218,6 @@ export default function TaskFormFieldBuilder({
                   label: event.target.value,
                 }))
               }
-              required
               fullWidth
               disabled={disabled}
               slotProps={{
