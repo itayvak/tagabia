@@ -4,6 +4,7 @@ import {
   normalizeUserIds,
 } from "@/lib/assigneeTeams";
 import { getAdminFirestore } from "@/lib/firebaseAdmin";
+import { canCreateTasks } from "@/lib/roles";
 import { isTaskCategory } from "@/lib/taskCategory";
 import { syncTaskFormFields } from "@/lib/taskFormFirestore";
 import { validateFormFieldInputs } from "@/lib/taskFormValidation";
@@ -133,6 +134,9 @@ export default async function handler(
     }
 
     const creatorData = creatorDoc.data() as FirestoreUser;
+    if (!canCreateTasks(creatorData.role)) {
+      return res.status(403).json({ error: "Task access is read-only" });
+    }
 
     const taskRef = await db.collection("tasks").add({
       title: title.trim(),

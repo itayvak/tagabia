@@ -13,6 +13,8 @@ export default function AppLayout({
   children,
   contentBgColor,
 }: AppLayoutProps) {
+  const showBottomBar = user.role !== "commander";
+
   return (
     <>
       <Box
@@ -28,14 +30,14 @@ export default function AppLayout({
             flex: 1,
             display: "flex",
             flexDirection: "column",
-            pb: appBottomOffset(16),
+            pb: showBottomBar ? appBottomOffset(16) : 0,
             bgcolor: contentBgColor,
           }}
         >
           {children}
         </Box>
       </Box>
-      <AppBottomBar user={user} />
+      {showBottomBar ? <AppBottomBar user={user} /> : null}
     </>
   );
 }
