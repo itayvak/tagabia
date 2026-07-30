@@ -2,7 +2,6 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useState } from "react";
 import DownloadIcon from "@mui/icons-material/Download";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
   Alert,
   Box,
@@ -12,6 +11,8 @@ import {
   Snackbar,
 } from "@mui/material";
 import AppLayout from "@/components/AppLayout";
+import AppTopBar from "@/components/AppTopBar";
+import ProfileDrawer from "@/components/ProfileDrawer";
 import { APP_BOTTOM_BAR_HEIGHT } from "@/components/AppBottomBar";
 import GoogleCalendarWidget from "@/components/GoogleCalendarWidget";
 import { getSession } from "@/lib/authStorage";
@@ -81,7 +82,10 @@ function PillChevron({ side }: { side: "right" | "left" }) {
       fill="none"
       sx={{
         position: "absolute",
-        [side]: "14px",
+        // @mui/stylis-plugin-rtl mirrors `left`/`right`, which would put the
+        // chevron on the opposite edge. The logical insets are left alone, and
+        // on this RTL page inline-start is the right edge.
+        [side === "right" ? "insetInlineStart" : "insetInlineEnd"]: "14px",
         top: "50%",
         transform: "translateY(-50%)",
       }}
@@ -127,7 +131,7 @@ function FilePill({
         position: "relative",
         background: gradient,
         borderRadius: "26px",
-        padding: { xs: "12px 34px", md: "12px 20px" },
+        padding: { xs: "12px 34px", md: "16px 20px" },
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -142,7 +146,12 @@ function FilePill({
         {glyphFirst && glyph}
         <Box
           component="span"
-          sx={{ fontSize: 13, fontWeight: 600, textAlign: "center" }}
+          sx={{
+            fontSize: 13,
+            fontWeight: 600,
+            textAlign: "center",
+            whiteSpace: "nowrap",
+          }}
         >
           {isLoading ? "טוען..." : media ? label : `${label} - אין קובץ`}
         </Box>
@@ -159,6 +168,7 @@ export default function WorkEnvironmentPage() {
   const [isLoadingFiles, setIsLoadingFiles] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isFormatsOpen, setIsFormatsOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const loadFiles = useCallback(async () => {
     setIsLoadingFiles(true);
@@ -221,6 +231,7 @@ export default function WorkEnvironmentPage() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
       <AppLayout user={user}>
+        <AppTopBar user={user} onProfileOpen={() => setIsProfileOpen(true)} />
         <Box
           sx={{
             flex: 1,
@@ -228,7 +239,7 @@ export default function WorkEnvironmentPage() {
             display: "flex",
             justifyContent: "center",
             px: { xs: "14px", md: "40px" },
-            pt: { xs: "14px", md: "40px" },
+            pt: { xs: "14px", md: "24px" },
             pb: {
               xs: `${APP_BOTTOM_BAR_HEIGHT + 24}px`,
               md: `${APP_BOTTOM_BAR_HEIGHT + 40}px`,
@@ -238,39 +249,32 @@ export default function WorkEnvironmentPage() {
           <Box
             sx={{
               width: "100%",
-              maxWidth: { xs: 600, md: 1240 },
+              maxWidth: { xs: 600, md: 1180 },
               display: "flex",
               flexDirection: "column",
               gap: { xs: "12px", md: "24px" },
             }}
           >
             <Box
-              component="h1"
-              sx={{
-                display: { xs: "none", md: "block" },
-                m: 0,
-                fontSize: 28,
-                fontWeight: 700,
-                color: "oklch(0.22 0.01 260)",
-                textAlign: "right",
-              }}
-            >
-              ארגז הכלים
-            </Box>
-
-            <Box
               sx={{
                 display: "grid",
-                gridTemplateColumns: { xs: "1fr", md: "360px 1fr" },
+                // Calendar (first child, so rightmost in RTL) sits just under
+                // half the width; the tile column takes the rest.
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  md: "minmax(0, 0.92fr) minmax(0, 1fr)",
+                },
                 gap: { xs: "12px", md: "24px" },
-                alignItems: "start",
+                // Stretch so both columns share the taller column's height; the
+                // file pills then push to the bottom and line up with the tiles.
+                alignItems: "stretch",
               }}
             >
               <Box
                 sx={{
                   display: "flex",
                   flexDirection: "column",
-                  gap: { xs: "12px", md: "16px" },
+                  gap: { xs: "12px", md: "24px" },
                   minWidth: 0,
                 }}
               >
@@ -280,7 +284,9 @@ export default function WorkEnvironmentPage() {
                   sx={{
                     display: "grid",
                     gridTemplateColumns: "1fr 1fr",
-                    gap: "10px",
+                    gap: { xs: "10px", md: "16px" },
+                    // Sits flush with the bottom of the tile column beside it.
+                    mt: { md: "auto" },
                   }}
                 >
                   <FilePill
@@ -312,7 +318,7 @@ export default function WorkEnvironmentPage() {
                 sx={{
                   display: "flex",
                   flexDirection: "column",
-                  gap: { xs: "12px", md: "16px" },
+                  gap: { xs: "12px", md: "24px" },
                   minWidth: 0,
                 }}
               >
@@ -323,7 +329,7 @@ export default function WorkEnvironmentPage() {
                 position: "relative",
                 borderRadius: { xs: "14px", md: "18px" },
                 overflow: "hidden",
-                height: { xs: 100, md: 160 },
+                height: { xs: 100, md: 236 },
                 width: "100%",
                 display: "block",
               }}
@@ -371,13 +377,6 @@ export default function WorkEnvironmentPage() {
                 >
                   פורמטים
                 </Box>
-                <ExpandMoreIcon
-                  sx={{
-                    color: "#000",
-                    transition: "transform 150ms ease",
-                    transform: isFormatsOpen ? "rotate(180deg)" : "none",
-                  }}
-                />
               </Box>
             </ButtonBase>
 
@@ -455,7 +454,10 @@ export default function WorkEnvironmentPage() {
             sx={{
               display: "grid",
               gridTemplateColumns: "1fr 1fr",
-              gap: { xs: "10px", md: "16px" },
+              gap: { xs: "10px", md: "24px" },
+              // Bottom-anchored like the file pills opposite, so the two
+              // columns end level whichever one happens to be taller.
+              mt: { md: "auto" },
             }}
           >
             {EXTERNAL_TILES.map((tile) => (
@@ -520,6 +522,11 @@ export default function WorkEnvironmentPage() {
             </Box>
           </Box>
         </Box>
+        <ProfileDrawer
+          open={isProfileOpen}
+          onClose={() => setIsProfileOpen(false)}
+          user={user}
+        />
       </AppLayout>
       <Snackbar
         open={Boolean(errorMessage)}

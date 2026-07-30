@@ -2,8 +2,8 @@ import type { ReactElement } from "react";
 import { useRouter } from "next/router";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import AssignmentIcon from "@mui/icons-material/Assignment";
-import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import ChecklistIcon from "@mui/icons-material/Checklist";
+import HandymanIcon from "@mui/icons-material/Handyman";
 import HomeIcon from "@mui/icons-material/Home";
 import { BottomNavigation, BottomNavigationAction, Paper } from "@mui/material";
 import { canAccessAdmin } from "@/lib/admin";
@@ -53,10 +53,10 @@ export default function AppBottomBar({ user }: AppBottomBarProps) {
       match: (pathname) => pathname === "/todo",
     },
     {
-      label: "לוח שנה",
-      href: "/calendar",
-      icon: <CalendarMonthIcon />,
-      match: (pathname) => pathname === "/calendar",
+      label: "ארגז כלים",
+      href: "/workEnvironment",
+      icon: <HandymanIcon />,
+      match: (pathname) => pathname === "/workEnvironment",
     },
     ...(showMyTasks
       ? [

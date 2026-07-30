@@ -9,7 +9,7 @@ import type {
 const WEEKDAY_LETTERS = ["א", "ב", "ג", "ד", "ה", "ו", "ש"];
 
 /** Current event plus the next three. */
-const VISIBLE_EVENT_COUNT = 4;
+const VISIBLE_EVENT_COUNT = 7;
 
 const EVENT_COLOR_PALETTE: Record<string, string> = {
   "1": "#7986cb",
