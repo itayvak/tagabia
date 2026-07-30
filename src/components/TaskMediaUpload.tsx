@@ -26,6 +26,7 @@ import type { TaskMedia } from "@/types/task";
 interface TaskMediaUploadProps {
   mode: "create" | "edit";
   disabled?: boolean;
+  hideTitle?: boolean;
   taskId?: string;
   userId?: string;
   initialMedia?: TaskMedia[];
@@ -45,6 +46,7 @@ function getTotalMediaCount(
 export default function TaskMediaUpload({
   mode,
   disabled = false,
+  hideTitle = false,
   taskId,
   userId,
   initialMedia = [],
@@ -199,7 +201,9 @@ export default function TaskMediaUpload({
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-      <Typography variant="subtitle1">קבצים מצורפים</Typography>
+      {hideTitle ? null : (
+        <Typography variant="subtitle1">קבצים מצורפים</Typography>
+      )}
       <Typography variant="caption" color="text.secondary">
         ניתן להעלות עד {MAX_TASK_MEDIA_FILES} קבצים (תמונות, סרטונים, PDF) עד{" "}
         {MAX_TASK_MEDIA_FILE_SIZE_MB}MB

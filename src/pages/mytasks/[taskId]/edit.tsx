@@ -15,6 +15,7 @@ import {
   Typography,
 } from "@mui/material";
 import AppLayout from "@/components/AppLayout";
+import { appBottomViewportOffset } from "@/components/AppBottomBar";
 import TaskForm, { type TaskFormData } from "@/components/TaskForm";
 import { getSession } from "@/lib/authStorage";
 import { fetchTask } from "@/lib/fetchTask";
@@ -217,33 +218,42 @@ export default function EditTaskPage() {
   return (
     <>
       <AppLayout user={user}>
-        <Container maxWidth="sm" sx={{ py: 3 }}>
-          <Typography variant="h5" component="h1" gutterBottom>
-            עריכת מטלה
-          </Typography>
-          {isLoading ? (
-            <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
-              <CircularProgress />
-            </Box>
-          ) : !task ? (
-            <Typography color="text.secondary" align="center" sx={{ py: 6 }}>
-              לא ניתן לטעון את המטלה
+        <Box
+          sx={{
+            bgcolor: "grey.200",
+            py: 3,
+            flex: 1,
+            minHeight: appBottomViewportOffset(88),
+          }}
+        >
+          <Container maxWidth="sm">
+            <Typography variant="h5" component="h1" gutterBottom>
+              עריכת מטלה
             </Typography>
-          ) : (
-            <TaskForm
-              mode="edit"
-              isSubmitting={isSubmitting}
-              taskId={task.id}
-              userId={user.id}
-              initialMedia={task.media}
-              formFieldsWarningMessage={formFieldsWarningMessage}
-              initialValues={initialFormValues}
-              onCancel={handleCancel}
-              onError={(message) => setErrorMessage(message)}
-              onSubmit={(formData) => void handleUpdateTask(formData)}
-            />
-          )}
-        </Container>
+            {isLoading ? (
+              <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+                <CircularProgress />
+              </Box>
+            ) : !task ? (
+              <Typography color="text.secondary" align="center" sx={{ py: 6 }}>
+                לא ניתן לטעון את המטלה
+              </Typography>
+            ) : (
+              <TaskForm
+                mode="edit"
+                isSubmitting={isSubmitting}
+                taskId={task.id}
+                userId={user.id}
+                initialMedia={task.media}
+                formFieldsWarningMessage={formFieldsWarningMessage}
+                initialValues={initialFormValues}
+                onCancel={handleCancel}
+                onError={(message) => setErrorMessage(message)}
+                onSubmit={(formData) => void handleUpdateTask(formData)}
+              />
+            )}
+          </Container>
+        </Box>
       </AppLayout>
       <Dialog
         open={isConfirmFormEditOpen}

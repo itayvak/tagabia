@@ -23,6 +23,7 @@ interface TaskFormFieldBuilderProps {
   fields: BuilderFormField[];
   onChange: (fields: BuilderFormField[]) => void;
   disabled?: boolean;
+  hideTitle?: boolean;
 }
 
 function createEmptyField(): BuilderFormField {
@@ -89,6 +90,7 @@ export default function TaskFormFieldBuilder({
   fields,
   onChange,
   disabled = false,
+  hideTitle = false,
 }: TaskFormFieldBuilderProps) {
   const updateField = (
     clientKey: string,
@@ -168,11 +170,13 @@ export default function TaskFormFieldBuilder({
         sx={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
+          justifyContent: hideTitle ? "flex-end" : "space-between",
           gap: 1,
         }}
       >
-        <Typography variant="subtitle1">שדה סקר</Typography>
+        {hideTitle ? null : (
+          <Typography variant="subtitle1">שדה סקר</Typography>
+        )}
         <Button
           size="small"
           startIcon={<AddIcon />}

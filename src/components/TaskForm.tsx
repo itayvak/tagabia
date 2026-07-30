@@ -16,6 +16,7 @@ import TaskFormFieldBuilder, {
   validateBuilderFields,
   type BuilderFormField,
 } from "@/components/TaskFormFieldBuilder";
+import TaskFormSection from "@/components/TaskFormSection";
 import TaskMediaUpload from "@/components/TaskMediaUpload";
 import { hasTaskAssignment } from "@/lib/assigneeTeams";
 import {
@@ -158,16 +159,12 @@ export default function TaskForm({
         setAssignedUsers(nextUsers);
       }}
       disabled={isFormBusy}
+      hideTitle
     />
   );
 
-  return (
-    <Box
-      component="form"
-      id={formId}
-      onSubmit={handleSubmit}
-      sx={{ display: "flex", flexDirection: "column", gap: 2 }}
-    >
+  const generalFields = (
+    <>
       <TaskCategoryPicker
         value={category}
         onChange={setCategory}
@@ -221,17 +218,25 @@ export default function TaskForm({
         }
         label="יש להגיש בקמפוס"
       />
-      <TaskMediaUpload
-        mode={mode}
-        disabled={isFormBusy}
-        taskId={taskId}
-        userId={userId}
-        initialMedia={initialMedia}
-        pendingMedia={pendingMedia}
-        onPendingMediaChange={setPendingMedia}
-        onError={onError}
-      />
-      {!isCreate ? assigneePicker : null}
+    </>
+  );
+
+  const mediaUpload = (
+    <TaskMediaUpload
+      mode={mode}
+      disabled={isFormBusy}
+      hideTitle
+      taskId={taskId}
+      userId={userId}
+      initialMedia={initialMedia}
+      pendingMedia={pendingMedia}
+      onPendingMediaChange={setPendingMedia}
+      onError={onError}
+    />
+  );
+
+  const formFieldBuilder = (
+    <>
       {formFieldsWarningMessage ? (
         <Alert severity="warning">{formFieldsWarningMessage}</Alert>
       ) : null}
@@ -239,33 +244,53 @@ export default function TaskForm({
         fields={formFields}
         onChange={setFormFields}
         disabled={isFormBusy}
+        hideTitle
       />
-      {isCreate ? assigneePicker : null}
-      <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, pt: 1 }}>
-        <Button onClick={handleCancel} disabled={isFormBusy}>
-          ביטול
-        </Button>
-        <Button
-          type="submit"
-          variant="contained"
-          disabled={isFormBusy || (isCreate && !category)}
-          startIcon={
-            isFormBusy ? (
-              <CircularProgress size={20} color="inherit" />
-            ) : undefined
-          }
-        >
-          {isUploadingMedia
-            ? "מעלה קבצים..."
-            : isSubmitting
-              ? isCreate
-                ? "יוצר..."
-                : "שומר..."
-              : isCreate
-                ? "שיוך מטלה"
-                : "שמירה"}
-        </Button>
-      </Box>
+    </>
+  );
+
+  const submitActions = (
+    <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, pt: 1 }}>
+      <Button onClick={handleCancel} disabled={isFormBusy}>
+        ביטול
+      </Button>
+      <Button
+        type="submit"
+        variant="contained"
+        disabled={isFormBusy || (isCreate && !category)}
+        startIcon={
+          isFormBusy ? (
+            <CircularProgress size={20} color="inherit" />
+          ) : undefined
+        }
+      >
+        {isUploadingMedia
+          ? "מעלה קבצים..."
+          : isSubmitting
+            ? isCreate
+              ? "יוצר..."
+              : "שומר..."
+            : isCreate
+              ? "שיוך מטלה"
+              : "שמירה"}
+      </Button>
+    </Box>
+  );
+
+  return (
+    <Box
+      component="form"
+      id={formId}
+      onSubmit={handleSubmit}
+      sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}
+    >
+      <TaskFormSection title="כללי" defaultExpanded>
+        {generalFields}
+      </TaskFormSection>
+      <TaskFormSection title="סקרים">{formFieldBuilder}</TaskFormSection>
+      <TaskFormSection title="קבצים מצורפים">{mediaUpload}</TaskFormSection>
+      <TaskFormSection title="שיוך לצוערים">{assigneePicker}</TaskFormSection>
+      {submitActions}
     </Box>
   );
 }
