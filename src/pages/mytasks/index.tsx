@@ -1,4 +1,3 @@
-import Head from "next/head";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -409,9 +408,6 @@ export default function MyTasksPage() {
 
   return (
     <>
-      <Head>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-      </Head>
       <AppLayout user={user}>
         <Container maxWidth="sm" sx={{ py: 3 }}>
         <ToggleButtonGroup

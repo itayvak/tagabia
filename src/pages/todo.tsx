@@ -1,4 +1,3 @@
-import Head from "next/head";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -332,7 +331,7 @@ export default function TodoPage() {
       <AppLayout user={user}>
         <Container maxWidth="sm" sx={{ py: 3 }}>
           <Typography variant="h5" component="h1" sx={{ mb: 0.5 }}>
-            משימות אישית
+            משימות אישיות
           </Typography>
 
           <PersonalTodoList

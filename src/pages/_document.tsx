@@ -14,6 +14,10 @@ export default function Document(
     <Html lang="he" dir="rtl">
       <Head>
         <DocumentHeadTags {...props} />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, viewport-fit=cover"
+        />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#1976d2" />
         <meta name="mobile-web-app-capable" content="yes" />
