@@ -1,4 +1,5 @@
 import { getAdminFirestore } from "@/lib/firebaseAdmin";
+import { getTeamsForPlatoon, isTaskAssignedToBattalionOrPlatoon } from "@/lib/platoons";
 import { isBattalionRole, getSubordinateRole } from "@/lib/roles";
 import { toPublicTask } from "@/lib/taskMapper";
 import type {
@@ -88,7 +89,12 @@ export default async function handler(
       (a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime(),
     );
 
-    return res.status(200).json({ tasks: allTasks });
+    const platoonTeams = getTeamsForPlatoon(viewerPlatoon);
+    const scopedTasks = allTasks.filter((task) =>
+      isTaskAssignedToBattalionOrPlatoon(task.assignedTeams, platoonTeams),
+    );
+
+    return res.status(200).json({ tasks: scopedTasks });
   } catch (error) {
     console.error("List subordinate tasks failed:", error);
     return res.status(500).json({ error: "List tasks failed" });

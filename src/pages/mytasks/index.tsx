@@ -4,6 +4,7 @@ import {
   Alert,
   Box,
   Button,
+  Checkbox,
   CircularProgress,
   Container,
   Dialog,
@@ -13,6 +14,8 @@ import {
   DialogTitle,
   Fab,
   InputAdornment,
+  ListItemText,
+  MenuItem,
   Snackbar,
   TextField,
   ToggleButton,
@@ -27,10 +30,18 @@ import CreatedTaskCard from "@/components/CreatedTaskCard";
 import TaskCompletionsDialog from "@/components/TaskCompletionsDialog";
 import TaskReportShareDialog from "@/components/TaskReportShareDialog";
 import TaskSubmissionsDialog from "@/components/TaskSubmissionsDialog";
-import { getSession } from "@/lib/authStorage";
+import { getSession, updateSessionUser } from "@/lib/authStorage";
 import { deleteTask } from "@/lib/deleteTask";
-import { canManageTasks, isBattalionRole } from "@/lib/roles";
-import { fetchAssignedTasks } from "@/lib/fetchAssignedTasks";
+import { fetchCurrentUser } from "@/lib/fetchCurrentUser";
+import { getTeamsForPlatoon } from "@/lib/platoons";
+import {
+  canManageTasks,
+  getRoleLabel,
+  isBattalionRole,
+  ROLE_LIST,
+  type Role,
+} from "@/lib/roles";
+import { fetchPlatoonScopeTasks } from "@/lib/fetchPlatoonScopeTasks";
 import { fetchCreatedTasks } from "@/lib/fetchCreatedTasks";
 import { fetchSubordinateTasks } from "@/lib/fetchSubordinateTasks";
 import { fetchTaskCompletions } from "@/lib/fetchTaskCompletions";
@@ -40,7 +51,6 @@ import type {
   DeleteTaskErrorResponse,
   ListTaskCompletionsErrorResponse,
   ListTaskCompletionsSuccessResponse,
-  ListAssignedTasksSuccessResponse,
   ListTasksErrorResponse,
   ListTasksSuccessResponse,
   PublicTask,
@@ -85,6 +95,8 @@ export default function MyTasksPage() {
   const [deletingTask, setDeletingTask] = useState<PublicTask | null>(null);
   const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCreatorRoles, setSelectedCreatorRoles] = useState<Role[]>([]);
+  const [selectedTeam, setSelectedTeam] = useState<number | "">("");
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -100,7 +112,22 @@ export default function MyTasksPage() {
       return;
     }
 
-    setUser(session.user);
+    const syncUser = async () => {
+      try {
+        const { response, data } = await fetchCurrentUser(session.user.id);
+        if (response.ok && "user" in data) {
+          updateSessionUser(data.user);
+          setUser(data.user);
+          return;
+        }
+      } catch {
+        // Fall back to the cached session when refresh fails.
+      }
+
+      setUser(session.user);
+    };
+
+    void syncUser();
   }, [router]);
 
   const loadTasks = useCallback(async () => {
@@ -112,11 +139,12 @@ export default function MyTasksPage() {
     setErrorMessage(null);
 
     try {
-      const [createdResult, assignedResult, subordinateResult] = await Promise.all([
-        fetchCreatedTasks(user.id),
-        fetchAssignedTasks(user.id, "all"),
-        fetchSubordinateTasks(user.id),
-      ]);
+      const [createdResult, platoonScopeResult, subordinateResult] =
+        await Promise.all([
+          fetchCreatedTasks(user.id),
+          fetchPlatoonScopeTasks(user.id),
+          fetchSubordinateTasks(user.id),
+        ]);
 
       if (!createdResult.response.ok) {
         const { error } = createdResult.data as ListTasksErrorResponse;
@@ -124,8 +152,8 @@ export default function MyTasksPage() {
         return;
       }
 
-      if (!assignedResult.response.ok) {
-        const { error } = assignedResult.data as ListTasksErrorResponse;
+      if (!platoonScopeResult.response.ok) {
+        const { error } = platoonScopeResult.data as ListTasksErrorResponse;
         setErrorMessage(getTaskErrorMessage(error ?? "טעינת המטלות נכשלה"));
         return;
       }
@@ -136,22 +164,22 @@ export default function MyTasksPage() {
         return;
       }
 
-      const assignedTasks = (
-        assignedResult.data as ListAssignedTasksSuccessResponse
+      const platoonScopeTasks = (
+        platoonScopeResult.data as ListTasksSuccessResponse
       ).tasks.filter((task) => task.creatorId !== user.id);
 
       const subordinateTasks = (
         subordinateResult.data as ListTasksSuccessResponse
       ).tasks;
 
-      // Merge subordinate tasks, avoiding duplicates already in assignedTasks
-      const assignedTaskIds = new Set(assignedTasks.map((t) => t.id));
+      // Merge subordinate tasks, avoiding duplicates already in platoonScopeTasks
+      const platoonScopeTaskIds = new Set(platoonScopeTasks.map((t) => t.id));
       const newSubordinateTasks = subordinateTasks.filter(
-        (t) => !assignedTaskIds.has(t.id),
+        (t) => !platoonScopeTaskIds.has(t.id),
       );
 
       setCreatedTasks((createdResult.data as ListTasksSuccessResponse).tasks);
-      setAssignedTasks([...assignedTasks, ...newSubordinateTasks]);
+      setAssignedTasks([...platoonScopeTasks, ...newSubordinateTasks]);
     } catch {
       setErrorMessage("שגיאה בטעינת המטלות. נסה שוב.");
     } finally {
@@ -165,6 +193,21 @@ export default function MyTasksPage() {
 
   const activeTasks = activeTab === "created" ? createdTasks : assignedTasks;
 
+  const allRolesSorted = useMemo(
+    () =>
+      [...ROLE_LIST]
+        .filter((role) => role !== "peasant" && role !== "commander")
+        .sort((a, b) =>
+          getRoleLabel(a).localeCompare(getRoleLabel(b), "he"),
+        ),
+    [],
+  );
+
+  const platoonTeams = useMemo(
+    () => (user ? getTeamsForPlatoon(user.platoon) : []),
+    [user],
+  );
+
   const reportTasks = useMemo(
     () => [...createdTasks, ...assignedTasks],
     [createdTasks, assignedTasks],
@@ -172,7 +215,25 @@ export default function MyTasksPage() {
 
   const filteredTasks = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
-    const sorted = [...activeTasks].sort(
+    let tasks = [...activeTasks];
+
+    if (activeTab === "assigned") {
+      if (selectedCreatorRoles.length > 0) {
+        tasks = tasks.filter((task) =>
+          selectedCreatorRoles.includes(task.creatorRole),
+        );
+      }
+
+      if (selectedTeam !== "") {
+        tasks = tasks.filter(
+          (task) =>
+            task.assignedTeams.length === 1 &&
+            task.assignedTeams[0] === selectedTeam,
+        );
+      }
+    }
+
+    const sorted = tasks.sort(
       (a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime(),
     );
 
@@ -185,7 +246,13 @@ export default function MyTasksPage() {
         task.title.toLowerCase().includes(query) ||
         task.content.toLowerCase().includes(query),
     );
-  }, [activeTasks, searchQuery]);
+  }, [
+    activeTasks,
+    activeTab,
+    searchQuery,
+    selectedCreatorRoles,
+    selectedTeam,
+  ]);
 
   const submittedUserIds = useMemo(
     () => submissions.map((submission) => submission.userId),
@@ -416,6 +483,10 @@ export default function MyTasksPage() {
           onChange={(_, value: MyTasksTab | null) => {
             if (value) {
               setActiveTab(value);
+              if (value !== "assigned") {
+                setSelectedCreatorRoles([]);
+                setSelectedTeam("");
+              }
             }
           }}
           fullWidth
@@ -424,7 +495,7 @@ export default function MyTasksPage() {
           sx={{ mb: 2 }}
         >
           <ToggleButton value="created">מטלות שיצרתי</ToggleButton>
-          <ToggleButton value="assigned">מטלות של אחרים</ToggleButton>
+          <ToggleButton value="assigned">מטלות פלוגתיות</ToggleButton>
         </ToggleButtonGroup>
         {isLoadingTasks ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
@@ -434,7 +505,7 @@ export default function MyTasksPage() {
           <Typography color="text.secondary" align="center" sx={{ py: 6 }}>
             {activeTab === "created"
               ? "אין מטלות שיצרת"
-              : "אין מטלות של אחרים"}
+              : "אין מטלות פלוגתיות"}
           </Typography>
         ) : (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -465,6 +536,65 @@ export default function MyTasksPage() {
                 שתף דוח
               </Button>
             </Box>
+            {activeTab === "assigned" ? (
+              <Box sx={{ display: "flex", gap: 1 }}>
+                <TextField
+                  select
+                  fullWidth
+                  size="small"
+                  label="תפקיד אחראי"
+                  value={selectedCreatorRoles}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setSelectedCreatorRoles(
+                      typeof value === "string" ? [] : value,
+                    );
+                  }}
+                  slotProps={{
+                    select: {
+                      multiple: true,
+                      renderValue: (selected) => {
+                        const roles = selected as Role[];
+                        if (roles.length === 0) {
+                          return "הכל";
+                        }
+
+                        return roles.map(getRoleLabel).join(", ");
+                      },
+                    },
+                  }}
+                >
+                  {allRolesSorted.map((role) => (
+                    <MenuItem key={role} value={role}>
+                      <Checkbox
+                        checked={selectedCreatorRoles.includes(role)}
+                        size="small"
+                        sx={{ py: 0, mr: 1 }}
+                      />
+                      <ListItemText primary={getRoleLabel(role)} />
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <TextField
+                  select
+                  fullWidth
+                  size="small"
+                  label="צוות משויך"
+                  value={selectedTeam}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setSelectedTeam(value === "" ? "" : Number(value));
+                  }}
+                >
+                  <MenuItem value="">הכל</MenuItem>
+                  {platoonTeams.map((team) => (
+                    <MenuItem key={team} value={team}>
+                      צוות {team}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Box>
+            ) : null}
             {filteredTasks.length === 0 ? (
               <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
                 לא נמצאו מטלות
@@ -536,6 +666,7 @@ export default function MyTasksPage() {
         assignees={assigneeStatuses}
         hasFormFields={completionsTask?.hasFormFields ?? false}
         submittedUserIds={submittedUserIds}
+        assignedTeams={completionsTask?.assignedTeams ?? []}
         groupByTeam={isBattalionRole(user.role)}
         onClose={handleCloseCompletions}
         onViewSubmission={

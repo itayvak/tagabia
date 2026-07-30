@@ -13,17 +13,17 @@ import TaskCategoryPicker from "@/components/TaskCategoryPicker";
 import TaskFormFieldBuilder, {
   toBuilderFormFields,
   toFormFieldInputs,
-  validateBuilderFields,
   type BuilderFormField,
 } from "@/components/TaskFormFieldBuilder";
 import TaskFormSection from "@/components/TaskFormSection";
 import TaskMediaUpload from "@/components/TaskMediaUpload";
-import { hasTaskAssignment } from "@/lib/assigneeTeams";
 import {
   DEFAULT_TASK_CATEGORY,
   type TaskCategory,
 } from "@/lib/taskCategory";
 import { fromDatetimeLocalValue } from "@/lib/taskDate";
+import { getTaskErrorMessage } from "@/lib/taskErrorMessages";
+import { validateTaskFormData } from "@/lib/validateTaskForm";
 import type { TaskMedia } from "@/types/task";
 import type { TaskFormFieldInput } from "@/types/taskForm";
 
@@ -117,26 +117,29 @@ export default function TaskForm({
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!category) {
-      onError?.("יש לבחור קטגוריה");
+    const validation = validateTaskFormData({
+      title,
+      category,
+      dueDate,
+      assignedTeams,
+      assignedUsers,
+      formFields: toFormFieldInputs(formFields),
+    });
+
+    if (!validation.ok) {
+      onError?.(getTaskErrorMessage(validation.error));
       return;
     }
 
-    if (!hasTaskAssignment(assignedTeams, assignedUsers)) {
-      onError?.("יש לבחור לפחות צוות או צוער אחד");
-      return;
-    }
-
-    const formFieldsError = validateBuilderFields(formFields);
-    if (formFieldsError) {
-      onError?.(formFieldsError);
+    const validatedCategory = category;
+    if (!validatedCategory) {
       return;
     }
 
     onSubmit({
       title: title.trim(),
       content: content.trim(),
-      category,
+      category: validatedCategory,
       dueDate: fromDatetimeLocalValue(dueDate),
       assignedTeams,
       assignedUsers,
@@ -175,7 +178,6 @@ export default function TaskForm({
         label="כותרת"
         value={title}
         onChange={(event) => setTitle(event.target.value)}
-        required
         fullWidth
         autoFocus={!isCreate || category !== null}
         disabled={isFormBusy}
@@ -200,7 +202,6 @@ export default function TaskForm({
         type="datetime-local"
         value={dueDate}
         onChange={(event) => setDueDate(event.target.value)}
-        required
         fullWidth
         disabled={isFormBusy}
         slotProps={{
@@ -257,7 +258,7 @@ export default function TaskForm({
       <Button
         type="submit"
         variant="contained"
-        disabled={isFormBusy || (isCreate && !category)}
+        disabled={isFormBusy}
         startIcon={
           isFormBusy ? (
             <CircularProgress size={20} color="inherit" />
@@ -281,6 +282,7 @@ export default function TaskForm({
     <Box
       component="form"
       id={formId}
+      noValidate
       onSubmit={handleSubmit}
       sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}
     >

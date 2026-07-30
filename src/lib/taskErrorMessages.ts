@@ -57,8 +57,12 @@ export function getTaskErrorMessage(error: string): string {
       return "שדה בחירה חייב לכלול לפחות שתי אפשרויות";
     case "Form answers are required":
       return "יש למלא את הטופס לפני סימון המטלה כבוצעה";
+    case "Task category is required":
+      return "יש לבחור קטגוריה";
     case "Invalid task category":
       return "יש לבחור קטגוריה תקינה";
+    case "At least one assignee is required":
+      return "יש לבחור לפחות צוות או צוער אחד";
     case "File is required":
       return "יש לבחור קובץ להעלאה";
     case "File type is not allowed":

@@ -19,7 +19,7 @@ import {
 import { fetchTaskCompletions } from "@/lib/fetchTaskCompletions";
 import {
   formatDueDate,
-  sortTasksByDueDateWithPastLast,
+  isDueInLastSevenDays,
 } from "@/lib/taskDate";
 import { renderTaskReportImage } from "@/lib/renderTaskReportImage";
 import { shareImageFile } from "@/lib/shareImageFile";
@@ -57,7 +57,10 @@ export default function TaskReportShareDialog({
   const [isSharing, setIsSharing] = useState(false);
 
   const sortedTasks = useMemo(
-    () => sortTasksByDueDateWithPastLast(tasks),
+    () =>
+      [...tasks].sort(
+        (a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime(),
+      ),
     [tasks],
   );
 
@@ -103,6 +106,16 @@ export default function TaskReportShareDialog({
 
   const handleSelectAll = () => {
     setSelectedTaskIds(new Set(sortedTasks.map((task) => task.id)));
+  };
+
+  const handleSelectLastSevenDays = () => {
+    setSelectedTaskIds(
+      new Set(
+        sortedTasks
+          .filter((task) => isDueInLastSevenDays(task.dueDate))
+          .map((task) => task.id),
+      ),
+    );
   };
 
   const handleClearSelection = () => {
@@ -219,9 +232,12 @@ export default function TaskReportShareDialog({
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               בחר את המטלות שיופיעו בתמונה לשיתוף בוואטסאפ או בקבוצה.
             </Typography>
-            <Box sx={{ display: "flex", gap: 1, mb: 1 }}>
+            <Box sx={{ display: "flex", gap: 1, mb: 1, flexWrap: "wrap" }}>
               <Button size="small" onClick={handleSelectAll}>
                 בחר הכל
+              </Button>
+              <Button size="small" onClick={handleSelectLastSevenDays}>
+                בחר 7 ימים אחרונים
               </Button>
               <Button size="small" onClick={handleClearSelection}>
                 נקה בחירה

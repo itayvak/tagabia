@@ -57,3 +57,12 @@ export function getSession(): StoredSession | null {
 export function clearSession(): void {
   localStorage.removeItem(SESSION_KEY);
 }
+
+export function updateSessionUser(user: PublicUser): void {
+  const session = getSession();
+  if (!session) {
+    return;
+  }
+
+  saveSession(user, session.credentials);
+}

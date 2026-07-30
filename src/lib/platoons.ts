@@ -35,6 +35,21 @@ export function getTeamsForPlatoon(platoon: Platoon): number[] {
   );
 }
 
+export function isTaskAssignedToBattalionOrPlatoon(
+  assignedTeams: number[],
+  platoonTeams: number[],
+): boolean {
+  if (assignedTeams.length === 0) {
+    return false;
+  }
+
+  if (assignedTeams.length === TOTAL_TEAMS) {
+    return true;
+  }
+
+  return assignedTeams.some((team) => platoonTeams.includes(team));
+}
+
 export function getPlatoonForTeam(team: number): Platoon | null {
   if (!Number.isInteger(team) || team < 1 || team > TOTAL_TEAMS) {
     return null;

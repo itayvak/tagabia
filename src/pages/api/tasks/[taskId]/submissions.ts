@@ -57,7 +57,13 @@ export default async function handler(
     const userData = userDoc.data() as FirestoreUser;
 
     if (
-      !canViewTaskManagement(userId, userData.team, userData.role, taskData)
+      !canViewTaskManagement(
+        userId,
+        userData.team,
+        userData.role,
+        taskData,
+        userData.platoon,
+      )
     ) {
       return res.status(403).json({ error: "User is not the task creator" });
     }

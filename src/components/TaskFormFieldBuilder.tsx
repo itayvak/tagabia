@@ -36,26 +36,6 @@ function createEmptyField(): BuilderFormField {
   };
 }
 
-function validateBuilderFields(fields: BuilderFormField[]): string | null {
-  for (const field of fields) {
-    if (!field.label.trim()) {
-      return "יש להזין תווית לכל שדה בטופס";
-    }
-
-    if (field.type === "multipleChoice" || field.type === "multiSelect") {
-      const options = (field.options ?? [])
-        .map((option) => option.trim())
-        .filter((option) => option.length > 0);
-
-      if (options.length < 2) {
-        return "שדה בחירה חייב לכלול לפחות שתי אפשרויות";
-      }
-    }
-  }
-
-  return null;
-}
-
 export function toBuilderFormFields(
   fields: TaskFormFieldInput[],
 ): BuilderFormField[] {
@@ -84,7 +64,6 @@ export function toFormFieldInputs(
   }));
 }
 
-export { validateBuilderFields };
 
 export default function TaskFormFieldBuilder({
   fields,
@@ -239,7 +218,6 @@ export default function TaskFormFieldBuilder({
                   label: event.target.value,
                 }))
               }
-              required
               fullWidth
               disabled={disabled}
               slotProps={{

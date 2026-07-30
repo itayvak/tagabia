@@ -139,6 +139,28 @@ export function isDueThisWeek(
   return startOfDue >= startOfWeek && startOfDue <= endOfWeek;
 }
 
+export function isDueInLastSevenDays(
+  dueDate: string,
+  referenceDate: Date = new Date(),
+): boolean {
+  const startOfToday = new Date(
+    referenceDate.getFullYear(),
+    referenceDate.getMonth(),
+    referenceDate.getDate(),
+  );
+  const startOfRange = new Date(startOfToday);
+  startOfRange.setDate(startOfToday.getDate() - 6);
+
+  const due = new Date(dueDate);
+  const startOfDue = new Date(
+    due.getFullYear(),
+    due.getMonth(),
+    due.getDate(),
+  );
+
+  return startOfDue >= startOfRange && startOfDue <= startOfToday;
+}
+
 export function isCompletedLate(
   dueDate: string,
   completedAt: string,
