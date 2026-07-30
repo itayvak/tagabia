@@ -17,6 +17,7 @@ import {
   Typography,
 } from "@mui/material";
 import { clearSession, getSession, saveSession } from "@/lib/authStorage";
+import { getUserHomePath } from "@/lib/appRoutes";
 import { isLoginNeedsPasswordSetup, loginWithCredentials } from "@/lib/login";
 import { requestPasswordReset } from "@/lib/requestPasswordReset";
 import { setPassword as setUserPassword } from "@/lib/setPassword";
@@ -96,7 +97,9 @@ export default function LoginPage() {
           (data as LoginSuccessResponse).user,
           session.credentials,
         );
-        await router.replace("/allTasks");
+        await router.replace(
+          getUserHomePath((data as LoginSuccessResponse).user),
+        );
       } catch {
         clearSession();
         setIsCheckingSession(false);
@@ -132,7 +135,9 @@ export default function LoginPage() {
         id: id.trim(),
         password,
       });
-      await router.replace("/allTasks");
+      await router.replace(
+        getUserHomePath((data as LoginSuccessResponse).user),
+      );
     } catch {
       setErrorMessage("שגיאה בהתחברות. נסה שוב.");
     } finally {
@@ -168,7 +173,9 @@ export default function LoginPage() {
         id: setupUserId,
         password: newPassword,
       });
-      await router.replace("/allTasks");
+      await router.replace(
+        getUserHomePath((data as SetPasswordSuccessResponse).user),
+      );
     } catch {
       setErrorMessage("שגיאה בשמירת הסיסמה. נסה שוב.");
     } finally {

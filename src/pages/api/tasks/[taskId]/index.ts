@@ -5,6 +5,7 @@ import {
   normalizeUserIds,
 } from "@/lib/assigneeTeams";
 import { getAdminFirestore } from "@/lib/firebaseAdmin";
+import { canCreateTasks } from "@/lib/roles";
 import { isTaskCategory } from "@/lib/taskCategory";
 import { toPublicTask } from "@/lib/taskMapper";
 import {
@@ -253,13 +254,25 @@ async function handlePut(
   try {
     const db = getAdminFirestore();
     const taskRef = db.collection("tasks").doc(taskId);
-    const taskDoc = await taskRef.get();
+    const trimmedUserId = userId.trim();
+    const [taskDoc, userDoc] = await Promise.all([
+      taskRef.get(),
+      db.collection("users").doc(trimmedUserId).get(),
+    ]);
 
     if (!taskDoc.exists) {
       return res.status(404).json({ error: "Task not found" });
     }
 
-    const trimmedUserId = userId.trim();
+    if (!userDoc.exists) {
+      return res.status(400).json({ error: "User not found" });
+    }
+
+    const userData = userDoc.data() as FirestoreUser;
+    if (!canCreateTasks(userData.role)) {
+      return res.status(403).json({ error: "Task access is read-only" });
+    }
+
     if (taskDoc.data()?.creatorId !== trimmedUserId) {
       return res.status(403).json({ error: "User is not the task creator" });
     }
@@ -303,13 +316,25 @@ async function handleDelete(
   try {
     const db = getAdminFirestore();
     const taskRef = db.collection("tasks").doc(taskId);
-    const taskDoc = await taskRef.get();
+    const trimmedUserId = userId.trim();
+    const [taskDoc, userDoc] = await Promise.all([
+      taskRef.get(),
+      db.collection("users").doc(trimmedUserId).get(),
+    ]);
 
     if (!taskDoc.exists) {
       return res.status(404).json({ error: "Task not found" });
     }
 
-    const trimmedUserId = userId.trim();
+    if (!userDoc.exists) {
+      return res.status(400).json({ error: "User not found" });
+    }
+
+    const userData = userDoc.data() as FirestoreUser;
+    if (!canCreateTasks(userData.role)) {
+      return res.status(403).json({ error: "Task access is read-only" });
+    }
+
     if (taskDoc.data()?.creatorId !== trimmedUserId) {
       return res.status(403).json({ error: "User is not the task creator" });
     }

@@ -3,6 +3,7 @@ import path from "path";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  allowedDevOrigins: ["172.20.10.3"],
   // Turbopack + Pages Router otherwise loads two @emotion/react instances during SSR
   // (bundled @mui/material vs externalized AppCacheProvider), causing css-* vs muirtl-* hydration mismatches.
   bundlePagesRouterDependencies: true,

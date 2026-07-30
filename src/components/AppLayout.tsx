@@ -8,6 +8,8 @@ interface AppLayoutProps {
 }
 
 export default function AppLayout({ user, children }: AppLayoutProps) {
+  const showBottomBar = user.role !== "commander";
+
   return (
     <>
       <Box sx={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
@@ -16,13 +18,13 @@ export default function AppLayout({ user, children }: AppLayoutProps) {
             flex: 1,
             display: "flex",
             flexDirection: "column",
-            pb: `${APP_BOTTOM_BAR_HEIGHT + 16}px`,
+            pb: showBottomBar ? `${APP_BOTTOM_BAR_HEIGHT + 16}px` : 0,
           }}
         >
           {children}
         </Box>
       </Box>
-      <AppBottomBar user={user} />
+      {showBottomBar ? <AppBottomBar user={user} /> : null}
     </>
   );
 }

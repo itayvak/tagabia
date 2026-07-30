@@ -42,6 +42,14 @@ export function canManageTasks(role: Role): boolean {
   return role !== "peasant";
 }
 
+export function canCreateTasks(role: Role): boolean {
+  return role !== "peasant" && role !== "commander";
+}
+
+export function isCommander(role: Role): boolean {
+  return role === "commander";
+}
+
 export function hasDeveloperAccess(role: Role): boolean {
   return role === "developer" || role === "AIBatallion" || role === "innovationBatallion";
 }
