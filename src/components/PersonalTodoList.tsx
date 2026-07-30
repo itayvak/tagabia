@@ -31,7 +31,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { APP_BOTTOM_BAR_HEIGHT } from "@/components/AppBottomBar";
+import { appBottomOffset } from "@/components/AppBottomBar";
 import { formatDateOnly, fromDateInputValue, toDateInputValue } from "@/lib/taskDate";
 import type { PersonalTodoItem } from "@/types/user";
 
@@ -664,7 +664,7 @@ export default function PersonalTodoList({
       onClick={() => setCreateSheetOpen(true)}
       sx={{
         position: "fixed",
-        bottom: APP_BOTTOM_BAR_HEIGHT + 16,
+        bottom: appBottomOffset(16),
         insetInlineStart: 24,
       }}
     >

@@ -1,5 +1,5 @@
 import { Box } from "@mui/material";
-import AppBottomBar, { APP_BOTTOM_BAR_HEIGHT } from "@/components/AppBottomBar";
+import AppBottomBar, { appBottomOffset } from "@/components/AppBottomBar";
 import type { PublicUser } from "@/types/user";
 
 interface AppLayoutProps {
@@ -16,7 +16,7 @@ export default function AppLayout({ user, children }: AppLayoutProps) {
             flex: 1,
             display: "flex",
             flexDirection: "column",
-            pb: `${APP_BOTTOM_BAR_HEIGHT + 16}px`,
+            pb: appBottomOffset(16),
           }}
         >
           {children}

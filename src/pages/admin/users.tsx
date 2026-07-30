@@ -21,7 +21,7 @@ import {
   Typography,
 } from "@mui/material";
 import AppLayout from "@/components/AppLayout";
-import { APP_BOTTOM_BAR_HEIGHT } from "@/components/AppBottomBar";
+import { appBottomOffset } from "@/components/AppBottomBar";
 import UserEditDialog, { type UserEditMode } from "@/components/UserEditDialog";
 import { canAccessAdmin } from "@/lib/admin";
 import { getSession } from "@/lib/authStorage";
@@ -182,7 +182,7 @@ export default function AdminUsersPage() {
           maxWidth="md"
           sx={{
             py: 3,
-            pb: `${APP_BOTTOM_BAR_HEIGHT + 24}px`,
+            pb: appBottomOffset(24),
           }}
         >
           <Box

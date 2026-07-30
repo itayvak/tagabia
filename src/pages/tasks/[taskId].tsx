@@ -22,7 +22,7 @@ import CheckIcon from "@mui/icons-material/Check";
 import ShareIcon from "@mui/icons-material/Share";
 import UndoIcon from "@mui/icons-material/Undo";
 import AppLayout from "@/components/AppLayout";
-import { APP_BOTTOM_BAR_HEIGHT } from "@/components/AppBottomBar";
+import { appBottomOffset, appBottomViewportOffset } from "@/components/AppBottomBar";
 import LinkifiedText from "@/components/LinkifiedText";
 import TaskFormRenderer from "@/components/TaskFormRenderer";
 import TaskMediaAttachments from "@/components/TaskMediaAttachments";
@@ -294,7 +294,7 @@ export default function TaskPage() {
             bgcolor: "grey.200",
             py: 3,
             flex: 1,
-            minHeight: `calc(100dvh - ${APP_BOTTOM_BAR_HEIGHT + 88}px)`,
+            minHeight: appBottomViewportOffset(88),
           }}
         >
           <Container maxWidth="sm">

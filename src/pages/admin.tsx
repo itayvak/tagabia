@@ -23,7 +23,7 @@ import {
   Typography,
 } from "@mui/material";
 import AppLayout from "@/components/AppLayout";
-import { APP_BOTTOM_BAR_HEIGHT } from "@/components/AppBottomBar";
+import { appBottomOffset } from "@/components/AppBottomBar";
 import CourseWeeksDialog from "@/components/CourseWeeksDialog";
 import UserEditDialog from "@/components/UserEditDialog";
 import { canAccessAdmin } from "@/lib/admin";
@@ -292,7 +292,7 @@ export default function AdminPage() {
           maxWidth="md"
           sx={{
             py: 3,
-            pb: `${APP_BOTTOM_BAR_HEIGHT + 24}px`,
+            pb: appBottomOffset(24),
             display: "flex",
             flexDirection: "column",
             gap: 3,

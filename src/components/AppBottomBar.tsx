@@ -12,6 +12,16 @@ import type { PublicUser } from "@/types/user";
 
 export const APP_BOTTOM_BAR_HEIGHT = 56;
 
+/** Space reserved above the bottom bar, including the iOS home indicator. */
+export function appBottomOffset(extra = 0): string {
+  return `calc(${APP_BOTTOM_BAR_HEIGHT + extra}px + env(safe-area-inset-bottom, 0px))`;
+}
+
+/** Viewport height minus the bottom bar and iOS safe area. */
+export function appBottomViewportOffset(extra = 0): string {
+  return `calc(100dvh - ${APP_BOTTOM_BAR_HEIGHT + extra}px - env(safe-area-inset-bottom, 0px))`;
+}
+
 interface AppBottomBarProps {
   user: PublicUser;
 }
@@ -83,6 +93,7 @@ export default function AppBottomBar({ user }: AppBottomBarProps) {
         left: 0,
         right: 0,
         zIndex: (theme) => theme.zIndex.appBar,
+        pb: "env(safe-area-inset-bottom, 0px)",
       }}
     >
       <BottomNavigation
