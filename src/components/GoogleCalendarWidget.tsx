@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Alert, Box, CircularProgress, Link, Typography } from "@mui/material";
 import { fetchGoogleCalendarEvents } from "@/lib/fetchGoogleCalendarEvents";
 import type {
+  ListGoogleCalendarEventsErrorResponse,
   ListGoogleCalendarEventsSuccessResponse,
   PublicGoogleCalendarEvent,
 } from "@/types/googleCalendar";
@@ -176,7 +177,14 @@ const cardSx = {
   boxShadow: "0 1px 3px rgba(20,20,43,0.06)",
 } as const;
 
-export default function GoogleCalendarWidget() {
+interface GoogleCalendarWidgetProps {
+  /** Whose platoon calendar to show; resolved server-side from this id. */
+  userId: string;
+}
+
+export default function GoogleCalendarWidget({
+  userId,
+}: GoogleCalendarWidgetProps) {
   const [events, setEvents] = useState<PublicGoogleCalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -190,14 +198,19 @@ export default function GoogleCalendarWidget() {
 
     const load = async () => {
       try {
-        const { response, data } = await fetchGoogleCalendarEvents();
+        const { response, data } = await fetchGoogleCalendarEvents(userId);
 
         if (cancelled) {
           return;
         }
 
         if (!response.ok) {
-          setErrorMessage("טעינת היומן נכשלה");
+          const { code } = data as ListGoogleCalendarEventsErrorResponse;
+          setErrorMessage(
+            code === "platoonCalendarNotConnected"
+              ? "לוח שנה פלוגתי אינו מחובר"
+              : "טעינת היומן נכשלה",
+          );
           return;
         }
 
@@ -218,7 +231,7 @@ export default function GoogleCalendarWidget() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [userId]);
 
   // Keep "what's happening now" accurate as time passes.
   useEffect(() => {
@@ -267,7 +280,22 @@ export default function GoogleCalendarWidget() {
   }
 
   if (errorMessage) {
-    return <Alert severity="error">{errorMessage}</Alert>;
+    // Keep the card footprint so the column beside it does not reflow.
+    return (
+      <Box
+        sx={{
+          ...cardSx,
+          minHeight: 200,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Alert severity="info" sx={{ width: "100%" }}>
+          {errorMessage}
+        </Alert>
+      </Box>
+    );
   }
 
   return (
