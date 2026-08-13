@@ -1,5 +1,14 @@
 import { google } from "googleapis";
-import { PLATOONS } from "@/lib/platoons";
+import { getAdminFirestore } from "@/lib/firebaseAdmin";
+import {
+  GOOGLE_CALENDAR_CONFIG_COLLECTION,
+  GOOGLE_CALENDAR_CONFIG_DOC_ID,
+  parseCalendarIds,
+} from "@/lib/googleCalendarConfigMapper";
+import type {
+  FirestoreGoogleCalendarConfig,
+  GoogleCalendarIdsByPlatoon,
+} from "@/types/googleCalendar";
 import type { Platoon } from "@/types/user";
 
 interface GoogleServiceAccountKey {
@@ -29,43 +38,50 @@ export function getGoogleCalendarClient() {
 }
 
 /**
- * GOOGLE_CALENDAR_IDS maps every platoon to its own calendar, e.g.
- * {"A":"a@group.calendar.google.com","B":"","C":"","D":"","E":""}
+ * The per-platoon calendars live in Firestore and are edited on the developers
+ * page. GOOGLE_CALENDAR_IDS — the JSON env var they used to live in, e.g.
+ * {"A":"a@group.calendar.google.com","B":""} — is still read as a fallback so
+ * deployments keep working until the config is saved once.
  *
- * A key that is missing, blank or not a string means that platoon has no
- * calendar connected yet, which the UI reports instead of showing a calendar.
+ * A platoon that is missing or blank in both has no calendar connected yet,
+ * which the UI reports instead of showing a calendar.
  */
-function getCalendarIdsByPlatoon(): Partial<Record<Platoon, string>> {
+function getCalendarIdsFromEnv(): GoogleCalendarIdsByPlatoon {
   const raw = process.env.GOOGLE_CALENDAR_IDS;
   if (!raw) {
-    throw new Error("GOOGLE_CALENDAR_IDS is not set");
+    return {};
   }
 
-  let parsed: unknown;
   try {
-    parsed = JSON.parse(raw);
+    return parseCalendarIds(JSON.parse(raw));
   } catch {
-    throw new Error("GOOGLE_CALENDAR_IDS is not valid JSON");
+    console.error("GOOGLE_CALENDAR_IDS is not valid JSON");
+    return {};
+  }
+}
+
+export async function getGoogleCalendarIdsByPlatoon(): Promise<GoogleCalendarIdsByPlatoon> {
+  const doc = await getAdminFirestore()
+    .collection(GOOGLE_CALENDAR_CONFIG_COLLECTION)
+    .doc(GOOGLE_CALENDAR_CONFIG_DOC_ID)
+    .get();
+
+  if (!doc.exists) {
+    return getCalendarIdsFromEnv();
   }
 
-  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-    throw new Error("GOOGLE_CALENDAR_IDS must be a JSON object keyed by platoon");
-  }
-
-  const entries = parsed as Record<string, unknown>;
-  const calendarIds: Partial<Record<Platoon, string>> = {};
-
-  for (const platoon of PLATOONS) {
-    const value = entries[platoon];
-    if (typeof value === "string" && value.trim()) {
-      calendarIds[platoon] = value.trim();
-    }
-  }
-
-  return calendarIds;
+  // Once the config has been saved it is the only source of truth, so a
+  // platoon cleared on the developers page stays cleared even if the old env
+  // var still lists it.
+  return parseCalendarIds(
+    (doc.data() as Partial<FirestoreGoogleCalendarConfig> | undefined)
+      ?.calendarIds,
+  );
 }
 
 /** The platoon's calendar id, or null when none is configured for it. */
-export function getGoogleCalendarIdForPlatoon(platoon: Platoon): string | null {
-  return getCalendarIdsByPlatoon()[platoon] ?? null;
+export async function getGoogleCalendarIdForPlatoon(
+  platoon: Platoon,
+): Promise<string | null> {
+  return (await getGoogleCalendarIdsByPlatoon())[platoon] ?? null;
 }

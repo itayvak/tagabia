@@ -42,7 +42,7 @@ export default async function handler(
     }
 
     const { platoon } = userDoc.data() as FirestoreUser;
-    const calendarId = getGoogleCalendarIdForPlatoon(platoon);
+    const calendarId = await getGoogleCalendarIdForPlatoon(platoon);
 
     if (!calendarId) {
       return res.status(404).json({
