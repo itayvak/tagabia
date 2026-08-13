@@ -3,6 +3,8 @@ import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import DownloadIcon from "@mui/icons-material/Download";
+import EventIcon from "@mui/icons-material/Event";
+import FolderIcon from "@mui/icons-material/Folder";
 import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
 import PeopleIcon from "@mui/icons-material/People";
 import UploadIcon from "@mui/icons-material/Upload";
@@ -24,7 +26,9 @@ import {
 import AppLayout from "@/components/AppLayout";
 import { appBottomOffset } from "@/components/AppBottomBar";
 import CourseWeeksDialog from "@/components/CourseWeeksDialog";
+import GoogleCalendarIdsSection from "@/components/GoogleCalendarIdsSection";
 import UserEditDialog from "@/components/UserEditDialog";
+import WorkEnvironmentFileUploads from "@/components/WorkEnvironmentFileUploads";
 import { canAccessAdmin } from "@/lib/admin";
 import { getSession } from "@/lib/authStorage";
 import { downloadUsersCsv } from "@/lib/downloadUsersCsv";
@@ -401,6 +405,14 @@ export default function AdminPage() {
             </Box>
           </AdminSection>
 
+          <AdminSection icon={<FolderIcon />} title="קבצי ארגז הכלים">
+            <WorkEnvironmentFileUploads
+              userId={user.id}
+              onError={(message) => setErrorMessage(message)}
+              onSuccess={(message) => setSuccessMessage(message)}
+            />
+          </AdminSection>
+
           <AdminSection icon={<CalendarMonthIcon />} title="הגדרות קורס">
             <Button
               variant="contained"
@@ -410,6 +422,14 @@ export default function AdminPage() {
             >
               עריכת שבועות הקורס
             </Button>
+          </AdminSection>
+
+          <AdminSection icon={<EventIcon />} title="יומני הפלוגות">
+            <GoogleCalendarIdsSection
+              userId={user.id}
+              onError={(message) => setErrorMessage(message)}
+              onSuccess={(message) => setSuccessMessage(message)}
+            />
           </AdminSection>
         </Container>
         <CourseWeeksDialog
