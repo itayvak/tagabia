@@ -1,7 +1,9 @@
+import { getAdminFirestore } from "@/lib/firebaseAdmin";
 import {
   getGoogleCalendarClient,
-  getGoogleCalendarId,
+  getGoogleCalendarIdForPlatoon,
 } from "@/lib/googleCalendarAdmin";
+import type { FirestoreUser } from "@/types/user";
 import type {
   ListGoogleCalendarEventsErrorResponse,
   ListGoogleCalendarEventsSuccessResponse,
@@ -22,9 +24,34 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+  const { userId } = req.query;
+  if (typeof userId !== "string" || !userId) {
+    return res.status(400).json({ error: "Missing userId" });
+  }
+
   try {
+    // The platoon comes from the stored user, never from the request, so a
+    // caller cannot read another platoon's calendar by asking for it.
+    const userDoc = await getAdminFirestore()
+      .collection("users")
+      .doc(userId)
+      .get();
+
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const { platoon } = userDoc.data() as FirestoreUser;
+    const calendarId = getGoogleCalendarIdForPlatoon(platoon);
+
+    if (!calendarId) {
+      return res.status(404).json({
+        error: `No calendar configured for platoon ${platoon}`,
+        code: "platoonCalendarNotConnected",
+      });
+    }
+
     const calendar = getGoogleCalendarClient();
-    const calendarId = getGoogleCalendarId();
 
     // Start from today rather than the past: a dense calendar would otherwise
     // fill the result cap with old events and never reach upcoming ones.

@@ -1,4 +1,6 @@
 import { google } from "googleapis";
+import { PLATOONS } from "@/lib/platoons";
+import type { Platoon } from "@/types/user";
 
 interface GoogleServiceAccountKey {
   client_email: string;
@@ -26,11 +28,44 @@ export function getGoogleCalendarClient() {
   return google.calendar({ version: "v3", auth });
 }
 
-export function getGoogleCalendarId(): string {
-  const calendarId = process.env.GOOGLE_CALENDAR_ID;
-  if (!calendarId) {
-    throw new Error("GOOGLE_CALENDAR_ID is not set");
+/**
+ * GOOGLE_CALENDAR_IDS maps every platoon to its own calendar, e.g.
+ * {"A":"a@group.calendar.google.com","B":"","C":"","D":"","E":""}
+ *
+ * A key that is missing, blank or not a string means that platoon has no
+ * calendar connected yet, which the UI reports instead of showing a calendar.
+ */
+function getCalendarIdsByPlatoon(): Partial<Record<Platoon, string>> {
+  const raw = process.env.GOOGLE_CALENDAR_IDS;
+  if (!raw) {
+    throw new Error("GOOGLE_CALENDAR_IDS is not set");
   }
 
-  return calendarId;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error("GOOGLE_CALENDAR_IDS is not valid JSON");
+  }
+
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    throw new Error("GOOGLE_CALENDAR_IDS must be a JSON object keyed by platoon");
+  }
+
+  const entries = parsed as Record<string, unknown>;
+  const calendarIds: Partial<Record<Platoon, string>> = {};
+
+  for (const platoon of PLATOONS) {
+    const value = entries[platoon];
+    if (typeof value === "string" && value.trim()) {
+      calendarIds[platoon] = value.trim();
+    }
+  }
+
+  return calendarIds;
+}
+
+/** The platoon's calendar id, or null when none is configured for it. */
+export function getGoogleCalendarIdForPlatoon(platoon: Platoon): string | null {
+  return getCalendarIdsByPlatoon()[platoon] ?? null;
 }

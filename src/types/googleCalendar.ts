@@ -12,6 +12,10 @@ export interface ListGoogleCalendarEventsSuccessResponse {
   events: PublicGoogleCalendarEvent[];
 }
 
+/** Distinguishes "this platoon has no calendar" from an actual failure. */
+export type ListGoogleCalendarEventsErrorCode = "platoonCalendarNotConnected";
+
 export interface ListGoogleCalendarEventsErrorResponse {
   error: string;
+  code?: ListGoogleCalendarEventsErrorCode;
 }

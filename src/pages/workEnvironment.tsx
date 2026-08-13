@@ -131,10 +131,13 @@ function FilePill({
         position: "relative",
         background: gradient,
         borderRadius: "26px",
-        padding: { xs: "12px 34px", md: "16px 20px" },
+        // The chevron is inset 14px and 18px wide, so the inline padding has to
+        // clear 32px on mobile; the label wraps inside whatever is left.
+        padding: { xs: "10px 32px", md: "16px 20px" },
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
+        minWidth: 0,
         color: "#fff",
         width: "100%",
         opacity: disabled ? 0.55 : 1,
@@ -142,15 +145,26 @@ function FilePill({
       }}
     >
       <PillChevron side={chevronSide} />
-      <Box sx={{ display: "flex", alignItems: "center", gap: "8px" }}>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          minWidth: 0,
+        }}
+      >
         {glyphFirst && glyph}
         <Box
           component="span"
           sx={{
-            fontSize: 13,
+            fontSize: { xs: 12, md: 13 },
             fontWeight: 600,
             textAlign: "center",
-            whiteSpace: "nowrap",
+            lineHeight: 1.25,
+            minWidth: 0,
+            // Mobile pills are half the viewport wide, so the longer labels have
+            // to wrap instead of running past the pill edge.
+            whiteSpace: { xs: "normal", md: "nowrap" },
           }}
         >
           {isLoading ? "טוען..." : media ? label : `${label} - אין קובץ`}
@@ -278,7 +292,7 @@ export default function WorkEnvironmentPage() {
                   minWidth: 0,
                 }}
               >
-                <GoogleCalendarWidget />
+                <GoogleCalendarWidget userId={user.id} />
 
                 <Box
                   sx={{
