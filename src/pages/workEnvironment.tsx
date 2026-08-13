@@ -138,6 +138,10 @@ function FilePill({
         alignItems: "center",
         justifyContent: "center",
         minWidth: 0,
+        maxWidth: "100%",
+        // Belt-and-braces against a long label spilling out of the pill and
+        // dragging the grid track past the viewport edge.
+        overflow: "hidden",
         color: "#fff",
         width: "100%",
         opacity: disabled ? 0.55 : 1,
@@ -163,11 +167,13 @@ function FilePill({
             lineHeight: 1.25,
             minWidth: 0,
             // Mobile pills are half the viewport wide, so the longer labels have
-            // to wrap instead of running past the pill edge.
+            // to wrap instead of running past the pill edge — including inside a
+            // single word if the pill is narrower than the word itself.
             whiteSpace: { xs: "normal", md: "nowrap" },
+            overflowWrap: "anywhere",
           }}
         >
-          {isLoading ? "טוען..." : media ? label : `${label} - אין קובץ`}
+          {isLoading ? "טוען..." : media ? label : `${label} - אין`}
         </Box>
         {!glyphFirst && glyph}
       </Box>
@@ -252,6 +258,9 @@ export default function WorkEnvironmentPage() {
             background: "oklch(0.955 0.004 260)",
             display: "flex",
             justifyContent: "center",
+            // Nothing on this page is meant to scroll sideways; the cards size
+            // themselves to the column instead.
+            overflowX: "hidden",
             px: { xs: "14px", md: "40px" },
             pt: { xs: "14px", md: "24px" },
             pb: {
@@ -264,6 +273,7 @@ export default function WorkEnvironmentPage() {
             sx={{
               width: "100%",
               maxWidth: { xs: 600, md: 1180 },
+              minWidth: 0,
               display: "flex",
               flexDirection: "column",
               gap: { xs: "12px", md: "24px" },
@@ -275,7 +285,7 @@ export default function WorkEnvironmentPage() {
                 // Calendar (first child, so rightmost in RTL) sits just under
                 // half the width; the tile column takes the rest.
                 gridTemplateColumns: {
-                  xs: "1fr",
+                  xs: "minmax(0, 1fr)",
                   md: "minmax(0, 0.92fr) minmax(0, 1fr)",
                 },
                 gap: { xs: "12px", md: "24px" },
@@ -297,33 +307,36 @@ export default function WorkEnvironmentPage() {
                 <Box
                   sx={{
                     display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
+                    // minmax(0, …) instead of 1fr: a bare `1fr` track floors at
+                    // its content's min-width, so a wide pill would stretch the
+                    // row past the viewport instead of the label wrapping.
+                    gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
                     gap: { xs: "10px", md: "16px" },
                     // Sits flush with the bottom of the tile column beside it.
                     mt: { md: "auto" },
                   }}
                 >
                   <FilePill
-              label="שאטלים"
-              gradient="linear-gradient(135deg, oklch(0.5 0.16 255), oklch(0.4 0.17 260))"
-              chevronSide="right"
-              glyph={<ShuttleGlyph />}
-              glyphFirst
-              file={getFile("shuttles")}
-              isLoading={isLoadingFiles}
-              onUnavailable={() => setErrorMessage("אין קובץ שאטלים זמין")}
-            />
-            <FilePill
-              label="תורניות ושמירות"
-              gradient="linear-gradient(135deg, oklch(0.5 0.09 190), oklch(0.4 0.1 170))"
-              chevronSide="left"
-              glyph={<RosterGlyph />}
-              glyphFirst={false}
-              file={getFile("guardRosters")}
-              isLoading={isLoadingFiles}
-              onUnavailable={() =>
-                setErrorMessage("אין קובץ תורניות ושמירות זמין")
-              }
+                    label="שאטלים"
+                    gradient="linear-gradient(135deg, oklch(0.5 0.16 255), oklch(0.4 0.17 260))"
+                    chevronSide="right"
+                    glyph={<ShuttleGlyph />}
+                    glyphFirst
+                    file={getFile("shuttles")}
+                    isLoading={isLoadingFiles}
+                    onUnavailable={() => setErrorMessage("אין קובץ שאטלים זמין")}
+                  />
+                  <FilePill
+                    label="תורניות ושמירות"
+                    gradient="linear-gradient(135deg, oklch(0.5 0.09 190), oklch(0.4 0.1 170))"
+                    chevronSide="left"
+                    glyph={<RosterGlyph />}
+                    glyphFirst={false}
+                    file={getFile("guardRosters")}
+                    isLoading={isLoadingFiles}
+                    onUnavailable={() =>
+                      setErrorMessage("אין קובץ תורניות ושמירות זמין")
+                    }
                   />
                 </Box>
               </Box>
@@ -467,7 +480,7 @@ export default function WorkEnvironmentPage() {
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: "1fr 1fr",
+              gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
               gap: { xs: "10px", md: "24px" },
               // Bottom-anchored like the file pills opposite, so the two
               // columns end level whichever one happens to be taller.
